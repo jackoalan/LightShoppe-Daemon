@@ -4,6 +4,16 @@ Thanks for obtaining LightShoppe! This project aims to be a general-purpose
 software solution for the control of theatrical and architectural grade
 lighting hardware; granting a wide degree of flexibility.
 
+To get straight to the point, there is currently no `make` system in
+LightShoppe. Instead, here are some simple scripts that perform the entire
+build in one go:
+
+	* Execute ./buildp.sh to build a compiler optomised binary (./lsd)
+	* Execute ./build.sh to build a non-optomised binary with debug
+	  symbols, ideal for running with valgrind
+	* Execute ./clean.sh to remove all files created by either of the
+	  above scripts
+
 LightShoppe is still very much in its early stages of development and there
 is no formal documentation at the time of this writing. This file provides
 a brief, informal description of the functions and use of LightShoppe.
