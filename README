@@ -1,0 +1,93 @@
+			********** WORK IN PROGRESS SOFTWARE!!! **********
+
+Thanks for obtaining LightShoppe! This project aims to be a general-purpose
+software solution for the control of theatrical and architectural grade
+lighting hardware; granting a wide degree of flexibility.
+
+LightShoppe is still very much in its early stages of development and there
+is no formal documentation at the time of this writing. This file provides
+a brief, informal description of the functions and use of LightShoppe.
+At this point, help is greatly needed! A development roadmap will eventually
+be posted on the GitHub wiki. In the meantime, here is my contact 
+information:
+
+	Jack Andersen <jackoalan@gmail.com>
+
+Questions, Comments, Patches, Documentation, Hate Mail, etc. may be sent
+there. Thanks!
+
+An instance of LightShoppe consists of the LightShoppe-Daemon 
+(abbreviated LSD) and one or more clients communicating to the daemon
+via a JSON-over-HTTP based RPC.
+
+Nodes are key elements of LightShoppe's design. The nodes behave like those
+in many other applications providing realtime adjustable data compositing.
+(Blender's node-based compositing system is a good example of this). Like
+many other node based applications, nodes are given I/O in the form of
+typed plugs (a set of inputs and a set of outputs, empty sets supported).
+A node's input may only accept a single connection to an output of the same
+type. Outputs, on the other hand, may be connected to multiple inputs 
+provided that the types all match. Nodes themselves follow the basic 
+principles of object-oriented design. Node developers design and write a
+"Node Class" which contains everything necessary to establish and run a
+"Node Instance" at the user's command. A "Class Library" is presented
+through the client to allow easy browsing and instantisation of these
+classes.
+
+Networks of nodes are contained within hierarchical units called
+"Patch Spaces". Patch Spaces can be thought of as directories in a 
+filesystem containing a (possibly complex) network of nodes and boiling it
+down to a single user-defined object called a "Facade". The Facade is the
+outward embodiment of the Patch Space. It appears and behaves like a 
+regular node to the user, except that the user is able to arbitrarily 
+define and name it's plugs. Upon definition, these plugs appear within
+the Patch Space and allow the user to create a complex network within a
+single entity, making complex configurations more comprehendable.
+
+The data network culminates in a macro-object called a "Partition".
+The Partition is a low-level object binding lighting universe channels
+to a "Root Patch Space" uniquely established for the Partition. Users are
+able to make a low-level patch using Channel objects to name individual
+lighting channels and group them into logical RGB triples or simply left
+as mono channels. These channels are bound to a single partition.
+The inward-facing facade plugs of the Root Patch Space contains outputs 
+for each Channel of the Partition in question. These outputs implement
+LSD's standard RGB type, which plugins may implement in their outputs.
+
+Open Lighting Architecture (OLA) is used as the framework for outputting 
+lighting data to the hardware. OLA supports a vast collection of various
+standards for universe-channel based light addressing and communication.
+A universe may be configured in OLA's web interface by providing a unique
+numeric ID and selecting the hardware interface(s) to be bound to the
+universe. The same universe ID is provided to LSD when creating a Channel
+for a Partition. Currently, universes are hard-allocated to 512 channels
+for standard DMX-512. Attempts to create a channel with an address outside
+this range will throw a memory access exception of some sort.
+
+LightShoppe provides an API for plugin developers to implement new node
+classes, populate them with I/O plugs and register I/O data types to be
+used by the node plugs. Data types defined by a plugin can even be shared
+with other plugins by establishing a private network of APIs.
+
+On the front end, LightShoppe's client currently consists of a JavaScript
+and SVG based application for use in relatively modern web browsers.
+XHRs made according to LSD's interface make heavy use of the notion of
+nodes and the wires that bind them, thus keeping the RPC concise and 
+stateful. The user interface uses SVG to provide a graphical representation
+of the current node network running on the server. Low-level patch editing
+is also provided to the user through the preferences dialog.
+
+Further documentation (preferably not in a README) will follow as 
+development time allows.
+
+
+
+For the curious, my testing system (and exclusive home lighting) consists
+of 2 LED dimmer boards and over 50 Prolight RGB, Warm White, and UV 1-watt 
+LEDs spread about. The Enttec Open DMX USB is used as the interface. It
+generates very smooth crossfades in my tests under Linux, especially with 
+16-bit dimming.
+
+The dimmer board is the DMX-32 designed and sold by Jesse Lackey.
+They may be purchased at his website: <celestialaudio.com>
+
