@@ -97,7 +97,7 @@ int coreInit(struct LSD_ScenePlugin const * plugin, cJSON const * confjson){
     }
     
     // Register test class
-    if(plugininit_registerNodeClass(plugin,&testClass,testNodeInit,testNodeClean,0,"TestTest","Test Class","faderNodeConfDialog",bfFuncs,bpFuncs)<0){
+    if(plugininit_registerNodeClass(plugin,&testClass,testNodeInit,NULL,testNodeClean,0,"TestTest","Test Class","faderNodeConfDialog",bfFuncs,bpFuncs)<0){
         fprintf(stderr, "Error while registering core's test class\n");
         return -1;
     }
