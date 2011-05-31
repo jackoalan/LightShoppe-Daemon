@@ -185,7 +185,7 @@ int faderPluginInit(struct LSD_ScenePlugin const * plugin, cJSON const * confjso
 	}
 	
     // Register fader class
-    if(plugininit_registerNodeClass(plugin,&faderClass,faderNodeInit,faderNodeClean,0,"Fader","Fader Class","faderNodeConfDialog",bfFuncs,bpFuncs)<0){
+    if(plugininit_registerNodeClass(plugin,&faderClass,faderNodeInit,NULL,faderNodeClean,0,"Fader","Fader Class","faderNodeConfDialog",bfFuncs,bpFuncs)<0){
         fprintf(stderr, "Error while registering fader class\n");
         return -1;
     }
