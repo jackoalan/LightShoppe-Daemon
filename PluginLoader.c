@@ -22,8 +22,11 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
+#include <dlfcn.h>
+#include <magic.h>
 
 #include "PluginLoader.h"
+#include "DBOps.h"
 
 /*
 Plugin Directory Structure:
@@ -56,3 +59,128 @@ This file contains:
  resolve a connection to the appropirate JavaScript functions related to the
  class.
 */
+
+typedef const struct LSD_ScenePluginHEAD* (*ghType)(void);
+
+int checkAddPlugin(const char* pluginDir, const char* pluginFile){
+
+	const struct LSD_ScenePluginHEAD* ph;
+	
+	void* librarySO = dlopen(pluginFile, RTLD_LAZY);
+	if(!librarySO){
+		printf("Error Opening SO: %s\n",dlerror());
+		return -1;
+	}
+	
+	ghType getHead = dlsym(librarySO,"getPluginHead");
+	if(getHead){
+		ph = getHead();
+		if( lsddb_pluginHeadLoader(ph,1,pluginDir,"1.0",librarySO) < 0 ){
+			fprintf(stderr,"Error while loading PluginHead\n");
+			dlclose(librarySO);
+		}
+	}
+	else{
+		printf("Error loading %s:\n",pluginFile);
+		printf("%s\n",dlerror());
+	}
+	
+	return 0;
+	
+}
+
+// Pulls server library out of plugin folder and uses libmagic to verify
+int scrapePlugin(const char* pluginsPath, const char* pluginDirName){
+	DIR* pluginDir;
+	struct dirent* pluginDirItem;
+	
+	// String to keep a single plugin's path for scraping
+	char pluginPath[256];
+	char pluginFile[256];
+	
+	// Magic cookie to do checks on loaded files
+	magic_t magicCookie = magic_open(MAGIC_MIME);
+	magic_load(magicCookie,NULL);
+	
+	snprintf(pluginPath,256,"%s/%s",pluginsPath,pluginDirName);
+	
+	pluginDir = opendir(pluginPath);
+	if(!pluginDir){
+		fprintf(stderr,"Unable to open plugin directory\n");
+		return -1;
+	}
+	
+	int foundLib;
+	const char* magicFileDesc;
+	pluginDirItem = readdir(pluginDir);
+	while(pluginDirItem){
+		foundLib = 0;
+		// We're only interested in regular files
+		if(pluginDirItem->d_type == DT_REG){
+			//printf("%s\n",pluginDirItem->d_name);
+			
+			// Check to see if file could be server library
+			if(
+#ifdef __APPLE__
+			   strncmp(pluginDirItem->d_name,"Server.dylib",12)==0
+#else
+			   strncmp(pluginDirItem->d_name,"Server.so",9)==0 
+#endif
+			   
+			   ){
+				foundLib = 1;
+				
+				
+#ifdef __APPLE__
+				snprintf(pluginFile,256,"%s/%s",pluginPath,"Server.dylib");
+#else
+				snprintf(pluginFile,256,"%s/%s",pluginPath,"Server.so");
+#endif
+
+				magicFileDesc = magic_file(magicCookie,pluginFile);
+				
+				if( strncmp(magicFileDesc, "application/x-sharedlib", 23) == 0 ){
+					printf("%s: Loading\n",pluginDirName);
+					checkAddPlugin(pluginDirName,pluginFile);
+				}
+				
+				
+			}
+			
+		}
+		
+		if(!foundLib)
+			pluginDirItem = readdir(pluginDir); // Iterate next
+		else
+			pluginDirItem = NULL; // Finish this plugin
+	}
+	
+	magic_close(magicCookie);
+	return closedir(pluginDir);
+}
+
+// Opens the plugins directory provided and calls scrapePlugin for the name
+int iteratePluginsDirectory(const char* pluginsDirPath){
+	DIR* pluginsDir;
+	struct dirent* pluginsDirItem;
+	
+	pluginsDir = opendir(pluginsDirPath);
+	if(!pluginsDir){
+		fprintf(stderr,"Unable to open plugins directory\n");
+		return -1;
+	}
+	
+	pluginsDirItem = readdir(pluginsDir);
+	while(pluginsDirItem){
+		// We're only interested in directories
+		if(pluginsDirItem->d_type == DT_DIR){
+			if(pluginsDirItem->d_name[0] != '.'){ // Filter out dot files
+				scrapePlugin(pluginsDirPath,pluginsDirItem->d_name);
+			}
+		}
+		
+		pluginsDirItem = readdir(pluginsDir);
+	}
+	
+	return closedir(pluginsDir);
+}

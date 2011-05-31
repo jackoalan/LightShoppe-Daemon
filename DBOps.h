@@ -96,7 +96,7 @@ int lsddb_removePartition(int partId);
 int lsddb_updatePartitionName(int partId, const char* name);
 
 int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, const char* name,
-                       const char* desc, const char* nodeConfJSFunc);
+					   const char* desc, int classIdx);
 
 int lsddb_addDataType(int* ptrToBind, int pluginId, const char* name,
                       const char* desc, int isArray);
@@ -143,7 +143,8 @@ int lsddb_removeNodeInst(int nodeId);
 
 int lsddb_addFacadeNodeInst(int childPatchSpaceId, int* idBinding, int parentPatchSpace);
 
-int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable);
+int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
+						   const char* parentDirectoryName, const char* pluginSha, void* dlObj);
 
 int lsddb_resolvePluginFromNodeId(struct LSD_ScenePlugin** pluginBind, int nodeId);
 

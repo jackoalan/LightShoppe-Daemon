@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <dlfcn.h>
 
 #include "PluginAPICore.h"
 #include "PluginAPI.h"
@@ -37,6 +38,10 @@ void destruct_ScenePlugin(void* plugin){
         if(castPlugin->cleanupFunc){
             castPlugin->cleanupFunc(castPlugin);
         }
+		if(castPlugin->dlObj){
+			dlclose(castPlugin->dlObj);
+			printf("Closed Plugin SO\n");
+		}
     }
 }
 
@@ -57,7 +62,7 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
                                  void(*nodeCleanFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  size_t nodeDataSize,
                                  const char* name, const char* desc,
-								 const char* nodeConfJSFunc,
+								 int classIdx,
 								 bfFunc* bfFuncTbl, bpFunc* bpFuncTbl){
     if(apistate != STATE_PINIT)
         return -10;
@@ -70,7 +75,7 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
     struct LSD_SceneNodeClass* tempClass;
     
     // Backend function
-    if(lsddb_addNodeClass(&tempClass,key->dbId,name,desc,nodeConfJSFunc)<0){
+    if(lsddb_addNodeClass(&tempClass,key->dbId,name,desc,classIdx)<0){
         fprintf(stderr,"Error while running DB and array portion of registerNodeClass()\n");
         return -1;
     }

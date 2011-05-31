@@ -29,7 +29,7 @@ struct RGB_TYPE {
 	double b;
 };
 
-int core_getRGBTypeID();
+extern int core_getRGBTypeID();
 
 const struct LSD_ScenePluginHEAD* getCoreHead();
 

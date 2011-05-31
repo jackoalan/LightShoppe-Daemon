@@ -41,6 +41,7 @@ struct LSD_ScenePlugin {
     int dbId;
     void(*cleanupFunc)(struct LSD_ScenePlugin const * plugin);
     void(*handleRPC)(cJSON* in, cJSON* out);
+	void* dlObj;
 };
 
 void destruct_ScenePlugin(void* plugin);
@@ -79,7 +80,7 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
                                  void(*nodeCleanFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  size_t nodeDataSize,
                                  const char* name, const char* desc,
-								 const char* nodeConfJSFunc,
+								 int classIdx,
 								 bfFunc* bfFuncTbl, bpFunc* bpFuncTbl);
 
 int plugininit_registerDataType(struct LSD_ScenePlugin const * key,

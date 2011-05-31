@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <dlfcn.h>
 
 // Forward-decl for statement compilation and cleanup
 int lsddb_prepStmts();
@@ -217,7 +218,7 @@ static const char INIT_QUERIES[] =
 
 // CREATE: SceneNodeClass
 "CREATE TABLE IF NOT EXISTS SceneNodeClass (id INTEGER PRIMARY KEY ASC, pluginId INTEGER NOT NULL, "
-"classIdx INTEGER, nodeConfJSFunc TEXT, "
+"classIdx INTEGER, "
 "name TEXT NOT NULL, desc TEXT NULL, arrayIdx INTEGER, FOREIGN KEY(pluginId) REFERENCES ScenePlugin(id));\n"
 
 "CREATE INDEX IF NOT EXISTS SceneNodeClassIdx ON SceneNodeClass (classIdx,name);\n"
@@ -704,7 +705,7 @@ static const char ADD_NODE_CLASS_CHECK[] =
 "SELECT arrayIdx,id FROM SceneNodeClass WHERE pluginId=?1 AND name=?2";
 static sqlite3_stmt* ADD_NODE_CLASS_CHECK_S;
 static const char ADD_NODE_CLASS_INSERT[] =
-"INSERT INTO SceneNodeClass (pluginId,name,desc,nodeConfJSFunc) VALUES (?1,?2,?3,?4)";
+"INSERT INTO SceneNodeClass (pluginId,name,desc,classIdx) VALUES (?1,?2,?3,?4)";
 static sqlite3_stmt* ADD_NODE_CLASS_INSERT_S;
 /*
 static const char ADD_NODE_CLASS_DELIN[] =
@@ -718,7 +719,7 @@ static const char ADD_NODE_CLASS_UPDIDX[] =
 "UPDATE SceneNodeClass SET arrayIdx=?2 WHERE id=?1";
 static sqlite3_stmt* ADD_NODE_CLASS_UPDIDX_S;
 int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, const char* name,
-					   const char* desc, const char* nodeConfJSFunc){
+					   const char* desc, int classIdx){
 	if(!name){
 		fprintf(stderr,"Name not provided in addNodeClass()\n");
 		return -1;
@@ -761,8 +762,7 @@ int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, cons
 		sqlite3_bind_int(ADD_NODE_CLASS_INSERT_S,1,pluginId);
 		sqlite3_bind_text(ADD_NODE_CLASS_INSERT_S,2,name,-1,NULL);
 		sqlite3_bind_text(ADD_NODE_CLASS_INSERT_S,3,desc,-1,NULL);
-		if(nodeConfJSFunc)
-			sqlite3_bind_text(ADD_NODE_CLASS_INSERT_S,4,nodeConfJSFunc,-1,NULL);
+		sqlite3_bind_int(ADD_NODE_CLASS_INSERT_S,4,classIdx);
 		
 		if(sqlite3_step(ADD_NODE_CLASS_INSERT_S)!=SQLITE_DONE){
 			fprintf(stderr,"Unable to insert new class entry into DB in addNodeClass()\n");
@@ -803,7 +803,7 @@ int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, cons
 	// Update arrIdx
 	sqlite3_reset(ADD_NODE_CLASS_UPDIDX_S);
 	
-	sqlite3_bind_int(ADD_NODE_CLASS_UPDIDX_S,1,pluginId);
+	sqlite3_bind_int(ADD_NODE_CLASS_UPDIDX_S,1,classId);
 	sqlite3_bind_int(ADD_NODE_CLASS_UPDIDX_S,2,insertedIdx);
 	
 	if(sqlite3_step(ADD_NODE_CLASS_UPDIDX_S)!=SQLITE_DONE){
@@ -1732,15 +1732,16 @@ static sqlite3_stmt* PLUGIN_HEAD_LOADER_INSERT_S;
 static const char PLUGIN_HEAD_LOADER_UPDIDX_LOAD[] =
 "UPDATE ScenePlugin SET arrayIdx=?1,loaded=1,seen=1 WHERE id=?2";
 static sqlite3_stmt* PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S;
-int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable){
-	if(!ph || !(ph->pluginDomain) || !(ph->pluginVersion) || !(ph->initFunc) || !(ph->cleanupFunc)){
+int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
+						   const char* parentDirectoryName, const char* pluginSha, void* dlObj){
+	if(!ph || !(ph->initFunc) || !(ph->cleanupFunc)){
 		fprintf(stderr,"Invalid PluginHEAD provided in pluginHeadLoader()\n");
 		return -1;
 	}
 	
 	sqlite3_reset(PLUGIN_HEAD_LOADER_CHECK_S);
-	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_S,1,ph->pluginDomain,-1,NULL);
-	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_S,2,ph->pluginVersion,-1,NULL);
+	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_S,1,parentDirectoryName,-1,NULL);
+	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_S,2,pluginSha,-1,NULL);
 	
 	int pluginId;
 	int enabled = 0;
@@ -1758,8 +1759,8 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable){
 	}
 	else{ // We must add new plugin record to DB
 		sqlite3_reset(PLUGIN_HEAD_LOADER_INSERT_S);
-		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,1,ph->pluginDomain,-1,NULL);
-		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,2,ph->pluginVersion,-1,NULL);
+		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,1,parentDirectoryName,-1,NULL);
+		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,2,pluginSha,-1,NULL);
 		
 		if(sqlite3_step(PLUGIN_HEAD_LOADER_INSERT_S)!=SQLITE_DONE){
 			fprintf(stderr,"Unable to insert newfound plugin into DB in pluginHeadLoader()\n");
@@ -1795,6 +1796,9 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable){
 		scenePlugin->cleanupFunc = ph->cleanupFunc;
 		scenePlugin->handleRPC = ph->handler;
 		
+		// Copy dlObj to be able to close SO
+		scenePlugin->dlObj = dlObj;
+		
 		// Now that the plugin is allocated and inited, it's loaded status and arrIdx is updated
 		sqlite3_reset(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S);
 		sqlite3_bind_int(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S,1,pluginArrIdx);
@@ -1806,6 +1810,9 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable){
 		}
 
 	}
+	else
+		if(dlObj)
+			dlclose(dlObj);
 	
 	return 0;
 	
@@ -2577,6 +2584,38 @@ int lsddb_jsonParts(cJSON* target){
 	return 0;
 }
 
+
+static const char JSON_INSERT_CLASS_OBJECT[] =
+"SELECT pluginId,classIdx FROM SceneNodeClass WHERE id=?1";
+static sqlite3_stmt* JSON_INSERT_CLASS_OBJECT_S;
+
+// Inserts a 'class' object into a json object consisting of classId, 
+// pluginId, and classIdx to allow a node in the client to resolve its
+// various class members implemented in static files
+int lsddb_jsonInsertClassObject(cJSON* target, int classId){
+	if(!target || target->type != cJSON_Object)
+		return -1;
+	
+	sqlite3_reset(JSON_INSERT_CLASS_OBJECT_S);
+	sqlite3_bind_int(JSON_INSERT_CLASS_OBJECT_S,1,classId);
+	
+	if(sqlite3_step(JSON_INSERT_CLASS_OBJECT_S)==SQLITE_ROW){
+		int pluginId = sqlite3_column_int(JSON_INSERT_CLASS_OBJECT_S,0);
+		int classIdx = sqlite3_column_int(JSON_INSERT_CLASS_OBJECT_S,1);
+		
+		cJSON* classObj = cJSON_CreateObject();
+		cJSON_AddNumberToObject(classObj,"classId",classId);
+		cJSON_AddNumberToObject(classObj,"pluginId",pluginId);
+		cJSON_AddNumberToObject(classObj,"classIdx",classIdx);
+		
+		cJSON_AddItemToObject(target,"class",classObj);
+		
+		return 0;
+	}
+	fprintf(stderr,"Unable to resolve class from DB in jsonInsertClassObject()\n");
+	return -1;
+}
+
 static const char JSON_NODES[] =
 "SELECT id,posX,posY,classId FROM SceneNodeInst WHERE patchSpaceId=?1";
 static sqlite3_stmt* JSON_NODES_S;
@@ -2614,7 +2653,8 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
 		cJSON_AddNumberToObject(nodeObj,"nodeId",nodeId);
 		cJSON_AddNumberToObject(nodeObj,"x",posX);
 		cJSON_AddNumberToObject(nodeObj,"y",posY);
-		cJSON_AddNumberToObject(nodeObj,"classId",classId);
+		//cJSON_AddNumberToObject(nodeObj,"classId",classId);
+		lsddb_jsonInsertClassObject(nodeObj,classId);
 		
 		// Get node's ins
 		sqlite3_reset(JSON_NODES_INS_S);
@@ -2820,21 +2860,6 @@ int lsddb_resolveClassFromId(struct LSD_SceneNodeClass** ptrToBind, int classId)
 }
 
 
-// Following two functions are used by lsd DMX handler
-// to iterate through all partitions and retreive
-// pointer to the output object of whatever is connected
-// to the partition facade's input
-static const char PARTITION_ITERATION[] =
-"SELECT * FROM SystemPartition";
-static sqlite3_stmt* PARTITION_ITERATION_S;
-
-int lsddb_PartitionIterationBegin(){
-	return 0;
-}
-
-int lsddb_PartitionIterationNext(struct LSD_SceneNodeOutput** ptrToBind){
-	return 0;
-}
 
 // Channel patch operations below
 
@@ -3373,6 +3398,8 @@ int lsddb_prepStmts(){
 	
 	PREP(JSON_PARTS,76);
 	
+	PREP(JSON_INSERT_CLASS_OBJECT,766);
+	
 	PREP(JSON_NODES,77);
 	PREP(JSON_NODES_INS,78);
 	PREP(JSON_NODES_OUTS,79);
@@ -3386,9 +3413,7 @@ int lsddb_prepStmts(){
 	PREP(JSON_PATCH_SPACE,84);
 	
 	PREP(RESOLVE_CLASS_FROM_ID,85);
-	
-	PREP(PARTITION_ITERATION,86);
-	
+		
 	PREP(GET_PATCH_CHANNELS_PARTS,87);
 	PREP(GET_PATCH_CHANNELS_CHANS,88);
 	PREP(GET_PATCH_CHANNELS_ADDITIONAL,89);
@@ -3528,6 +3553,8 @@ int lsddb_finishStmts(){
 	
 	FINAL(JSON_PARTS);
 	
+	FINAL(JSON_INSERT_CLASS_OBJECT);
+	
 	FINAL(JSON_NODES);
 	FINAL(JSON_NODES_INS);
 	FINAL(JSON_NODES_OUTS);
@@ -3541,9 +3568,7 @@ int lsddb_finishStmts(){
 	FINAL(JSON_PATCH_SPACE);
 	
 	FINAL(RESOLVE_CLASS_FROM_ID);
-	
-	FINAL(PARTITION_ITERATION);
-	
+		
 	FINAL(GET_PATCH_CHANNELS_PARTS);
 	FINAL(GET_PATCH_CHANNELS_CHANS);
 	FINAL(GET_PATCH_CHANNELS_ADDITIONAL);

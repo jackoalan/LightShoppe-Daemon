@@ -19,20 +19,17 @@
 */
 
 
-// This is a specially privledged plugin for the purpose of providing
-// various built-in classes and types 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../PluginAPI.h"
-#include "../NodeInstAPI.h"
-#include "../DBOps.h"
-#include "../CorePlugin.h"
-#include "../cJSON.h"
+#include "../../PluginAPI.h"
+#include "../../NodeInstAPI.h"
+#include "../../DBOps.h"
+#include "../../CorePlugin.h"
+#include "../../cJSON.h"
 
-#include "faderPlugin.h"
 
 static struct LSD_SceneNodeClass* faderClass;
 
@@ -174,7 +171,7 @@ void faderRPCHandler(cJSON* in, cJSON* out){
 // Plugin init funcs
 
 int faderPluginInit(struct LSD_ScenePlugin const * plugin, cJSON const * confjson){
-	
+	printf("Fader Init Ran\n");
 	// Init data
 	int i;
 	for(i=0;i<5;++i){
@@ -185,7 +182,7 @@ int faderPluginInit(struct LSD_ScenePlugin const * plugin, cJSON const * confjso
 	}
 	
     // Register fader class
-    if(plugininit_registerNodeClass(plugin,&faderClass,faderNodeInit,NULL,faderNodeClean,0,"Fader","Fader Class","faderNodeConfDialog",bfFuncs,bpFuncs)<0){
+    if(plugininit_registerNodeClass(plugin,&faderClass,faderNodeInit,NULL,faderNodeClean,0,"Fader","Fader Class",0,bfFuncs,bpFuncs)<0){
         fprintf(stderr, "Error while registering fader class\n");
         return -1;
     }
@@ -205,6 +202,6 @@ static const struct LSD_ScenePluginHEAD pluginHead = {
     "0.1"
 };
 
-const struct LSD_ScenePluginHEAD* getFaderPluginHead(){
+extern const struct LSD_ScenePluginHEAD* getPluginHead(){
     return &pluginHead;
 }

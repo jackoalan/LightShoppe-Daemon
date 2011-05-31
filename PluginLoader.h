@@ -17,3 +17,6 @@
 **
 **    @author Jack Andersen <jackoalan@gmail.com>
 */
+
+
+int iteratePluginsDirectory(const char* pluginsDirPath);

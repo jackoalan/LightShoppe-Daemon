@@ -30,6 +30,7 @@
 #include "CorePlugin.h"
 #include "GarbageCollector.h"
 #include "DMX.h"
+#include "PluginLoader.h"
 
 #include <event.h>
 #include <signal.h>
@@ -38,8 +39,6 @@
 
 #include "DBOps.h"
 #include "cJSON.h"
-
-#include "Plugins/faderPlugin.h"
 
 // Basic runtime configuration stuff
 static int verbose;
@@ -239,17 +238,22 @@ int lsdSceneEntry(){
 		
 		/** LOAD PLUGINS HERE **/
 		
+		
 		printf("Loading core plugin head\n");
-		if(lsddb_pluginHeadLoader(getCoreHead(),1)<0){
+		if(lsddb_pluginHeadLoader(getCoreHead(),1,"CORE","0",NULL)<0){
 			fprintf(stderr,"Unable to properly load core plugin\n");
 			return -1;
 		}
 		
+		iteratePluginsDirectory("Plugins");
+		
+		/*
 		printf("Loading fader bank plugin\n");
-		if(lsddb_pluginHeadLoader(getFaderPluginHead(),1)<0){
+		if(lsddb_pluginHeadLoader(getFaderPluginHead(),1,"FaderBank","1")<0){
 			fprintf(stderr,"Unable to properly load fader plugin\n");
 			return -1;
 		}
+		 */
 		
 		/** STRUCT PARTITION ARRAY **/
         
@@ -337,12 +341,16 @@ int lsdSceneEntry(){
 
 int main(int argc, const char** argv){
 	
-	// Parse CommandLine
+	// Parse Command Line
 	int i;
 	verbose = 0;
 	dbfile = 0;
 	if(argc>0){
 		for (i=0; i<argc; ++i) {
+			if(strcmp(argv[i],"-h")==0){
+				printf("Usage: lsd [-h|-v|-f] [-d dbfile]\n");
+				return 0;
+			}
 			if(strcmp(argv[i],"-v")==0)
 				verbose = 1;
 			if(strcmp(argv[i],"-d")==0){
