@@ -143,6 +143,12 @@ int lsddb_removeNodeInst(int nodeId);
 
 int lsddb_addFacadeNodeInst(int childPatchSpaceId, int* idBinding, int parentPatchSpace);
 
+int lsddb_jsonPlugins(cJSON* target);
+
+int lsddb_disablePlugin(int pluginId);
+
+int lsddb_enablePlugin(int pluginId);
+
 int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
 						   const char* parentDirectoryName, const char* pluginSha, void* dlObj);
 

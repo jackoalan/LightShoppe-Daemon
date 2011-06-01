@@ -104,6 +104,7 @@ void lsdAddNode(cJSON* req, cJSON* resp){
             struct LSD_SceneNodeClass* nc = NULL;
             if(lsddb_resolveClassFromId(&nc,classId->valueint)<0){
                 cJSON_AddStringToObject(resp,"error","Problem while resolving class object");
+                return;
             }
             int instId;
             if(lsddb_addNodeInst(psId->valueint,nc,&instId,NULL)<0){
@@ -383,6 +384,38 @@ void lsdCreateChannel(cJSON* req, cJSON* resp){
         cJSON_AddStringToObject(resp,"success","success");
 }
 
+void lsdJsonPlugins(cJSON* req, cJSON* resp){
+    if(lsddb_jsonPlugins(resp)<0)
+        cJSON_AddStringToObject(resp,"error","unable to get plugins");
+}
+
+void lsdDisablePlugin(cJSON* req, cJSON* resp){
+    cJSON* pId = cJSON_GetObjectItem(req,"pluginId");
+    if(!pId || pId->type!=cJSON_Number){
+        cJSON_AddStringToObject(resp,"error","pluginId not a valid value");
+        return;
+    }
+    
+    if(lsddb_disablePlugin(pId->valueint)<0)
+        cJSON_AddStringToObject(resp,"error","Unable to disable plugin");
+    else
+        cJSON_AddStringToObject(resp,"success","success");
+}
+
+void lsdEnablePlugin(cJSON* req, cJSON* resp){
+    cJSON* pId = cJSON_GetObjectItem(req,"pluginId");
+    if(!pId || pId->type!=cJSON_Number){
+        cJSON_AddStringToObject(resp,"error","pluginId not a valid value");
+        return;
+    }
+    
+    if(lsddb_enablePlugin(pId->valueint)<0)
+        cJSON_AddStringToObject(resp,"error","Unable to enable plugin");
+    else
+        cJSON_AddStringToObject(resp,"success","success");
+}
+
+
 
 // Main request brancher
 int handleJSONRequest(cJSON* req, cJSON* resp, int* reloadAfter){
@@ -442,6 +475,12 @@ int handleJSONRequest(cJSON* req, cJSON* resp, int* reloadAfter){
             lsdCreateChannel(req,resp);
             *reloadAfter = 1;
         }
+        else if(strcasecmp(method->valuestring,"lsdJsonPlugins")==0)
+            lsdJsonPlugins(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdDisablePlugin")==0)
+            lsdDisablePlugin(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdEnablePlugin")==0)
+            lsdEnablePlugin(req,resp);
 		else if(strcasecmp(method->valuestring,"lsdCustomRPC")==0)
 			lsdCustomRPC(req,resp);
 

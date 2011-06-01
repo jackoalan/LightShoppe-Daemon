@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <magic.h>
+#include <gcrypt.h>
 
 #include "PluginLoader.h"
 #include "DBOps.h"
@@ -64,7 +65,21 @@ typedef const struct LSD_ScenePluginHEAD* (*ghType)(void);
 
 int checkAddPlugin(const char* pluginDir, const char* pluginFile){
 
-	const struct LSD_ScenePluginHEAD* ph;
+	// First get the file's digest
+    char shaCommand[264];
+    snprintf(shaCommand,264,"sha1sum %s",pluginFile);
+    FILE* shaStream = popen(shaCommand,"r");
+    
+    char digest[41];
+    fread(digest,40,1,shaStream);
+    digest[41] = '\0';
+    
+    pclose(shaStream);
+    
+    printf("%s digest: %.40s\n",pluginDir,digest);
+    
+    // Now extract the head and load it!
+    const struct LSD_ScenePluginHEAD* ph;
 	
 	void* librarySO = dlopen(pluginFile, RTLD_LAZY);
 	if(!librarySO){
@@ -75,7 +90,7 @@ int checkAddPlugin(const char* pluginDir, const char* pluginFile){
 	ghType getHead = dlsym(librarySO,"getPluginHead");
 	if(getHead){
 		ph = getHead();
-		if( lsddb_pluginHeadLoader(ph,1,pluginDir,"1.0",librarySO) < 0 ){
+		if( lsddb_pluginHeadLoader(ph,1,pluginDir,digest,librarySO) < 0 ){
 			fprintf(stderr,"Error while loading PluginHead\n");
 			dlclose(librarySO);
 		}

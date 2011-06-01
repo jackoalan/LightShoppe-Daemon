@@ -36,7 +36,7 @@ static struct LSD_SceneNodeClass* testClass;
 
 static struct RGB_TYPE testOut;
 
-extern int core_getRGBTypeID(){
+int core_getRGBTypeID(){
 	return rgbType;
 }
 

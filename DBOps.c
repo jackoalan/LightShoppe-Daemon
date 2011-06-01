@@ -203,7 +203,7 @@ static const char INIT_QUERIES[] =
 
 // CREATE: ScenePlugin
 "CREATE TABLE IF NOT EXISTS ScenePlugin (id INTEGER PRIMARY KEY ASC,"
-"pluginDomain TEXT NOT NULL, pluginVersion TEXT NOT NULL,"
+"pluginDomain TEXT NOT NULL, pluginSha TEXT NOT NULL,"
 "arrayIdx INTEGER, loaded INTEGER NOT NULL,"
 "enabled INTEGER NOT NULL, seen INTEGER NOT NULL DEFAULT 0, codeSignature TEXT NULL);\n"
 
@@ -212,9 +212,6 @@ static const char INIT_QUERIES[] =
 "UPDATE ScenePlugin SET arrayIdx=-1;\n"
 "UPDATE ScenePlugin SET seen=0;\n"
 
-// Reserve core plugin
-//"REPLACE INTO ScenePlugin (id,pluginDomain,pluginVersion,arrayIdx,loaded,enabled)"
-//"VALUES (0,'org.resinbros.lsdcore','0.1',0,1,1);\n"
 
 // CREATE: SceneNodeClass
 "CREATE TABLE IF NOT EXISTS SceneNodeClass (id INTEGER PRIMARY KEY ASC, pluginId INTEGER NOT NULL, "
@@ -980,6 +977,23 @@ int lsddb_structNodeInstInputArr(struct LSD_SceneNodeInst* nodeInst){
 
 // A fully constructed node has memory allocated according to the value in
 // the class's instDataSize member.
+
+static const char STRUCT_NODE_INST_ARR_CHECK_ENABLE[] =
+"SELECT ScenePlugin.enabled FROM ScenePlugin,SceneNodeClass WHERE "
+"ScenePlugin.id=SceneNodeClass.pluginId AND SceneNodeClass.id=?1";
+static sqlite3_stmt* STRUCT_NODE_INST_ARR_CHECK_ENABLE_S;
+
+// Get Node's plugin enable status
+int lsddb_checkClassEnabled(int classId){
+    int nodeEnabled = 0;
+    sqlite3_reset(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S);
+    sqlite3_bind_int(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S,1,classId);
+    if(sqlite3_step(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S)==SQLITE_ROW)
+        nodeEnabled = sqlite3_column_int(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S,0);
+    
+    return nodeEnabled;
+}
+
 static const char STRUCT_NODE_INST_ARR[] =
 "SELECT id,classId FROM SceneNodeInst WHERE patchSpaceId=?1";
 static const char STRUCT_NODE_INST_ARR_UPDIDX[] =
@@ -994,7 +1008,10 @@ int lsddb_structNodeInstArr(int patchSpaceId){
 	while((errcode = sqlite3_step(STRUCT_NODE_INST_ARR_S))==SQLITE_ROW){
 		int instId = sqlite3_column_int(STRUCT_NODE_INST_ARR_S,0);
 		int classId = sqlite3_column_int(STRUCT_NODE_INST_ARR_S,1);
-		if(instId != 0){
+        
+        int nodeEnabled = lsddb_checkClassEnabled(classId);
+        
+		if(instId != 0 && nodeEnabled){
 			size_t targetIdx;
 			struct LSD_SceneNodeInst* nodeInst;
 			if(insertElem(getArr_lsdNodeInstArr(),&targetIdx,(void**)&nodeInst)<0){
@@ -1718,36 +1735,128 @@ int lsddb_panPatchSpace(int psId, int xVal, int yVal){
 
 // Plugin Related operations below
 
+// List Plugins
+static const char JSON_PLUGINS[] =
+"SELECT id,pluginDomain,pluginSha,enabled FROM ScenePlugin WHERE seen=1 AND id!=1";
+static sqlite3_stmt* JSON_PLUGINS_S;
+
+int lsddb_jsonPlugins(cJSON* target){
+    if(!target)
+        return -1;
+    
+    cJSON* pluginArr = cJSON_CreateArray();
+    
+    sqlite3_reset(JSON_PLUGINS_S);
+    
+    while(sqlite3_step(JSON_PLUGINS_S)==SQLITE_ROW){
+        cJSON* pluginObj = cJSON_CreateObject();
+        
+        int pluginId = sqlite3_column_int(JSON_PLUGINS_S,0);
+        const unsigned char* pluginDirName = sqlite3_column_text(JSON_PLUGINS_S,1);
+        const unsigned char* pluginSha = sqlite3_column_text(JSON_PLUGINS_S,2);
+        int enabled = sqlite3_column_int(JSON_PLUGINS_S,3);
+        
+        cJSON_AddNumberToObject(pluginObj,"pluginId",pluginId);
+        cJSON_AddStringToObject(pluginObj,"pluginDir",(const char*)pluginDirName);
+        cJSON_AddStringToObject(pluginObj,"pluginSha",(const char*)pluginSha);
+        cJSON_AddNumberToObject(pluginObj,"enabled",enabled);
+        
+        cJSON_AddItemToArray(pluginArr,pluginObj);
+    }
+    
+    cJSON_AddItemToObject(target,"plugins",pluginArr);
+    
+    return 0;
+}
+
+// Disable Plugin
+static const char DISABLE_PLUGIN[] =
+"UPDATE ScenePlugin SET enabled=0 WHERE id=?1";
+static sqlite3_stmt* DISABLE_PLUGIN_S;
+
+int lsddb_disablePlugin(int pluginId){
+    sqlite3_reset(DISABLE_PLUGIN_S);
+    sqlite3_bind_int(DISABLE_PLUGIN_S,1,pluginId);
+    if(sqlite3_step(DISABLE_PLUGIN_S)==SQLITE_DONE)
+        return 0;
+    return -1;
+}
+
+// Enable Plugin
+static const char ENABLE_PLUGIN[] =
+"UPDATE ScenePlugin SET enabled=1 WHERE id=?1";
+static sqlite3_stmt* ENABLE_PLUGIN_S;
+
+int lsddb_enablePlugin(int pluginId){
+    sqlite3_reset(ENABLE_PLUGIN_S);
+    sqlite3_bind_int(ENABLE_PLUGIN_S,1,pluginId);
+    if(sqlite3_step(ENABLE_PLUGIN_S)==SQLITE_DONE)
+        return 0;
+    return -1;
+}
+
 // Plugin HEAD loader - ensures HEAD (extracted from SOs iteratively) exists in DB, adds if not,
 // inits plugin if 'enabled' is true
-static const char PLUGIN_HEAD_LOADER_CHECK[] =
-"SELECT id,enabled FROM ScenePlugin WHERE pluginDomain=?1 AND pluginVersion=?2 LIMIT 1";
-static sqlite3_stmt* PLUGIN_HEAD_LOADER_CHECK_S;
+static const char PLUGIN_HEAD_LOADER_CHECK_NAME[] =
+"SELECT id,enabled FROM ScenePlugin WHERE pluginDomain=?1 LIMIT 1";
+static sqlite3_stmt* PLUGIN_HEAD_LOADER_CHECK_NAME_S;
+
+static const char PLUGIN_HEAD_LOADER_CHECK_SHA[] =
+"SELECT enabled FROM ScenePlugin WHERE id=?1 AND pluginSha=?2 LIMIT 1";
+static sqlite3_stmt* PLUGIN_HEAD_LOADER_CHECK_SHA_S;
+
+static const char PLUGIN_HEAD_LOADER_UPDATE_SHA[] =
+"UPDATE ScenePlugin SET pluginSha=?2 WHERE id=?1";
+static sqlite3_stmt* PLUGIN_HEAD_LOADER_UPDATE_SHA_S;
+
 static const char PLUGIN_HEAD_LOADER_SEEN[] =
 "UPDATE ScenePlugin SET seen=1 WHERE id=?1";
 static sqlite3_stmt* PLUGIN_HEAD_LOADER_SEEN_S;
+
 static const char PLUGIN_HEAD_LOADER_INSERT[] =
-"INSERT INTO ScenePlugin (pluginDomain,pluginVersion,loaded,enabled,seen) VALUES (?1,?2,0,0,1)";
+"INSERT INTO ScenePlugin (pluginDomain,pluginSha,loaded,enabled,seen) VALUES (?1,?2,0,0,1)";
 static sqlite3_stmt* PLUGIN_HEAD_LOADER_INSERT_S;
+
 static const char PLUGIN_HEAD_LOADER_UPDIDX_LOAD[] =
 "UPDATE ScenePlugin SET arrayIdx=?1,loaded=1,seen=1 WHERE id=?2";
 static sqlite3_stmt* PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S;
+
 int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
 						   const char* parentDirectoryName, const char* pluginSha, void* dlObj){
-	if(!ph || !(ph->initFunc) || !(ph->cleanupFunc)){
+	if(!ph || !(ph->initFunc) || !(ph->cleanupFunc) || !pluginSha){
 		fprintf(stderr,"Invalid PluginHEAD provided in pluginHeadLoader()\n");
 		return -1;
 	}
 	
-	sqlite3_reset(PLUGIN_HEAD_LOADER_CHECK_S);
-	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_S,1,parentDirectoryName,-1,NULL);
-	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_S,2,pluginSha,-1,NULL);
+	sqlite3_reset(PLUGIN_HEAD_LOADER_CHECK_NAME_S);
+	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1,parentDirectoryName,256,NULL);
+	//sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_S,2,pluginSha,40,NULL);
 	
+    
+    
 	int pluginId;
 	int enabled = 0;
-	if(sqlite3_step(PLUGIN_HEAD_LOADER_CHECK_S)==SQLITE_ROW){
-		pluginId = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_S,0);
-		enabled = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_S,1);
+	if(sqlite3_step(PLUGIN_HEAD_LOADER_CHECK_NAME_S)==SQLITE_ROW){ // Found by name
+		pluginId = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_NAME_S,0);
+		enabled = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1);
+        
+        // If enabled, verify SHA1 matches last known SHA1
+        if(enabled){
+            sqlite3_reset(PLUGIN_HEAD_LOADER_CHECK_SHA_S);
+            sqlite3_bind_int(PLUGIN_HEAD_LOADER_CHECK_SHA_S,1,pluginId);
+            sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_SHA_S,2,pluginSha,40,NULL);
+            if(sqlite3_step(PLUGIN_HEAD_LOADER_CHECK_SHA_S)!=SQLITE_ROW){ // match not found, disable and update
+                enabled = 0;
+                lsddb_disablePlugin(pluginId);
+                
+                sqlite3_reset(PLUGIN_HEAD_LOADER_UPDATE_SHA_S);
+                sqlite3_bind_int(PLUGIN_HEAD_LOADER_UPDATE_SHA_S,1,pluginId);
+                sqlite3_bind_text(PLUGIN_HEAD_LOADER_UPDATE_SHA_S,1,pluginSha,40,NULL);
+                if(sqlite3_step(PLUGIN_HEAD_LOADER_UPDATE_SHA_S)!=SQLITE_DONE){
+                    fprintf(stderr,"Error while updating plugin SHA1\n");
+                }
+            }
+        }
 		
 		sqlite3_reset(PLUGIN_HEAD_LOADER_SEEN_S);
 		sqlite3_bind_int(PLUGIN_HEAD_LOADER_SEEN_S,1,pluginId);
@@ -1760,7 +1869,7 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable,
 	else{ // We must add new plugin record to DB
 		sqlite3_reset(PLUGIN_HEAD_LOADER_INSERT_S);
 		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,1,parentDirectoryName,-1,NULL);
-		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,2,pluginSha,-1,NULL);
+		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,2,pluginSha,40,NULL);
 		
 		if(sqlite3_step(PLUGIN_HEAD_LOADER_INSERT_S)!=SQLITE_DONE){
 			fprintf(stderr,"Unable to insert newfound plugin into DB in pluginHeadLoader()\n");
@@ -2033,7 +2142,7 @@ static const char WIRE_NODES_SET_FACADE_OUT_DATA[] =
 "UPDATE SceneNodeInstOutput SET typeId=?2,aliasedOut=?3 WHERE id=?1";
 static sqlite3_stmt* WIRE_NODES_SET_FACADE_OUT_DATA_S;
 
-// Four statements below used to ensure same patch space
+// Four statements below used to ensure same patch space and both node's plugins enabled
 static const char WIRE_NODES_GET_FACADE_IN_CPS[] =
 "SELECT instId FROM SceneNodeInstInput WHERE id=?1 AND facadeBool=1";
 static sqlite3_stmt* WIRE_NODES_GET_FACADE_IN_CPS_S;
@@ -2043,13 +2152,15 @@ static const char WIRE_NODES_GET_FACADE_OUT_CPS[] =
 static sqlite3_stmt* WIRE_NODES_GET_FACADE_OUT_CPS_S;
 
 static const char WIRE_NODES_GET_IN_PS[] =
-"SELECT SceneNodeInst.patchSpaceId,SceneNodeInstInput.typeId FROM SceneNodeInst,SceneNodeInstInput "
+"SELECT SceneNodeInst.patchSpaceId,SceneNodeInstInput.typeId,SceneNodeInst.classId "
+"FROM SceneNodeInst,SceneNodeInstInput "
 "WHERE SceneNodeInst.id=SceneNodeInstInput.instId AND SceneNodeInstInput.id=?1 "
 "AND SceneNodeInstInput.facadeBool=0";
 static sqlite3_stmt* WIRE_NODES_GET_IN_PS_S;
 
 static const char WIRE_NODES_GET_OUT_PS[] =
-"SELECT SceneNodeInst.patchSpaceId,SceneNodeInstOutput.typeId FROM SceneNodeInst,SceneNodeInstOutput "
+"SELECT SceneNodeInst.patchSpaceId,SceneNodeInstOutput.typeId,SceneNodeInst.classId "
+"FROM SceneNodeInst,SceneNodeInstOutput "
 "WHERE SceneNodeInst.id=SceneNodeInstOutput.instId AND SceneNodeInstOutput.id=?1 "
 "AND SceneNodeInstOutput.facadeBool=0";
 static sqlite3_stmt* WIRE_NODES_GET_OUT_PS_S;
@@ -2092,6 +2203,8 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 	
 	int srcPS;
 	int destPS;
+    int srcClass;
+    int destClass;
 	
 	// holder of wire ID for after insertion
 	int wireId;
@@ -2117,6 +2230,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 		sqlite3_bind_int(WIRE_NODES_GET_IN_PS_S,1,destId);
 		if(sqlite3_step(WIRE_NODES_GET_IN_PS_S)==SQLITE_ROW){
 			destPS = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,0);
+            destClass = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,2);
 		}
 		else{
 			fprintf(stderr,"Unable to verify node input's patch space\n");
@@ -2128,6 +2242,10 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 			return -1;
 		}
 		
+        if(!lsddb_checkClassEnabled(destClass)){
+            fprintf(stderr,"Unable to connect wire's destination; destination class disabled\n");
+            return -1;
+        }
 		
 		// Get data of wire src to verify that it actually is a facade plug (the afformentioned input)
 		sqlite3_reset(WIRE_NODES_CHECK_DEST_IN_S);
@@ -2203,6 +2321,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 		sqlite3_bind_int(WIRE_NODES_GET_OUT_PS_S,1,srcId);
 		if(sqlite3_step(WIRE_NODES_GET_OUT_PS_S)==SQLITE_ROW){
 			srcPS = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,0);
+            srcClass = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,2);
 		}
 		else{
 			fprintf(stderr,"Unable to verify node output's patch space\n");
@@ -2225,6 +2344,11 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 			fprintf(stderr,"Patch Spaces Do not match in wireNodes()\n");
 			return -1;
 		}
+        
+        if(!lsddb_checkClassEnabled(srcClass)){
+            fprintf(stderr,"Unable to connect wire's source; source class disabled\n");
+            return -1;
+        }
 		
 		
 		// Get data of wire dest to verify that it actually is a facade plug (the afformentioned output)
@@ -2307,6 +2431,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 	if(sqlite3_step(WIRE_NODES_GET_OUT_PS_S)==SQLITE_ROW){
 		srcPS = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,0);
 		srcType = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,1);
+        srcClass = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,2);
 	}
 	else{
 		fprintf(stderr,"Unable to verify node output's patch space\n");
@@ -2319,6 +2444,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 	if(sqlite3_step(WIRE_NODES_GET_IN_PS_S)==SQLITE_ROW){
 		destPS = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,0);
 		destType = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,1);
+        destClass = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,2);
 	}
 	else{
 		fprintf(stderr,"Unable to verify node input's patch space\n");
@@ -2335,6 +2461,16 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 		fprintf(stderr,"Types do not match in wireNodes()\n");
 		return -1;
 	}
+    
+    if(!lsddb_checkClassEnabled(srcClass)){
+        fprintf(stderr,"Unable to connect wire's source; source class disabled\n");
+        return -1;
+    }
+    
+    if(!lsddb_checkClassEnabled(destClass)){
+        fprintf(stderr,"Unable to connect wire's destination; destination class disabled\n");
+        return -1;
+    }
 	
 	// Use trace functions to resolve the source and destination objects
 	struct LSD_SceneNodeOutput* src;
@@ -2473,15 +2609,19 @@ int lsddb_jsonClassLibrary(cJSON* target){
 	sqlite3_reset(JSON_CLASS_LIBRARY_S);
 	
 	while(sqlite3_step(JSON_CLASS_LIBRARY_S)==SQLITE_ROW){
-		cJSON* classObj = cJSON_CreateObject();
-		
-		int classId = sqlite3_column_int(JSON_CLASS_LIBRARY_S,0);
+        int classId = sqlite3_column_int(JSON_CLASS_LIBRARY_S,0);
 		const char* className = (const char*)sqlite3_column_text(JSON_CLASS_LIBRARY_S,1);
-		
-		cJSON_AddNumberToObject(classObj,"classId",classId);
-		cJSON_AddStringToObject(classObj,"className",className);
-		
-		cJSON_AddItemToArray(classArr,classObj);
+        
+        if(lsddb_checkClassEnabled(classId)){
+            
+            cJSON* classObj = cJSON_CreateObject();
+            
+            cJSON_AddNumberToObject(classObj,"classId",classId);
+            cJSON_AddStringToObject(classObj,"className",className);
+            
+            cJSON_AddItemToArray(classArr,classObj);
+            
+        }
 	}
 	
 	cJSON_AddItemToObject(target,"classes",classArr);
@@ -2653,7 +2793,10 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
 		cJSON_AddNumberToObject(nodeObj,"nodeId",nodeId);
 		cJSON_AddNumberToObject(nodeObj,"x",posX);
 		cJSON_AddNumberToObject(nodeObj,"y",posY);
-		//cJSON_AddNumberToObject(nodeObj,"classId",classId);
+        if(lsddb_checkClassEnabled(classId))
+            cJSON_AddTrueToObject(nodeObj,"enabled");
+        else
+            cJSON_AddFalseToObject(nodeObj,"enabled");
 		lsddb_jsonInsertClassObject(nodeObj,classId);
 		
 		// Get node's ins
@@ -2849,7 +2992,7 @@ int lsddb_resolveClassFromId(struct LSD_SceneNodeClass** ptrToBind, int classId)
 		}
 	}
 	else{
-		fprintf(stderr,"Class could not be resolved in resolveClassFromId()\n");
+		fprintf(stderr,"Class could not be resolved or its plugin is disabled in resolveClassFromId()\n");
 		return -1;
 	}
 	
@@ -3317,6 +3460,7 @@ int lsddb_prepStmts(){
 	PREP(STRUCT_NODE_INST_INPUT_ARR,22);
 	PREP(STRUCT_NODE_INST_INPUT_ARR_UPDIDX,23);
 	
+    PREP(STRUCT_NODE_INST_ARR_CHECK_ENABLE,123);
 	PREP(STRUCT_NODE_INST_ARR,24);
 	PREP(STRUCT_NODE_INST_ARR_UPDIDX,25);
 	
@@ -3358,8 +3502,14 @@ int lsddb_prepStmts(){
 	PREP(FACADE_INST_POS,50);
 	
 	PREP(PAN_PATCH_SPACE,51);
+    
+    PREP(JSON_PLUGINS,051);
+    PREP(DISABLE_PLUGIN,151);
+    PREP(ENABLE_PLUGIN,251);
 	
-	PREP(PLUGIN_HEAD_LOADER_CHECK,52);
+	PREP(PLUGIN_HEAD_LOADER_CHECK_NAME,52);
+    PREP(PLUGIN_HEAD_LOADER_CHECK_SHA,152);
+    PREP(PLUGIN_HEAD_LOADER_UPDATE_SHA,252);
 	PREP(PLUGIN_HEAD_LOADER_SEEN,53);
 	PREP(PLUGIN_HEAD_LOADER_INSERT,54);
 	PREP(PLUGIN_HEAD_LOADER_UPDIDX_LOAD,55);
@@ -3472,6 +3622,7 @@ int lsddb_finishStmts(){
 	FINAL(STRUCT_NODE_INST_INPUT_ARR);
 	FINAL(STRUCT_NODE_INST_INPUT_ARR_UPDIDX);
 	
+    FINAL(STRUCT_NODE_INST_ARR_CHECK_ENABLE);
 	FINAL(STRUCT_NODE_INST_ARR);
 	FINAL(STRUCT_NODE_INST_ARR_UPDIDX);
 	
@@ -3514,7 +3665,13 @@ int lsddb_finishStmts(){
 	
 	FINAL(PAN_PATCH_SPACE);
 	
-	FINAL(PLUGIN_HEAD_LOADER_CHECK);
+    FINAL(JSON_PLUGINS);
+    FINAL(DISABLE_PLUGIN);
+    FINAL(ENABLE_PLUGIN);
+	
+	FINAL(PLUGIN_HEAD_LOADER_CHECK_NAME);
+    FINAL(PLUGIN_HEAD_LOADER_CHECK_SHA);
+    FINAL(PLUGIN_HEAD_LOADER_UPDATE_SHA);
 	FINAL(PLUGIN_HEAD_LOADER_SEEN);
 	FINAL(PLUGIN_HEAD_LOADER_INSERT);
 	FINAL(PLUGIN_HEAD_LOADER_UPDIDX_LOAD);
