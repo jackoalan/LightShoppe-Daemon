@@ -27,6 +27,7 @@
 #define DBOPS_H
 
 #include <sqlite3.h>
+#include <evhttp.h>
 
 #include "Node.h"
 #include "cJSON.h"
@@ -142,6 +143,8 @@ int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
 int lsddb_removeNodeInst(int nodeId);
 
 int lsddb_addFacadeNodeInst(int childPatchSpaceId, int* idBinding, int parentPatchSpace);
+
+int lsddb_indexHtmlGen(const char* pluginsDir, struct evbuffer* target);
 
 int lsddb_jsonPlugins(cJSON* target);
 

@@ -554,6 +554,16 @@ void reqCB(struct evhttp_request* req, void* arg){
 	evbuffer_free(repBuf);
 }
 
+void srvIndexCB(struct evhttp_request* req, void* arg){
+    struct evbuffer* repBuf = evbuffer_new();
+    if(lsddb_indexHtmlGen(NULL,repBuf)<0){
+        evbuffer_add_printf(repBuf,"Error while generating index\n");
+    }
+    evhttp_add_header(evhttp_request_get_output_headers(req), "Content-Type", "text/html");
+    evhttp_send_reply(req,200,"OK",repBuf);
+    evbuffer_free(repBuf);
+}
+
 // Libevent stuff below
 
 static struct event_base* eb;
@@ -566,7 +576,8 @@ int openRPC(struct event_base* ebin, int port){
         return -1;
     }
 	evhttp_set_gencb(eh,reqCB,NULL);
-	evhttp_set_cb(eh,"/lsdnew/rpc",rpcReqCB,NULL);
+	evhttp_set_cb(eh,"/lsdnew/main/rpc",rpcReqCB,NULL);
+    evhttp_set_cb(eh,"/lsdnew/main/",srvIndexCB,NULL);
     
     return 0;
 }

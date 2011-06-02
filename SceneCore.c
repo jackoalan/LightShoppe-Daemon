@@ -348,7 +348,7 @@ int main(int argc, const char** argv){
 	if(argc>0){
 		for (i=0; i<argc; ++i) {
 			if(strcmp(argv[i],"-h")==0){
-				printf("Usage: lsd [-h|-v|-f] [-d dbfile]\n");
+				printf("Usage: lsd [-hvf] [-d dbfile]\n");
 				return 0;
 			}
 			if(strcmp(argv[i],"-v")==0)

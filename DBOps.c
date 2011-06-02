@@ -395,6 +395,7 @@ int lsddb_resetDB(){
 static const char CREATE_PATCH_SPACE[] =
 "INSERT INTO ScenePatchSpace (name,parentPatchSpace) VALUES (?1,?2)";
 static sqlite3_stmt* CREATE_PATCH_SPACE_S;
+
 int lsddb_createPatchSpace(const char* name, int* idBinding, int parentPatchSpace){
 	
 	
@@ -420,15 +421,19 @@ int lsddb_createPatchSpace(const char* name, int* idBinding, int parentPatchSpac
 static const char REMOVE_PATCH_SPACE[] =
 "DELETE FROM ScenePatchSpace WHERE id=?1";
 static sqlite3_stmt* REMOVE_PATCH_SPACE_S;
+
 static const char REMOVE_PATCH_SPACE_NODES[] =
 "SELECT id FROM SceneNodeInst WHERE patchSpaceId=?1";
 static sqlite3_stmt* REMOVE_PATCH_SPACE_NODES_S;
+
 static const char REMOVE_PATCH_SPACE_INS[] =
 "SELECT id FROM SceneNodeInstInput WHERE instId=?1 AND facadeBool=1";
 static sqlite3_stmt* REMOVE_PATCH_SPACE_INS_S;
+
 static const char REMOVE_PATCH_SPACE_OUTS[] =
 "SELECT id FROM SceneNodeInstOutput WHERE instId=?1 AND facadeBool=1";
 static sqlite3_stmt* REMOVE_PATCH_SPACE_OUTS_S;
+
 int lsddb_removePatchSpace(int psid){
 	// remove nodes
 	sqlite3_reset(REMOVE_PATCH_SPACE_NODES_S);
@@ -492,6 +497,7 @@ int lsddb_createPatchSpaceIn(int patchSpaceId, const char* name, int* idBinding)
 static const char CREATE_PATCH_SPACE_OUT[] =
 "INSERT INTO SceneNodeInstOutput (instId,typeId,facadeBool,name,arrIdx,bfFuncIdx,bpFuncIdx) VALUES (?1,-1,1,?2,-1,-1,-1)";
 static sqlite3_stmt* CREATE_PATCH_SPACE_OUT_S;
+
 int lsddb_createPatchSpaceOut(int patchSpaceId, const char* name, int* idBinding){
 	sqlite3_reset(CREATE_PATCH_SPACE_OUT_S);
 	
@@ -701,9 +707,11 @@ int lsddb_updatePartitionName(int partId, const char* name){
 static const char ADD_NODE_CLASS_CHECK[] =
 "SELECT arrayIdx,id FROM SceneNodeClass WHERE pluginId=?1 AND name=?2";
 static sqlite3_stmt* ADD_NODE_CLASS_CHECK_S;
+
 static const char ADD_NODE_CLASS_INSERT[] =
 "INSERT INTO SceneNodeClass (pluginId,name,desc,classIdx) VALUES (?1,?2,?3,?4)";
 static sqlite3_stmt* ADD_NODE_CLASS_INSERT_S;
+
 /*
 static const char ADD_NODE_CLASS_DELIN[] =
 "DELETE FROM SceneNodeClassInput WHERE classId=?1";
@@ -715,6 +723,7 @@ static sqlite3_stmt* ADD_NODE_CLASS_DELOUT_S;
 static const char ADD_NODE_CLASS_UPDIDX[] =
 "UPDATE SceneNodeClass SET arrayIdx=?2 WHERE id=?1";
 static sqlite3_stmt* ADD_NODE_CLASS_UPDIDX_S;
+
 int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, const char* name,
 					   const char* desc, int classIdx){
 	if(!name){
@@ -815,6 +824,7 @@ int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, cons
 static const char ADD_DATA_TYPE_CHECK[] = 
 "SELECT id FROM SceneDataType WHERE pluginId=?1 AND name=?2";
 static sqlite3_stmt* ADD_DATA_TYPE_CHECK_S;
+
 static const char ADD_DATA_TYPE_INSERT[] =
 "INSERT INTO SceneDataType (pluginId,name,desc,isArray) VALUES (?1,?2,?3,?4)";
 static sqlite3_stmt* ADD_DATA_TYPE_INSERT_S;
@@ -867,9 +877,11 @@ static const char STRUCT_NODE_INST_OUTPUT_ARR[] =
 "SELECT id,typeId,bfFuncIdx,bpFuncIdx FROM SceneNodeInstOutput WHERE "
 "instId=?1 AND facadeBool=0";
 static sqlite3_stmt* STRUCT_NODE_INST_OUTPUT_ARR_S;
+
 static const char STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX[] =
 "UPDATE SceneNodeInstOutput SET arrIdx=?1 WHERE id=?2";
 static sqlite3_stmt* STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S;
+
 int lsddb_structNodeInstOutputArr(struct LSD_SceneNodeInst* nodeInst){
 	if(!nodeInst){
 		fprintf(stderr,"nodeInst may not be null in structNodeInstOutputArr()\n");
@@ -925,9 +937,11 @@ static const char STRUCT_NODE_INST_INPUT_ARR[] =
 "SELECT id,typeId FROM SceneNodeInstInput WHERE "
 "instId=?1 AND facadeBool=0";
 static sqlite3_stmt* STRUCT_NODE_INST_INPUT_ARR_S;
+
 static const char STRUCT_NODE_INST_INPUT_ARR_UPDIDX[] =
 "UPDATE SceneNodeInstInput SET arrIdx=?1 WHERE id=?2";
 static sqlite3_stmt* STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S;
+
 int lsddb_structNodeInstInputArr(struct LSD_SceneNodeInst* nodeInst){
 	if(!nodeInst){
 		fprintf(stderr,"nodeInst may not be null in structNodeInstInputArr()\n");
@@ -1000,6 +1014,7 @@ static const char STRUCT_NODE_INST_ARR_UPDIDX[] =
 "UPDATE SceneNodeInst SET arrIdx=?1 WHERE id=?2";
 static sqlite3_stmt* STRUCT_NODE_INST_ARR_S;
 static sqlite3_stmt* STRUCT_NODE_INST_ARR_UPDIDX_S;
+
 int lsddb_structNodeInstArr(int patchSpaceId){
 	sqlite3_reset(STRUCT_NODE_INST_ARR_S);
 	sqlite3_bind_int(STRUCT_NODE_INST_ARR_S,1,patchSpaceId);
@@ -1061,12 +1076,15 @@ int lsddb_structNodeInstArr(int patchSpaceId){
 static const char STRUCT_UNIV_ARR[] =
 "SELECT DISTINCT olaUnivId FROM OlaAddress";
 static sqlite3_stmt* STRUCT_UNIV_ARR_S;
+
 static const char STRUCT_UNIV_ARR_UPDIDX[] =
 "UPDATE OlaAddress SET olaUnivArrIdx=?1 WHERE olaUnivId=?2";
 static sqlite3_stmt* STRUCT_UNIV_ARR_UPDIDX_S;
+
 static const char STRUCT_UNIV_ARR_MAXIDX[] =
 "SELECT olaLightAddr FROM OlaAddress WHERE olaUnivId=?1 ORDER BY olaLightAddr DESC LIMIT 1";
 static sqlite3_stmt* STRUCT_UNIV_ARR_MAXIDX_S;
+
 int lsddb_structUnivArr(){
 	sqlite3_reset(STRUCT_UNIV_ARR_S);
 	int errcode;
@@ -1125,6 +1143,7 @@ int lsddb_structUnivArr(){
 static const char STRUCT_CHANNEL_ARR_ADDR[] =
 "SELECT id,olaUnivArrIdx,olaLightAddr,sixteenBit FROM OlaAddress WHERE id=?1";
 static sqlite3_stmt* STRUCT_CHANNEL_ARR_ADDR_S;
+
 int lsddb_structChannelArrAddr(struct LSD_Addr* addr,int addrId){
 	if(!addr){
 		fprintf(stderr,"addr is NULL in structChannelArrAddr()\n");
@@ -1256,9 +1275,11 @@ int lsddb_structChannelArr(){
 static const char STRUCT_PARTITION_ARR[] = 
 "SELECT id,patchSpaceId FROM SystemPartition";
 static sqlite3_stmt* STRUCT_PARTITION_ARR_S;
+
 static const char STRUCT_PARTITION_ARR_UPDIDX[] =
 "UPDATE SystemPartition SET arrayIdx=?1 WHERE id=?2";
 static sqlite3_stmt* STRUCT_PARTITION_ARR_UPDIDX_S;
+
 int lsddb_structPartitionArr(){
 
 	// First insert partition facade nodes
@@ -1335,9 +1356,11 @@ int lsddb_structPartitionArr(){
 static const char ADD_NODE_INST_INPUT_INSERT[] =
 "INSERT INTO SceneNodeInstInput (instId,typeId,name,facadeBool) VALUES (?1,?2,?3,0)";
 static sqlite3_stmt* ADD_NODE_INST_INPUT_INSERT_S;
+
 static const char ADD_NODE_INST_INPUT_UPDIDX[] =
 "UPDATE SceneNodeInstInput SET arrIdx=?2 WHERE id=?1";
 static sqlite3_stmt* ADD_NODE_INST_INPUT_UPDIDX_S;
+
 int lsddb_addNodeInstInput(struct LSD_SceneNodeInst const * node,
 						   int typeId,
 						   const char* name,
@@ -1396,9 +1419,11 @@ int lsddb_addNodeInstInput(struct LSD_SceneNodeInst const * node,
 static const char ADD_NODE_INST_OUTPUT_INSERT[] =
 "INSERT INTO SceneNodeInstOutput (instId,typeId,name,facadeBool,bfFuncIdx,bpFuncIdx) VALUES (?1,?2,?3,0,?4,?5)";
 static sqlite3_stmt* ADD_NODE_INST_OUTPUT_INSERT_S;
+
 static const char ADD_NODE_INST_OUTPUT_UPDIDX[] =
 "UPDATE SceneNodeInstOutput SET arrIdx=?2 WHERE id=?1";
 static sqlite3_stmt* ADD_NODE_INST_OUTPUT_UPDIDX_S;
+
 int lsddb_addNodeInstOutput(struct LSD_SceneNodeInst const * node,
 							int typeId,
 							const char* name,
@@ -1460,12 +1485,15 @@ int lsddb_addNodeInstOutput(struct LSD_SceneNodeInst const * node,
 static const char REMOVE_NODE_INST_INPUT_ARRIDX[] =
 "SELECT arrIdx FROM SceneNodeInstInput WHERE id=?1";
 static sqlite3_stmt* REMOVE_NODE_INST_INPUT_ARRIDX_S;
+
 static const char REMOVE_NODE_INST_INPUT[] =
 "DELETE FROM SceneNodeInstInput WHERE id=?1";
 static sqlite3_stmt* REMOVE_NODE_INST_INPUT_S;
+
 static const char REMOVE_NODE_INST_INPUT_GET_WIRES[] =
 "SELECT id FROM SceneNodeEdge WHERE destIn=?1 AND destFacadeInt=0";
 static sqlite3_stmt* REMOVE_NODE_INST_INPUT_GET_WIRES_S;
+
 int lsddb_removeNodeInstInput(int inputId){
 	// call unwireNodes on wire connected to input
 	sqlite3_reset(REMOVE_NODE_INST_INPUT_GET_WIRES_S);
@@ -1511,12 +1539,15 @@ int lsddb_removeNodeInstInput(int inputId){
 static const char REMOVE_NODE_INST_OUTPUT_ARRIDX[] =
 "SELECT arrIdx FROM SceneNodeInstOutput WHERE id=?1";
 static sqlite3_stmt* REMOVE_NODE_INST_OUTPUT_ARRIDX_S;
+
 static const char REMOVE_NODE_INST_OUTPUT[] =
 "DELETE FROM SceneNodeInstOutput WHERE id=?1";
 static sqlite3_stmt* REMOVE_NODE_INST_OUTPUT_S;
+
 static const char REMOVE_NODE_INST_OUTPUT_GET_WIRES[] =
 "SELECT id FROM SceneNodeEdge WHERE srcOut=?1";
 static sqlite3_stmt* REMOVE_NODE_INST_OUTPUT_GET_WIRES_S;
+
 int lsddb_removeNodeInstOutput(int outputId){
 	// call unwireNodes on wire connected to output
 	sqlite3_reset(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S);
@@ -1567,6 +1598,7 @@ static const char ADD_NODE_INST[] =
 "INSERT INTO SceneNodeInst (arrIdx,classId,patchSpaceId) "
 "VALUES (?1,?2,?3)";
 static sqlite3_stmt* ADD_NODE_INST_S;
+
 int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
 					  int* idBinding, struct LSD_SceneNodeInst** ptrToBind){
 	if(!nc || nc->dbId==0){
@@ -1628,15 +1660,19 @@ int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
 static const char REMOVE_NODE_INST_CHECK[] =
 "SELECT arrIdx FROM SceneNodeInst WHERE id=?1";
 static sqlite3_stmt* REMOVE_NODE_INST_CHECK_S;
+
 static const char REMOVE_NODE_INST_GET_INS[] =
 "SELECT id FROM SceneNodeInstInput WHERE instId=?1 AND facadeBool=0";
 static sqlite3_stmt* REMOVE_NODE_INST_GET_INS_S;
+
 static const char REMOVE_NODE_INST_GET_OUTS[] =
 "SELECT id FROM SceneNodeInstOutput WHERE instId=?1 AND facadeBool=0";
 static sqlite3_stmt* REMOVE_NODE_INST_GET_OUTS_S;
+
 static const char REMOVE_NODE_INST_DELETE[] =
 "DELETE FROM SceneNodeInst WHERE id=?1";
 static sqlite3_stmt* REMOVE_NODE_INST_DELETE_S;
+
 int lsddb_removeNodeInst(int nodeId){
 	// First check to see if the node exists, and get
 	// its array index
@@ -1682,6 +1718,7 @@ int lsddb_removeNodeInst(int nodeId){
 static const char NODE_INST_POS[] =
 "UPDATE SceneNodeInst SET posX=?2,posY=?3 WHERE id=?1";
 static sqlite3_stmt* NODE_INST_POS_S;
+
 int lsddb_nodeInstPos(int nodeId,int xVal, int yVal){
 	sqlite3_reset(NODE_INST_POS_S);
 	sqlite3_bind_int(NODE_INST_POS_S,1,nodeId);
@@ -1699,6 +1736,7 @@ int lsddb_nodeInstPos(int nodeId,int xVal, int yVal){
 static const char FACADE_INST_POS[] =
 "UPDATE ScenePatchSpace SET posX=?2,posY=?3 WHERE id=?1";
 static sqlite3_stmt* FACADE_INST_POS_S;
+
 int lsddb_facadeInstPos(int nodeId,int xVal, int yVal){
 	sqlite3_reset(FACADE_INST_POS_S);
 	sqlite3_bind_int(FACADE_INST_POS_S,1,nodeId);
@@ -1734,6 +1772,50 @@ int lsddb_panPatchSpace(int psId, int xVal, int yVal){
 
 
 // Plugin Related operations below
+
+// index.html generator
+#include <evhttp.h>
+
+static const char INDEX_HTML_GEN[] =
+"SELECT pluginDomain FROM ScenePlugin WHERE id!=1";
+static sqlite3_stmt* INDEX_HTML_GEN_S;
+
+static const char INDEX_HTML_HEAD[] =
+"<!DOCTYPE html>\n"
+"<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
+"\t<head>\n"
+"\t\t<title>LSD Client 2.0</title>\n"
+"\t\t<meta charset=\"utf-8\"/>\n"
+"\t\t<meta name = \"viewport\" content = \"user-scalable=no, initial-scale=1.0, width=device-width\">\n"
+"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../LSDClient.css\" />\n"
+"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"/japis/jquery-ui/themes/custom-theme/jquery-ui-1.8.12.custom.css\">\n"
+"\t\t<script type=\"text/javascript\" src=\"/japis/jquery/jquery.min.js\"></script>\n"
+"\t\t<script type=\"text/javascript\" src=\"/japis/jquery-ui/jquery-ui.min.js\"></script>\n"
+"\t\t<script type=\"text/javascript\" src=\"../LSDClientIF.js\"></script>\n"
+"\t\t<script type=\"text/javascript\" src=\"../LSDClient.js\"></script>\n"
+"\n\t\t<!-- BEGIN PROCEDURALLY GENERATED CONTENT -->\n\n";
+
+static const char INDEX_HTML_FOOT[] =
+"\n\t\t<!-- END PROCEDURALLY GENERATED CONTENT -->\n\n"
+"\t</head>\n"
+"\t<body>\n"
+"\t\t<div id=\"bg\"></div>\n"
+"\t\t<div id=\"canv\"></div>\n"
+"\t</body>\n"
+"</html>\n";
+
+int lsddb_indexHtmlGen(const char* pluginsDir, struct evbuffer* target){
+    if(!target)
+        return -1;
+    
+    // Add head of html template
+    evbuffer_add_printf(target,"%s",INDEX_HTML_HEAD);
+    
+    // Add foot of html template
+    evbuffer_add_printf(target,"%s",INDEX_HTML_FOOT);
+    
+    return 0;
+}
 
 // List Plugins
 static const char JSON_PLUGINS[] =
@@ -1955,6 +2037,7 @@ int lsddb_resolvePluginFromNodeId(struct LSD_ScenePlugin** pluginBind, int nodeI
 static const char TRACE_INPUT[] =
 "SELECT facadeBool,aliasedIn,arrIdx FROM SceneNodeInstInput WHERE id=?1";
 static sqlite3_stmt* TRACE_INPUT_S;
+
 int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId){
 	// Recursively drill down to find a standard node's input (i.e. not a facade input)
 	int facadeBool = 1;
@@ -1992,6 +2075,7 @@ int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId){
 static const char TRACE_OUTPUT[] =
 "SELECT facadeBool,aliasedOut,arrIdx FROM SceneNodeInstOutput WHERE id=?1";
 static sqlite3_stmt* TRACE_OUTPUT_S;
+
 int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId){
 	// Recursively drill down to find a standard node's output (i.e. not a facade output)
 	int facadeBool = 1;
@@ -2598,6 +2682,7 @@ int lsddb_unwireNodes(int wireId){
 static const char JSON_CLASS_LIBRARY[] = 
 "SELECT id,name FROM SceneNodeClass";
 static sqlite3_stmt* JSON_CLASS_LIBRARY_S;
+
 int lsddb_jsonClassLibrary(cJSON* target){
 	if(!target){
 		fprintf(stderr,"target may not be null in jsonClassLibrary()\n");
@@ -2917,6 +3002,7 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
 static const char JSON_WIRES[] =
 "SELECT id,srcOut,destIn FROM SceneNodeEdge WHERE patchSpaceId=?1";
 static sqlite3_stmt* JSON_WIRES_S;
+
 int lsddb_jsonWires(int patchSpaceId, cJSON* resp){
 	sqlite3_reset(JSON_WIRES_S);
 	sqlite3_bind_int(JSON_WIRES_S,1,patchSpaceId);
@@ -2977,6 +3063,7 @@ int lsddb_jsonPatchSpace(int patchSpaceId, cJSON* resp){
 static const char RESOLVE_CLASS_FROM_ID[] =
 "SELECT arrayIdx FROM SceneNodeClass WHERE id=?1";
 static sqlite3_stmt* RESOLVE_CLASS_FROM_ID_S;
+
 int lsddb_resolveClassFromId(struct LSD_SceneNodeClass** ptrToBind, int classId){
 	sqlite3_reset(RESOLVE_CLASS_FROM_ID_S);
 	sqlite3_bind_int(RESOLVE_CLASS_FROM_ID_S,1,classId);
