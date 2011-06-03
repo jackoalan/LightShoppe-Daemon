@@ -1,1 +1,1 @@
-{"js":["FaderClient.js"],"css":["FaderClient.css"]}
+{"js":["FaderClient.js","farbtastic/farbtastic.js"],"css":["FaderClient.css","farbtastic/farbtastic.css"]}

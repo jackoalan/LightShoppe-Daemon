@@ -1778,7 +1778,7 @@ int lsddb_panPatchSpace(int psId, int xVal, int yVal){
 #include <evhttp.h>
 
 static const char INDEX_HTML_GEN[] =
-"SELECT pluginDomain FROM ScenePlugin WHERE id!=1 AND enabled=1";
+"SELECT pluginDomain,id FROM ScenePlugin WHERE id!=1 AND enabled=1";
 static sqlite3_stmt* INDEX_HTML_GEN_S;
 
 static const char INDEX_HTML_HEAD[] =
@@ -1788,14 +1788,15 @@ static const char INDEX_HTML_HEAD[] =
 "\t\t<title>LightShoppe Client</title>\n"
 "\t\t<meta charset=\"utf-8\"/>\n"
 "\t\t<meta name = \"viewport\" content = \"user-scalable=no, initial-scale=1.0, width=device-width\">\n"
+"\t\t<script type=\"text/javascript\">var LSD_PLUGIN_TABLE = new Array();</script>\n"
+"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"/japis/jquery-ui/themes/custom-theme/jquery-ui-1.8.12.custom.css\">\n"
+"\t\t<script type=\"text/javascript\" src=\"/japis/jquery/jquery.min.js\"></script>\n"
+"\t\t<script type=\"text/javascript\" src=\"/japis/jquery-ui/jquery-ui.min.js\"></script>\n"
 "\n\t\t<!-- BEGIN PROCEDURALLY GENERATED CONTENT -->\n\n";
 
 static const char INDEX_HTML_FOOT[] =
 "\n\t\t<!-- END PROCEDURALLY GENERATED CONTENT -->\n\n"
 "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../LSDClient.css\" />\n"
-"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"/japis/jquery-ui/themes/custom-theme/jquery-ui-1.8.12.custom.css\">\n"
-"\t\t<script type=\"text/javascript\" src=\"/japis/jquery/jquery.min.js\"></script>\n"
-"\t\t<script type=\"text/javascript\" src=\"/japis/jquery-ui/jquery-ui.min.js\"></script>\n"
 "\t\t<script type=\"text/javascript\" src=\"../LSDClientIF.js\"></script>\n"
 "\t\t<script type=\"text/javascript\" src=\"../LSDClient.js\"></script>\n"
 "\t</head>\n"
@@ -1816,8 +1817,11 @@ int lsddb_indexHtmlGen(const char* pluginsDir, struct evbuffer* target){
 	sqlite3_reset(INDEX_HTML_GEN_S);
 	while(sqlite3_step(INDEX_HTML_GEN_S)==SQLITE_ROW){
 		const unsigned char* pluginDirName = sqlite3_column_text(INDEX_HTML_GEN_S,0);
+		int pluginId = sqlite3_column_int(INDEX_HTML_GEN_S,1);
 		if(pluginDirName){
 			getPluginWebIncludes(target,pluginsDir,(const char*)pluginDirName);
+			evbuffer_add_printf(target,"\t\t<script type=\"text/javascript\">\n\t\t\tLSD_PLUGIN_TABLE[%d] = "
+								"%s_CoreHead;\n\t\t</script>\n",pluginId,(const char*)pluginDirName);
 		}
 	}
 	
@@ -2844,7 +2848,7 @@ int lsddb_jsonInsertClassObject(cJSON* target, int classId){
 		cJSON_AddNumberToObject(classObj,"pluginId",pluginId);
 		cJSON_AddNumberToObject(classObj,"classIdx",classIdx);
 		
-		cJSON_AddItemToObject(target,"class",classObj);
+		cJSON_AddItemToObject(target,"classObj",classObj);
 		
 		return 0;
 	}
