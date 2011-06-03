@@ -26,6 +26,7 @@
 #include "DBArr.h"
 #include "SceneCore.h"
 #include "PluginAPI.h"
+#include "PluginLoader.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -1777,26 +1778,26 @@ int lsddb_panPatchSpace(int psId, int xVal, int yVal){
 #include <evhttp.h>
 
 static const char INDEX_HTML_GEN[] =
-"SELECT pluginDomain FROM ScenePlugin WHERE id!=1";
+"SELECT pluginDomain FROM ScenePlugin WHERE id!=1 AND enabled=1";
 static sqlite3_stmt* INDEX_HTML_GEN_S;
 
 static const char INDEX_HTML_HEAD[] =
 "<!DOCTYPE html>\n"
 "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
 "\t<head>\n"
-"\t\t<title>LSD Client 2.0</title>\n"
+"\t\t<title>LightShoppe Client</title>\n"
 "\t\t<meta charset=\"utf-8\"/>\n"
 "\t\t<meta name = \"viewport\" content = \"user-scalable=no, initial-scale=1.0, width=device-width\">\n"
+"\n\t\t<!-- BEGIN PROCEDURALLY GENERATED CONTENT -->\n\n";
+
+static const char INDEX_HTML_FOOT[] =
+"\n\t\t<!-- END PROCEDURALLY GENERATED CONTENT -->\n\n"
 "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../LSDClient.css\" />\n"
 "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"/japis/jquery-ui/themes/custom-theme/jquery-ui-1.8.12.custom.css\">\n"
 "\t\t<script type=\"text/javascript\" src=\"/japis/jquery/jquery.min.js\"></script>\n"
 "\t\t<script type=\"text/javascript\" src=\"/japis/jquery-ui/jquery-ui.min.js\"></script>\n"
 "\t\t<script type=\"text/javascript\" src=\"../LSDClientIF.js\"></script>\n"
 "\t\t<script type=\"text/javascript\" src=\"../LSDClient.js\"></script>\n"
-"\n\t\t<!-- BEGIN PROCEDURALLY GENERATED CONTENT -->\n\n";
-
-static const char INDEX_HTML_FOOT[] =
-"\n\t\t<!-- END PROCEDURALLY GENERATED CONTENT -->\n\n"
 "\t</head>\n"
 "\t<body>\n"
 "\t\t<div id=\"bg\"></div>\n"
@@ -1811,6 +1812,15 @@ int lsddb_indexHtmlGen(const char* pluginsDir, struct evbuffer* target){
     // Add head of html template
     evbuffer_add_printf(target,"%s",INDEX_HTML_HEAD);
     
+	// Get plugin includes
+	sqlite3_reset(INDEX_HTML_GEN_S);
+	while(sqlite3_step(INDEX_HTML_GEN_S)==SQLITE_ROW){
+		const unsigned char* pluginDirName = sqlite3_column_text(INDEX_HTML_GEN_S,0);
+		if(pluginDirName){
+			getPluginWebIncludes(target,pluginsDir,(const char*)pluginDirName);
+		}
+	}
+	
     // Add foot of html template
     evbuffer_add_printf(target,"%s",INDEX_HTML_FOOT);
     
@@ -1905,20 +1915,20 @@ static sqlite3_stmt* PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S;
 
 int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
 						   const char* parentDirectoryName, const char* pluginSha, void* dlObj){
-	if(!ph || !(ph->initFunc) || !(ph->cleanupFunc) || !pluginSha){
+	if(!ph || !ph->initFunc || !ph->cleanupFunc || !pluginSha){
 		fprintf(stderr,"Invalid PluginHEAD provided in pluginHeadLoader()\n");
 		return -1;
 	}
 	
 	sqlite3_reset(PLUGIN_HEAD_LOADER_CHECK_NAME_S);
-	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1,parentDirectoryName,256,NULL);
-	//sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_S,2,pluginSha,40,NULL);
-	
+	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1,parentDirectoryName,-1,NULL);
+	printf("Checking %s\n",parentDirectoryName);
     
     
 	int pluginId;
 	int enabled = 0;
 	if(sqlite3_step(PLUGIN_HEAD_LOADER_CHECK_NAME_S)==SQLITE_ROW){ // Found by name
+		printf("Found already\n");
 		pluginId = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_NAME_S,0);
 		enabled = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1);
         
@@ -1949,6 +1959,7 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable,
 		}
 	}
 	else{ // We must add new plugin record to DB
+		printf("Not Found\n");
 		sqlite3_reset(PLUGIN_HEAD_LOADER_INSERT_S);
 		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,1,parentDirectoryName,-1,NULL);
 		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,2,pluginSha,40,NULL);
@@ -3589,6 +3600,8 @@ int lsddb_prepStmts(){
 	PREP(FACADE_INST_POS,50);
 	
 	PREP(PAN_PATCH_SPACE,51);
+	
+	PREP(INDEX_HTML_GEN,151);
     
     PREP(JSON_PLUGINS,051);
     PREP(DISABLE_PLUGIN,151);
@@ -3751,6 +3764,8 @@ int lsddb_finishStmts(){
 	FINAL(FACADE_INST_POS);	
 	
 	FINAL(PAN_PATCH_SPACE);
+	
+	FINAL(INDEX_HTML_GEN);
 	
     FINAL(JSON_PLUGINS);
     FINAL(DISABLE_PLUGIN);

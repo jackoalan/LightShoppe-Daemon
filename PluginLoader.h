@@ -18,5 +18,8 @@
 **    @author Jack Andersen <jackoalan@gmail.com>
 */
 
+#include <evhttp.h>
 
 int iteratePluginsDirectory(const char* pluginsDirPath);
+
+int getPluginWebIncludes(struct evbuffer* target, const char* pluginsDirPath, const char* pluginDirName);

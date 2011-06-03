@@ -114,9 +114,7 @@ void coreClean(struct LSD_ScenePlugin const * plugin){
 static const struct LSD_ScenePluginHEAD pluginHead = {
     coreInit,
     coreClean,
-	rpcHandler,
-    "org.resinbros.lsd.core",
-    "0.1"
+	rpcHandler
 };
 
 const struct LSD_ScenePluginHEAD* getCoreHead(){

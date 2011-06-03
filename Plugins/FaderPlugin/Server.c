@@ -197,9 +197,7 @@ void faderPluginClean(struct LSD_ScenePlugin const * plugin){
 static const struct LSD_ScenePluginHEAD pluginHead = {
     faderPluginInit,
     faderPluginClean,
-	faderRPCHandler,
-    "org.resinbros.lsd.fader",
-    "0.1"
+	faderRPCHandler
 };
 
 extern const struct LSD_ScenePluginHEAD* getPluginHead(){

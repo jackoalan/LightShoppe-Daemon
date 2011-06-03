@@ -24,42 +24,13 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <magic.h>
-#include <gcrypt.h>
+#include <evhttp.h>
+#include "cJSON.h"
 
 #include "PluginLoader.h"
 #include "DBOps.h"
 
-/*
-Plugin Directory Structure:
--Plugins (Directory)
-    -<PluginName> (Directory)
-        -Server.so 
-        -Client.js
-            -<PluginName_clienthead> object containing an array of members
-             for each class provided by plugin
-        -Client images and other resources
 
-This file contains:
-
--function to iterate through directories within a given directory and
- pass the directory's name to a loader function
-
--loader function to receive a directory name, open plugin, verify validity
-    -if valid, it will be added to DB with the directory name and SHA of binary
-     with load net to no according to process below
-        -if name already exists in DB, check to see if SHA matches
-            -if so, check load flag
-                -if so, set loaded and load
-            -if not, unset load flag and update SHA
-            
--function to generate PluginBindings.js, which contains an indexed array
- where the index corresponds to the plugin ID of the plugin.
- Each entry contains a reference to an array with function references to the configuration
- function of each class provided by the plugin, indexed privately by the plugin
- and sent to the client along with each class. This allows the client to 
- resolve a connection to the appropirate JavaScript functions related to the
- class.
-*/
 
 typedef const struct LSD_ScenePluginHEAD* (*ghType)(void);
 
@@ -90,7 +61,7 @@ int checkAddPlugin(const char* pluginDir, const char* pluginFile){
 	ghType getHead = dlsym(librarySO,"getPluginHead");
 	if(getHead){
 		ph = getHead();
-		if( lsddb_pluginHeadLoader(ph,1,pluginDir,digest,librarySO) < 0 ){
+		if( lsddb_pluginHeadLoader(ph,0,pluginDir,digest,librarySO) < 0 ){
 			fprintf(stderr,"Error while loading PluginHead\n");
 			dlclose(librarySO);
 		}
@@ -199,3 +170,92 @@ int iteratePluginsDirectory(const char* pluginsDirPath){
 	
 	return closedir(pluginsDir);
 }
+
+/*
+ * This function provides a way of opening and parsing out an
+ * include file named "Client.json" in each plugin directory
+ * for the benefit of the webbrowser
+ */
+int getPluginWebIncludes(struct evbuffer* target, const char* pluginsDirPath, const char* pluginDirName){
+	if(!target || !pluginsDirPath || !pluginDirName){
+		fprintf(stderr,"Invalid use of getPluginWebIncludes()\n");
+		return -1;
+	}
+
+	char pluginIncludePath[256];
+	snprintf(pluginIncludePath,256,"%s/%s/Client.json",pluginsDirPath,pluginDirName);
+	
+	FILE* includeFile = fopen(pluginIncludePath,"rb");
+	if(includeFile){
+		
+		// Get file size first
+		fseek(includeFile, 0L, SEEK_END);
+		size_t sz = ftell(includeFile);
+		fseek(includeFile, 0L, SEEK_SET);
+		
+		
+		char* includeFileContent = malloc(sizeof(char)*sz);
+		if(!includeFileContent){
+			fprintf(stderr,"Unable to allocate memory to accomodate include file for parsing\n");
+			fclose(includeFile);
+			return -1;
+		}
+		fread(includeFileContent,sizeof(char)*sz,1,includeFile);
+		
+		cJSON* includeFileParsed = cJSON_Parse(includeFileContent);
+		if(!includeFileParsed){
+			fprintf(stderr,"Unable to parse JSON from include file\n");
+			fclose(includeFile);
+			free(includeFileContent);
+			return -1;
+		}
+		
+		// Done with string after parsing
+		free(includeFileContent);
+		
+		// Make comment in HTML
+		evbuffer_add_printf(target,"\t\t<!-- Includes for %.50s -->\n",
+							pluginDirName);
+		
+		// PARSE!
+		int i;
+		
+		cJSON* jsArr = cJSON_GetObjectItem(includeFileParsed,"js");
+		if(jsArr && jsArr->type == cJSON_Array){
+			for(i=0; i < cJSON_GetArraySize(jsArr); ++i){
+				cJSON* jsItem = cJSON_GetArrayItem(jsArr, i);
+				if(jsItem && jsItem->type == cJSON_String){
+					evbuffer_add_printf(target,"\t\t<script type=\"text/javascript\" src=\"../plugins/%.50s/%.50s\"></script>\n",
+										pluginDirName,jsItem->valuestring);
+				}
+			}
+		}
+		
+		cJSON* cssArr = cJSON_GetObjectItem(includeFileParsed,"css");
+		if(cssArr && cssArr->type == cJSON_Array){
+			for(i=0; i < cJSON_GetArraySize(cssArr); ++i){
+				cJSON* cssItem = cJSON_GetArrayItem(cssArr, i);
+				if(cssItem && cssItem->type == cJSON_String){
+					evbuffer_add_printf(target,"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../plugins/%.50s/%.50s\" />\n",
+										pluginDirName,cssItem->valuestring);
+				}
+			}
+		}
+
+		// Line break
+		evbuffer_add_printf(target,"\n");
+		
+		// Free JSON
+		cJSON_Delete(includeFileParsed);
+		
+	}
+	else{
+		fprintf(stderr,"Unable to open %s\n",pluginIncludePath);
+		return -1;
+	}
+	
+	
+	return fclose(includeFile);
+	
+}
+

@@ -65,8 +65,6 @@ struct LSD_ScenePluginHEAD {
     int(*initFunc)(struct LSD_ScenePlugin const * plugin, cJSON const * confjson);
     void(*cleanupFunc)(struct LSD_ScenePlugin const * plugin);
 	void(*handler)(cJSON* in, cJSON* out);
-    const char* pluginDomain;
-    const char* pluginVersion;
 };
 
 

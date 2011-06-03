@@ -477,10 +477,14 @@ int handleJSONRequest(cJSON* req, cJSON* resp, int* reloadAfter){
         }
         else if(strcasecmp(method->valuestring,"lsdJsonPlugins")==0)
             lsdJsonPlugins(req,resp);
-        else if(strcasecmp(method->valuestring,"lsdDisablePlugin")==0)
+        else if(strcasecmp(method->valuestring,"lsdDisablePlugin")==0){
             lsdDisablePlugin(req,resp);
-        else if(strcasecmp(method->valuestring,"lsdEnablePlugin")==0)
+			*reloadAfter = 1;
+		}
+        else if(strcasecmp(method->valuestring,"lsdEnablePlugin")==0){
             lsdEnablePlugin(req,resp);
+			*reloadAfter = 1;
+		}
 		else if(strcasecmp(method->valuestring,"lsdCustomRPC")==0)
 			lsdCustomRPC(req,resp);
 
@@ -556,10 +560,11 @@ void reqCB(struct evhttp_request* req, void* arg){
 
 void srvIndexCB(struct evhttp_request* req, void* arg){
     struct evbuffer* repBuf = evbuffer_new();
-    if(lsddb_indexHtmlGen(NULL,repBuf)<0){
+    if(lsddb_indexHtmlGen("Plugins",repBuf)<0){
         evbuffer_add_printf(repBuf,"Error while generating index\n");
     }
     evhttp_add_header(evhttp_request_get_output_headers(req), "Content-Type", "text/html");
+	evhttp_add_header(evhttp_request_get_output_headers(req), "Pragma", "no-cache");
     evhttp_send_reply(req,200,"OK",repBuf);
     evbuffer_free(repBuf);
 }
