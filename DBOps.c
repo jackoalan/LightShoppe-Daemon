@@ -2876,7 +2876,7 @@ static const char JSON_NODES_OUTS[] =
 static sqlite3_stmt* JSON_NODES_OUTS_S;
 
 static const char JSON_NODES_FACADES[] =
-"SELECT id,posX,posY FROM ScenePatchSpace WHERE parentPatchSpace=?1";
+"SELECT id,posX,posY,name FROM ScenePatchSpace WHERE parentPatchSpace=?1";
 static sqlite3_stmt* JSON_NODES_FACADES_S;
 static const char JSON_NODES_FACADES_INS[] =
 "SELECT id,typeId,name FROM SceneNodeInstInput WHERE instId=?1 AND facadeBool=1";
@@ -2964,10 +2964,12 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
 		cJSON* nodeObj = cJSON_CreateObject();
 		
 		int nodeId = sqlite3_column_int(JSON_NODES_FACADES_S,0);
+		const unsigned char* psName = sqlite3_column_text(JSON_NODES_FACADES_S,3);
 		int posX = sqlite3_column_int(JSON_NODES_FACADES_S,1);
 		int posY = sqlite3_column_int(JSON_NODES_FACADES_S,2);
 		
 		cJSON_AddNumberToObject(nodeObj,"facadeId",nodeId);
+		cJSON_AddStringToObject(nodeObj,"name",(const char*)psName);
 		cJSON_AddNumberToObject(nodeObj,"x",posX);
 		cJSON_AddNumberToObject(nodeObj,"y",posY);
 		

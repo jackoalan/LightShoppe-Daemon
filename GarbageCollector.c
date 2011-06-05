@@ -67,7 +67,7 @@ int lsdgc_setArrMark(int arrayId, int arrIdx){
 	sqlite3_bind_int(SET_ARR_MARK_S,2,arrIdx);
 	errcode = sqlite3_step(SET_ARR_MARK_S);
 	
-	printf("Set Mark for array %d at %d\n",arrayId,arrIdx);
+	//printf("Set Mark for array %d at %d\n",arrayId,arrIdx);
 	
 	if(errcode == SQLITE_DONE)
 		return 0;
@@ -85,7 +85,7 @@ int lsdgc_unsetArrMark(int arrayId, int arrIdx){
 	sqlite3_bind_int(UNSET_ARR_MARK_S,2,arrIdx);
 	errcode = sqlite3_step(UNSET_ARR_MARK_S);
 	
-	printf("Unset Mark for array %d at %d\n",arrayId,arrIdx);
+	//printf("Unset Mark for array %d at %d\n",arrayId,arrIdx);
 	
 	if(errcode == SQLITE_DONE)
 		return 0;

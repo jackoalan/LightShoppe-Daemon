@@ -159,12 +159,32 @@ void lsdDeleteNode(cJSON* req, cJSON* resp){
 void lsdAddFacade(cJSON* req, cJSON* resp){
     cJSON* psId = cJSON_GetObjectItem(req,"psId");
 	if(psId && psId->type==cJSON_Number){
-		if(lsddb_createPatchSpace(NULL,NULL,psId->valueint)<0){
+		int newPS;
+		if(lsddb_createPatchSpace("New PatchSpace",&newPS,psId->valueint)<0){
 			cJSON_AddStringToObject(resp,"error","Unable to add node instance to DB");
 		}
 		else{
+			// Get Coords
+			cJSON* xVal = cJSON_GetObjectItem(req,"x");
+			int xValVal;
+			if(!xVal || xVal->type!=cJSON_Number)
+				xValVal = 0;
+			else
+				xValVal = xVal->valueint;
+			
+			cJSON* yVal = cJSON_GetObjectItem(req,"y");
+			int yValVal;
+			if(!yVal || yVal->type!=cJSON_Number)
+				yValVal = 0;
+			else
+				yValVal = yVal->valueint;
+			
+			if(lsddb_facadeInstPos(newPS,xValVal,yValVal)<0){
+				cJSON_AddStringToObject(resp,"error","Error while positioning facade node");
+			}
+			
 			cJSON_AddStringToObject(resp,"success","success");
-			cJSON_AddNumberToObject(resp,"psId",psId->valueint);
+			cJSON_AddNumberToObject(resp,"psId",newPS);
 		}
     }
     else{
@@ -172,20 +192,16 @@ void lsdAddFacade(cJSON* req, cJSON* resp){
     }
 }
 
-void lsdRemoveNode(cJSON* req, cJSON* resp){
-    cJSON* nodeId = cJSON_GetObjectItem(req,"nodeId");
+void lsdDeleteFacade(cJSON* req, cJSON* resp){
+    cJSON* nodeId = cJSON_GetObjectItem(req,"facNodeId");
     if(nodeId && nodeId->type==cJSON_Number){
-        
-        if(lsddb_removeNodeInst(nodeId->valueint)<0){
-            cJSON_AddStringToObject(resp,"error","Error while removing node");
-        }
-        else{
-            cJSON_AddStringToObject(resp,"success","success");
-        }
-        
+		if(lsddb_removePatchSpace(nodeId->valueint)<0)
+			cJSON_AddStringToObject(resp,"error","error");
+		else
+			cJSON_AddStringToObject(resp,"success","success");
     }
     else{
-        cJSON_AddStringToObject(resp,"error","nodeId key not present or not a number");
+        cJSON_AddStringToObject(resp,"error","facNodeId key not present or not a number");
     }
 }
 
@@ -479,8 +495,8 @@ int handleJSONRequest(cJSON* req, cJSON* resp, int* reloadAfter){
             lsdDeleteNode(req,resp);
 		else if(strcasecmp(method->valuestring,"lsdAddFacade")==0)
 			lsdAddFacade(req,resp);
-        else if(strcasecmp(method->valuestring,"lsdRemoveNode")==0)
-            lsdRemoveNode(req,resp);
+		else if(strcasecmp(method->valuestring,"lsdDeleteFacade")==0)
+			lsdDeleteFacade(req,resp);
         else if(strcasecmp(method->valuestring,"lsdWireNodes")==0)
             lsdWireNodes(req,resp);
         else if(strcasecmp(method->valuestring,"lsdUnwire")==0)

@@ -38,5 +38,14 @@ g++ -o OLAWrapper.o -c -O2 -Wall OLAWrapper.cpp
 echo "Compiling DMX"
 gcc -o DMX.o -c -O2 -Wall DMX.c
 
+echo "Compiling Plugin Loader"
+gcc -o PluginLoader.o -c -O2 -Wall PluginLoader.c
+
 echo "Compiling SceneCore target"
-gcc -o lsd -O2 -Wall -lm -lsqlite3 -levent -lola /usr/lib/libprotobuf.so.7 cJSON.o GarbageCollector.o DBArr.o Array.o DBArrOps.o DBOps.o Node.o PluginAPI.o NodeInstAPI.o CoreRPC.o CorePlugin.o OLAWrapper.o DMX.o SceneCore.c
+gcc -o lsd -O2 -Wall -rdynamic -lm -ldl -lmagic -lsqlite3 -levent -lola /usr/lib/libprotobuf.so cJSON.o GarbageCollector.o DBArr.o Array.o DBArrOps.o DBOps.o Node.o PluginAPI.o NodeInstAPI.o CoreRPC.o CorePlugin.o OLAWrapper.o DMX.o PluginLoader.o SceneCore.c
+
+echo "Compiling Plugins"
+cd Plugins
+./build.sh
+cd ..
+

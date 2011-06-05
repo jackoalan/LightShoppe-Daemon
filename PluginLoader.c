@@ -41,7 +41,7 @@ int checkAddPlugin(const char* pluginDir, const char* pluginFile){
     snprintf(shaCommand,264,"sha1sum %s",pluginFile);
     FILE* shaStream = popen(shaCommand,"r");
     
-    char digest[41];
+    char digest[42];
     fread(digest,40,1,shaStream);
     digest[41] = '\0';
     
