@@ -114,7 +114,6 @@ int faderNodeInit(struct LSD_SceneNodeInst const * inst, void* instData){
 }
 
 void faderNodeClean(struct LSD_SceneNodeInst const * inst, void* instData){
-	
 }
 
 void faderRPCHandler(cJSON* in, cJSON* out){

@@ -122,6 +122,10 @@ int lsdgc_removeArrIdMarks(int arrayId){
 		return -1;
 }
 
+static const char GC_INIT[] =
+"CREATE TABLE SystemArrayMark (arrayId INTEGER, delElem INTEGER);\n"
+"CREATE INDEX SystemArrayMarkIdx ON SystemArrayMark (arrayId,delElem);\n";
+
 int lsdgc_prepGCOps(){
 	
 	int rc;
@@ -129,18 +133,26 @@ int lsdgc_prepGCOps(){
 	rc = sqlite3_open(":memory:", &memory);
 	if(rc == SQLITE_OK){
 		gcdb = memory;
+		
+		char* errMsg = NULL;
+		rc = sqlite3_exec(gcdb, GC_INIT, NULL, NULL, &errMsg);
+		
+		if(errMsg){
+			fprintf(stderr, "Error during GC init:\n%s\n", errMsg);
+			sqlite3_free(errMsg);
+		}
+		
+		PREPGC(GET_NEW_ARRAY_ID,1);
+		PREPGC(SET_ARR_MARK,2);
+		PREPGC(UNSET_ARR_MARK,3);
+		PREPGC(DISCOVER_ARR_MARK,4);
+		PREPGC(REMOVE_ARR_MARKS,5);
+		
 		return 0;
 	}
 	fprintf(stderr, "Unable to open empty DB for gc\n");
 	return -1;
-	
-	PREPGC(GET_NEW_ARRAY_ID,1);
-	PREPGC(SET_ARR_MARK,2);
-	PREPGC(UNSET_ARR_MARK,3);
-	PREPGC(DISCOVER_ARR_MARK,4);
-	PREPGC(REMOVE_ARR_MARKS,5);
-	
-	return 0;
+
 }
 
 int lsdgc_finalGCOps(){

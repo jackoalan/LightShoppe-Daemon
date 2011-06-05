@@ -1705,6 +1705,14 @@ int lsddb_removeNodeInst(int nodeId){
 		if(delIdx(getArr_lsdNodeInstArr(),arrIdx)<0){
 			fprintf(stderr,"Error while removing node from array in removeNodeInst()\n");
 		}
+		
+		// Remove node
+		sqlite3_reset(REMOVE_NODE_INST_DELETE_S);
+		sqlite3_bind_int(REMOVE_NODE_INST_DELETE_S,1,nodeId);
+		if(sqlite3_step(REMOVE_NODE_INST_DELETE_S)!=SQLITE_DONE){
+			fprintf(stderr,"Unable to remove node from DB\n");
+			return -1;
+		}
 				
 	}
 	else{
@@ -1947,7 +1955,7 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable,
                 
                 sqlite3_reset(PLUGIN_HEAD_LOADER_UPDATE_SHA_S);
                 sqlite3_bind_int(PLUGIN_HEAD_LOADER_UPDATE_SHA_S,1,pluginId);
-                sqlite3_bind_text(PLUGIN_HEAD_LOADER_UPDATE_SHA_S,1,pluginSha,40,NULL);
+                sqlite3_bind_text(PLUGIN_HEAD_LOADER_UPDATE_SHA_S,2,pluginSha,40,NULL);
                 if(sqlite3_step(PLUGIN_HEAD_LOADER_UPDATE_SHA_S)!=SQLITE_DONE){
                     fprintf(stderr,"Error while updating plugin SHA1\n");
                 }

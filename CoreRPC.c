@@ -124,6 +124,19 @@ void lsdAddNode(cJSON* req, cJSON* resp){
     }
 }
 
+void lsdDeleteNode(cJSON* req, cJSON* resp){
+    cJSON* nodeId = cJSON_GetObjectItem(req,"nodeId");
+    if(nodeId && nodeId->type==cJSON_Number){
+		if(lsddb_removeNodeInst(nodeId->valueint)<0)
+			cJSON_AddStringToObject(resp,"error","error");
+		else
+			cJSON_AddStringToObject(resp,"success","success");
+    }
+    else{
+        cJSON_AddStringToObject(resp,"error","psId key not present or not a number");
+    }
+}
+
 void lsdAddFacade(cJSON* req, cJSON* resp){
     cJSON* psId = cJSON_GetObjectItem(req,"psId");
 	if(psId && psId->type==cJSON_Number){
@@ -437,6 +450,8 @@ int handleJSONRequest(cJSON* req, cJSON* resp, int* reloadAfter){
 			lsdJsonPatchSpace(req,resp);
         else if(strcasecmp(method->valuestring,"lsdAddNode")==0)
             lsdAddNode(req,resp);
+		else if(strcasecmp(method->valuestring,"lsdDeleteNode")==0)
+            lsdDeleteNode(req,resp);
 		else if(strcasecmp(method->valuestring,"lsdAddFacade")==0)
 			lsdAddFacade(req,resp);
         else if(strcasecmp(method->valuestring,"lsdRemoveNode")==0)
