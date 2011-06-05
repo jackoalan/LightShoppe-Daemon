@@ -40,7 +40,7 @@ void lsdgc_reportPrepProblem(int problem){
 // Array functions below. Do not touch!
 
 static const char GET_NEW_ARRAY_ID[] =
-"SELECT (arrayId) FROM SystemArrayMark ORDER BY arrayId DESC LIMIT 1";
+"SELECT arrayId FROM SystemArrayMark ORDER BY arrayId DESC LIMIT 1";
 static sqlite3_stmt* GET_NEW_ARRAY_ID_S = NULL;
 int lsdgc_getNewArrayId(int* arrIdBind){
 	int errcode;
@@ -48,7 +48,7 @@ int lsdgc_getNewArrayId(int* arrIdBind){
 	errcode = sqlite3_step(GET_NEW_ARRAY_ID_S);
 	
 	if(errcode == SQLITE_ROW){
-		*arrIdBind = sqlite3_column_int(GET_NEW_ARRAY_ID_S,0);
+		*arrIdBind = sqlite3_column_int(GET_NEW_ARRAY_ID_S,0) + 1;
 		return 0;
 	}
 	else{
@@ -67,6 +67,8 @@ int lsdgc_setArrMark(int arrayId, int arrIdx){
 	sqlite3_bind_int(SET_ARR_MARK_S,2,arrIdx);
 	errcode = sqlite3_step(SET_ARR_MARK_S);
 	
+	printf("Set Mark for array %d at %d\n",arrayId,arrIdx);
+	
 	if(errcode == SQLITE_DONE)
 		return 0;
 	else
@@ -82,6 +84,8 @@ int lsdgc_unsetArrMark(int arrayId, int arrIdx){
 	sqlite3_bind_int(UNSET_ARR_MARK_S,1,arrayId);
 	sqlite3_bind_int(UNSET_ARR_MARK_S,2,arrIdx);
 	errcode = sqlite3_step(UNSET_ARR_MARK_S);
+	
+	printf("Unset Mark for array %d at %d\n",arrayId,arrIdx);
 	
 	if(errcode == SQLITE_DONE)
 		return 0;

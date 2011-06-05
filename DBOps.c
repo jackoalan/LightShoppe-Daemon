@@ -228,7 +228,7 @@ static const char INIT_QUERIES[] =
 // CREATE: ScenePatchSpace
 "CREATE TABLE IF NOT EXISTS ScenePatchSpace (id INTEGER PRIMARY KEY,"
 "name TEXT, parentPatchSpace INTEGER NOT NULL, posX INTEGER, posY INTEGER, "
-"panX INTEGER DEFAULT 0, panY INTEGER DEFAULT 0);\n"
+"panX INTEGER DEFAULT 0, panY INTEGER DEFAULT 0, scale REAL DEFAULT 1.0);\n"
 
 // Reserve PatchSpace 0 for partition facade Nodes.
 // Note that the parentPatchSpace column is meaningless in this special patchSpace (so -1 will do)
@@ -1762,14 +1762,15 @@ int lsddb_facadeInstPos(int nodeId,int xVal, int yVal){
 
 
 static const char PAN_PATCH_SPACE[] =
-"UPDATE ScenePatchSpace SET panX=?2,panY=?3 WHERE id=?1";
+"UPDATE ScenePatchSpace SET panX=?2,panY=?3,scale=?4 WHERE id=?1";
 static sqlite3_stmt* PAN_PATCH_SPACE_S;
 
-int lsddb_panPatchSpace(int psId, int xVal, int yVal){
+int lsddb_panPatchSpace(int psId, int xVal, int yVal, double scale){
 	sqlite3_reset(PAN_PATCH_SPACE_S);
 	sqlite3_bind_int(PAN_PATCH_SPACE_S,1,psId);
 	sqlite3_bind_int(PAN_PATCH_SPACE_S,2,xVal);
 	sqlite3_bind_int(PAN_PATCH_SPACE_S,3,yVal);
+	sqlite3_bind_double(PAN_PATCH_SPACE_S,4,scale);
 	
 	if(sqlite3_step(PAN_PATCH_SPACE_S)!=SQLITE_DONE){
 		return -1;
@@ -3053,7 +3054,7 @@ int lsddb_jsonWires(int patchSpaceId, cJSON* resp){
 }
 
 static const char JSON_PATCH_SPACE[] = 
-"SELECT name,panX,panY FROM ScenePatchSpace WHERE id=?1";
+"SELECT name,panX,panY,scale FROM ScenePatchSpace WHERE id=?1";
 static sqlite3_stmt* JSON_PATCH_SPACE_S;
 
 int lsddb_jsonPatchSpace(int patchSpaceId, cJSON* resp){
@@ -3064,11 +3065,13 @@ int lsddb_jsonPatchSpace(int patchSpaceId, cJSON* resp){
 		const unsigned char* psName = sqlite3_column_text(JSON_PATCH_SPACE_S,0);
 		int panX = sqlite3_column_int(JSON_PATCH_SPACE_S,1);
 		int panY = sqlite3_column_int(JSON_PATCH_SPACE_S,2);
+		double scale = sqlite3_column_double(JSON_PATCH_SPACE_S,3);
 		
 		cJSON_AddNumberToObject(resp,"psId",patchSpaceId);
 		cJSON_AddStringToObject(resp,"name",(const char*)psName);
 		cJSON_AddNumberToObject(resp,"x",panX);
 		cJSON_AddNumberToObject(resp,"y",panY);
+		cJSON_AddNumberToObject(resp,"scale",scale);
 		
 		lsddb_jsonNodes(patchSpaceId,resp);
 		lsddb_jsonWires(patchSpaceId,resp);

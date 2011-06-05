@@ -163,7 +163,7 @@ int lsddb_nodeInstPos(int nodeId, int x, int y);
 
 int lsddb_facadeInstPos(int nodeId,int xVal, int yVal);
 
-int lsddb_panPatchSpace(int psId, int xVal, int yVal);
+int lsddb_panPatchSpace(int psId, int xVal, int yVal, double scale);
 
 int lsddb_nodeInstComment(int nodeID, const char* comment);
 

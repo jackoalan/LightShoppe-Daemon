@@ -106,11 +106,30 @@ void lsdAddNode(cJSON* req, cJSON* resp){
                 cJSON_AddStringToObject(resp,"error","Problem while resolving class object");
                 return;
             }
+			
+			// Get Coords
+			cJSON* xVal = cJSON_GetObjectItem(req,"x");
+			int xValVal;
+			if(!xVal || xVal->type!=cJSON_Number)
+				xValVal = 0;
+			else
+				xValVal = xVal->valueint;
+			
+			cJSON* yVal = cJSON_GetObjectItem(req,"y");
+			int yValVal;
+			if(!yVal || yVal->type!=cJSON_Number)
+				yValVal = 0;
+			else
+				yValVal = yVal->valueint;
+			
             int instId;
             if(lsddb_addNodeInst(psId->valueint,nc,&instId,NULL)<0){
                 cJSON_AddStringToObject(resp,"error","Unable to add node instance to DB");
             }
             else{
+				if(lsddb_nodeInstPos(instId,xValVal,yValVal)<0){
+					cJSON_AddStringToObject(resp,"error","Error while positioning node");
+				}
                 cJSON_AddStringToObject(resp,"success","success");
                 cJSON_AddNumberToObject(resp,"instId",instId);
             }
@@ -293,7 +312,13 @@ void lsdPanPatchSpace(cJSON* req, cJSON* resp){
         return;
     }
 	
-	if(lsddb_panPatchSpace(psId->valueint,xVal->valueint,yVal->valueint)<0){
+	cJSON* scaleVal = cJSON_GetObjectItem(req,"scale");
+    if(!scaleVal || scaleVal->type!=cJSON_Number){
+        cJSON_AddStringToObject(resp,"error","scale not present or not a number");
+        return;
+    }
+	
+	if(lsddb_panPatchSpace(psId->valueint,xVal->valueint,yVal->valueint,scaleVal->valuedouble)<0){
 		cJSON_AddStringToObject(resp,"error","error");
 		return;
 	}
