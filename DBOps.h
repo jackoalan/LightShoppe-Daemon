@@ -83,9 +83,21 @@ int lsddb_createPatchSpace(const char* name, int* idBinding, int parentPatchSpac
 
 int lsddb_removePatchSpace(int psid);
 
+int lsddb_updatePatchSpaceName(int psId, const char* name);
+
+int lsddb_setPatchSpaceColour(int psId, cJSON* colour);
+
 int lsddb_createPatchSpaceIn(int patchSpaceId, const char* name, int* idBinding);
 
 int lsddb_createPatchSpaceOut(int patchSpaceId, const char* name, int* idBinding);
+
+int lsddb_removePatchSpaceOut(int outId);
+
+int lsddb_removePatchSpaceIn(int inId);
+
+int lsddb_updatePatchSpaceInName(int inId, const char* name);
+
+int lsddb_updatePatchSpaceOutName(int outId, const char* name);
 
 // May only be called in a series immediately before a state reload
 int lsddb_createPartition(const char* name, int* idBinding);
@@ -142,6 +154,8 @@ int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
 
 int lsddb_removeNodeInst(int nodeId);
 
+int lsddb_updateNodeName(int nodeId, const char* name);
+
 int lsddb_addFacadeNodeInst(int childPatchSpaceId, int* idBinding, int parentPatchSpace);
 
 int lsddb_indexHtmlGen(const char* pluginsDir, struct evbuffer* target);
@@ -157,7 +171,7 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable,
 
 int lsddb_resolvePluginFromNodeId(struct LSD_ScenePlugin** pluginBind, int nodeId);
 
-int lsddb_nodeInstColour(int nodeId, struct LSD_RGB colour);
+int lsddb_setNodeColour(int nodeId, cJSON* colour);
 
 int lsddb_nodeInstPos(int nodeId, int x, int y);
 
@@ -178,6 +192,8 @@ int lsddb_jsonClassLibrary(cJSON* target);
 int lsddb_resolveClassFromId(struct LSD_SceneNodeClass** ptrToBind, int classId);
 
 int lsddb_jsonNodes(int patchSpaceId, cJSON* target);
+
+int lsddb_jsonFacade(int psId, cJSON* resp);
 
 int lsddb_jsonWires(int patchSpaceId, cJSON* target);
 

@@ -152,7 +152,47 @@ void lsdDeleteNode(cJSON* req, cJSON* resp){
 			cJSON_AddStringToObject(resp,"success","success");
     }
     else{
-        cJSON_AddStringToObject(resp,"error","psId key not present or not a number");
+        cJSON_AddStringToObject(resp,"error","nodeId key not present or not a number");
+    }
+}
+
+void lsdUpdateNodeName(cJSON* req, cJSON* resp){
+    cJSON* nodeId = cJSON_GetObjectItem(req,"nodeId");
+    if(nodeId && nodeId->type==cJSON_Number){
+        
+        cJSON* name = cJSON_GetObjectItem(req,"name");
+        if(!name || name->type != cJSON_String){
+            cJSON_AddStringToObject(resp,"error","name not present or not a string");
+            return;
+        }
+        
+		if(lsddb_updateNodeName(nodeId->valueint, name->valuestring)<0)
+			cJSON_AddStringToObject(resp,"error","error");
+		else
+			cJSON_AddStringToObject(resp,"success","success");
+    }
+    else{
+        cJSON_AddStringToObject(resp,"error","nodeId key not present or not a number");
+    }
+}
+
+void lsdSetNodeColour(cJSON* req, cJSON* resp){
+    cJSON* nodeId = cJSON_GetObjectItem(req,"nodeId");
+    if(nodeId && nodeId->type==cJSON_Number){
+        
+        cJSON* colour = cJSON_GetObjectItem(req,"colour");
+        if(!colour || colour->type != cJSON_Object){
+            cJSON_AddStringToObject(resp,"error","name not present or not an object");
+            return;
+        }
+        
+		if(lsddb_setNodeColour(nodeId->valueint, colour)<0)
+			cJSON_AddStringToObject(resp,"error","error");
+		else
+			cJSON_AddStringToObject(resp,"success","success");
+    }
+    else{
+        cJSON_AddStringToObject(resp,"error","nodeId key not present or not a number");
     }
 }
 
@@ -203,6 +243,159 @@ void lsdDeleteFacade(cJSON* req, cJSON* resp){
     else{
         cJSON_AddStringToObject(resp,"error","facNodeId key not present or not a number");
     }
+}
+
+void lsdUpdateFacadeName(cJSON* req, cJSON* resp){
+    cJSON* nodeId = cJSON_GetObjectItem(req,"facNodeId");
+    if(nodeId && nodeId->type==cJSON_Number){
+        
+        cJSON* name = cJSON_GetObjectItem(req,"name");
+        if(!name || name->type != cJSON_String){
+            cJSON_AddStringToObject(resp,"error","name not present or not a string");
+            return;
+        }
+        
+		if(lsddb_updatePatchSpaceName(nodeId->valueint, name->valuestring)<0)
+			cJSON_AddStringToObject(resp,"error","error");
+		else
+			cJSON_AddStringToObject(resp,"success","success");
+    }
+    else{
+        cJSON_AddStringToObject(resp,"error","facNodeId key not present or not a number");
+    }
+}
+
+void lsdSetFacadeColour(cJSON* req, cJSON* resp){
+    cJSON* nodeId = cJSON_GetObjectItem(req,"facNodeId");
+    if(nodeId && nodeId->type==cJSON_Number){
+        
+        cJSON* colour = cJSON_GetObjectItem(req,"colour");
+        if(!colour || colour->type != cJSON_Object){
+            cJSON_AddStringToObject(resp,"error","name not present or not an object");
+            return;
+        }
+        
+		if(lsddb_setPatchSpaceColour(nodeId->valueint, colour)<0)
+			cJSON_AddStringToObject(resp,"error","error");
+		else
+			cJSON_AddStringToObject(resp,"success","success");
+    }
+    else{
+        cJSON_AddStringToObject(resp,"error","nodeId key not present or not a number");
+    }
+}
+
+void lsdGetFacade(cJSON* req, cJSON* resp){
+    cJSON* facNodeId = cJSON_GetObjectItem(req,"facNodeId");
+    if(facNodeId && facNodeId->type == cJSON_Number){
+        if(lsddb_jsonFacade(facNodeId->valueint,resp)<0){
+            cJSON_AddStringToObject(resp,"error","error");
+        }
+    }
+    else
+        cJSON_AddStringToObject(resp,"error","facNodeId not present or not a number");
+}
+
+void lsdCreateFacadeIn(cJSON* req, cJSON* resp){
+    cJSON* facNodeId = cJSON_GetObjectItem(req,"facNodeId");
+    if(facNodeId && facNodeId->type == cJSON_Number){
+        cJSON* name = cJSON_GetObjectItem(req,"name");
+        if(!name || name->type != cJSON_String){
+            cJSON_AddStringToObject(resp,"error","name not provided");
+            return;
+        }
+        
+        int inId;
+        if(lsddb_createPatchSpaceIn(facNodeId->valueint,name->valuestring,&inId)<0){
+            cJSON_AddStringToObject(resp,"error","error");
+            return;
+        }
+        cJSON_AddStringToObject(resp,"success","success");
+        cJSON_AddNumberToObject(resp,"inId",inId);
+    }
+    else
+        cJSON_AddStringToObject(resp,"error","facNodeId not present or not a number");
+}
+
+void lsdDeleteFacadeIn(cJSON* req, cJSON* resp){
+    cJSON* inId = cJSON_GetObjectItem(req,"inId");
+    if(inId && inId->type == cJSON_Number){
+        if(lsddb_removePatchSpaceIn(inId->valueint)<0){
+            cJSON_AddStringToObject(resp,"error","error");
+        }
+    }
+    else
+        cJSON_AddStringToObject(resp,"error","inId not present or not a number");
+}
+
+void lsdUpdateFacadeIn(cJSON* req, cJSON* resp){
+    cJSON* inId = cJSON_GetObjectItem(req,"inId");
+    if(inId && inId->type == cJSON_Number){
+        cJSON* name = cJSON_GetObjectItem(req,"name");
+        if(!name || name->type != cJSON_String){
+            cJSON_AddStringToObject(resp,"error","name not provided");
+            return;
+        }
+        
+        if(lsddb_updatePatchSpaceInName(inId->valueint,name->valuestring)<0){
+            cJSON_AddStringToObject(resp,"error","error");
+            return;
+        }
+        cJSON_AddStringToObject(resp,"success","success");
+    }
+    else
+        cJSON_AddStringToObject(resp,"error","inId not present or not a number");
+}
+
+void lsdCreateFacadeOut(cJSON* req, cJSON* resp){
+    cJSON* facNodeId = cJSON_GetObjectItem(req,"facNodeId");
+    if(facNodeId && facNodeId->type == cJSON_Number){
+        cJSON* name = cJSON_GetObjectItem(req,"name");
+        if(!name || name->type != cJSON_String){
+            cJSON_AddStringToObject(resp,"error","name not provided");
+            return;
+        }
+        
+        int outId;
+        if(lsddb_createPatchSpaceOut(facNodeId->valueint,name->valuestring,&outId)<0){
+            cJSON_AddStringToObject(resp,"error","error");
+            return;
+        }
+        cJSON_AddStringToObject(resp,"success","success");
+        cJSON_AddNumberToObject(resp,"outId",outId);
+    }
+    else
+        cJSON_AddStringToObject(resp,"error","facNodeId not present or not a number");
+}
+
+void lsdDeleteFacadeOut(cJSON* req, cJSON* resp){
+    cJSON* outId = cJSON_GetObjectItem(req,"outId");
+    if(outId && outId->type == cJSON_Number){
+        if(lsddb_removePatchSpaceOut(outId->valueint)<0){
+            cJSON_AddStringToObject(resp,"error","error");
+        }
+    }
+    else
+        cJSON_AddStringToObject(resp,"error","outId not present or not a number");
+}
+
+void lsdUpdateFacadeOut(cJSON* req, cJSON* resp){
+    cJSON* outId = cJSON_GetObjectItem(req,"outId");
+    if(outId && outId->type == cJSON_Number){
+        cJSON* name = cJSON_GetObjectItem(req,"name");
+        if(!name || name->type != cJSON_String){
+            cJSON_AddStringToObject(resp,"error","name not provided");
+            return;
+        }
+        
+        if(lsddb_updatePatchSpaceOutName(outId->valueint,name->valuestring)<0){
+            cJSON_AddStringToObject(resp,"error","error");
+            return;
+        }
+        cJSON_AddStringToObject(resp,"success","success");
+    }
+    else
+        cJSON_AddStringToObject(resp,"error","outId not present or not a number");
 }
 
 void lsdWireNodes(cJSON* req, cJSON* resp){
@@ -481,22 +674,38 @@ int handleJSONRequest(cJSON* req, cJSON* resp, int* reloadAfter){
             lsdJsonLibrary(req,resp);
         else if(strcasecmp(method->valuestring,"lsdJsonPartitions")==0)
             lsdJsonPartitions(req,resp);
-		/*
-        else if(strcasecmp(method->valuestring,"lsdJsonNodes")==0)
-            lsdJsonNodes(req,resp);
-        else if(strcasecmp(method->valuestring,"lsdJsonWires")==0)
-            lsdJsonWires(req,resp);
-		 */
 		else if(strcasecmp(method->valuestring,"lsdJsonPatchSpace")==0)
 			lsdJsonPatchSpace(req,resp);
         else if(strcasecmp(method->valuestring,"lsdAddNode")==0)
             lsdAddNode(req,resp);
 		else if(strcasecmp(method->valuestring,"lsdDeleteNode")==0)
             lsdDeleteNode(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdUpdateNodeName")==0)
+            lsdUpdateNodeName(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdSetNodeColour")==0)
+            lsdSetNodeColour(req,resp);
 		else if(strcasecmp(method->valuestring,"lsdAddFacade")==0)
 			lsdAddFacade(req,resp);
 		else if(strcasecmp(method->valuestring,"lsdDeleteFacade")==0)
 			lsdDeleteFacade(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdUpdateFacadeName")==0)
+            lsdUpdateFacadeName(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdSetFacadeColour")==0)
+            lsdSetFacadeColour(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdGetFacade")==0)
+            lsdGetFacade(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdCreateFacadeIn")==0)
+            lsdCreateFacadeIn(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdDeleteFacadeIn")==0)
+            lsdDeleteFacadeIn(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdUpdateFacadeIn")==0)
+            lsdUpdateFacadeIn(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdCreateFacadeOut")==0)
+            lsdCreateFacadeOut(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdDeleteFacadeOut")==0)
+            lsdDeleteFacadeOut(req,resp);
+        else if(strcasecmp(method->valuestring,"lsdUpdateFacadeOut")==0)
+            lsdUpdateFacadeOut(req,resp);
         else if(strcasecmp(method->valuestring,"lsdWireNodes")==0)
             lsdWireNodes(req,resp);
         else if(strcasecmp(method->valuestring,"lsdUnwire")==0)

@@ -228,7 +228,8 @@ static const char INIT_QUERIES[] =
 // CREATE: ScenePatchSpace
 "CREATE TABLE IF NOT EXISTS ScenePatchSpace (id INTEGER PRIMARY KEY,"
 "name TEXT, parentPatchSpace INTEGER NOT NULL, posX INTEGER, posY INTEGER, "
-"panX INTEGER DEFAULT 0, panY INTEGER DEFAULT 0, scale REAL DEFAULT 1.0);\n"
+"panX INTEGER DEFAULT 0, panY INTEGER DEFAULT 0, scale REAL DEFAULT 1.0, "
+"colourR REAL DEFAULT 0, colourG REAL DEFAULT 1, colourB REAL DEFAULT 0);\n"
 
 // Reserve PatchSpace 0 for partition facade Nodes.
 // Note that the parentPatchSpace column is meaningless in this special patchSpace (so -1 will do)
@@ -238,8 +239,8 @@ static const char INIT_QUERIES[] =
 // CREATE: SceneNodeInst
 "CREATE TABLE IF NOT EXISTS SceneNodeInst (id INTEGER PRIMARY KEY,"
 "arrIdx INTEGER, classId INTEGER NOT NULL, "
-"patchSpaceId INTEGER NOT NULL,  userComment TEXT NULL,"
-"colourR REAL NULL, colourG REAL NULL, colourB REAL NULL,"
+"patchSpaceId INTEGER NOT NULL,  name TEXT NULL,"
+"colourR REAL DEFAULT 1, colourG REAL DEFAULT 0, colourB REAL DEFAULT 0,"
 "posX INTEGER DEFAULT 0, posY INTEGER DEFAULT 0);\n"
 
 // reset data structure indicies
@@ -449,7 +450,7 @@ int lsddb_removePatchSpace(int psid){
 	sqlite3_bind_int(REMOVE_PATCH_SPACE_INS_S,1,psid);
 	while(sqlite3_step(REMOVE_PATCH_SPACE_INS_S)==SQLITE_ROW){
 		int inId = sqlite3_column_int(REMOVE_PATCH_SPACE_INS_S,0);
-		lsddb_removeNodeInstInput(inId);
+        lsddb_removePatchSpaceIn(inId);
 	}
 	
 	// remove outs
@@ -457,7 +458,7 @@ int lsddb_removePatchSpace(int psid){
 	sqlite3_bind_int(REMOVE_PATCH_SPACE_OUTS_S,1,psid);
 	while(sqlite3_step(REMOVE_PATCH_SPACE_OUTS_S)==SQLITE_ROW){
 		int outId = sqlite3_column_int(REMOVE_PATCH_SPACE_OUTS_S,0);
-		lsddb_removeNodeInstOutput(outId);
+        lsddb_removePatchSpaceOut(outId);
 	}
 	
 	// Actually delete patch space
@@ -470,6 +471,57 @@ int lsddb_removePatchSpace(int psid){
 	}
 	
 	return 0;
+}
+
+
+static const char UPDATE_PATCH_SPACE_NAME[] =
+"UPDATE ScenePatchSpace SET name=?2 WHERE id=?1";
+static sqlite3_stmt* UPDATE_PATCH_SPACE_NAME_S;
+
+int lsddb_updatePatchSpaceName(int psId, const char* name){
+    if(!name)
+        return -1;
+    
+    sqlite3_reset(UPDATE_PATCH_SPACE_NAME_S);
+    sqlite3_bind_int(UPDATE_PATCH_SPACE_NAME_S,1,psId);
+    sqlite3_bind_text(UPDATE_PATCH_SPACE_NAME_S,2,name,-1,NULL);
+    
+    if(sqlite3_step(UPDATE_PATCH_SPACE_NAME_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error while updating patch space name\n");
+        return -1;
+    }
+    
+    return 0;
+}
+
+// Update patch space colour
+static const char SET_PS_COLOUR[] =
+"UPDATE ScenePatchSpace SET colourR=?2,colourG=?3,colourB=?4 WHERE id=?1";
+static sqlite3_stmt* SET_PS_COLOUR_S;
+
+int lsddb_setPatchSpaceColour(int psId, cJSON* colour){
+    if(!colour || colour->type != cJSON_Object)
+        return -1;
+    
+    cJSON* rObj = cJSON_GetObjectItem(colour,"r");
+    cJSON* gObj = cJSON_GetObjectItem(colour,"g");
+    cJSON* bObj = cJSON_GetObjectItem(colour,"b");
+    
+    if(!rObj || rObj->type != cJSON_Number || 
+       !gObj || gObj->type != cJSON_Number || 
+       !bObj || bObj->type != cJSON_Number){
+        return -1;
+    }
+    
+    sqlite3_reset(SET_PS_COLOUR_S);
+    sqlite3_bind_int(SET_PS_COLOUR_S,1,psId);
+    sqlite3_bind_double(SET_PS_COLOUR_S,2,rObj->valuedouble);
+    sqlite3_bind_double(SET_PS_COLOUR_S,3,gObj->valuedouble);
+    sqlite3_bind_double(SET_PS_COLOUR_S,4,bObj->valuedouble);
+    
+    if(sqlite3_step(SET_PS_COLOUR_S)!=SQLITE_DONE)
+        return -1;
+    return 0;
 }
 
 
@@ -519,7 +571,73 @@ int lsddb_createPatchSpaceOut(int patchSpaceId, const char* name, int* idBinding
 	return 0;
 }
 
+static const char REMOVE_PATCH_SPACE_OUT[] =
+"DELETE FROM SceneNodeInstOutput WHERE id=?1 AND facadeBool=1";
+static sqlite3_stmt* REMOVE_PATCH_SPACE_OUT_S;
 
+static const char REMOVE_PATCH_SPACE_IN[] =
+"DELETE FROM SceneNodeInstInput WHERE id=?1 AND facadeBool=1";
+static sqlite3_stmt* REMOVE_PATCH_SPACE_IN_S;
+
+int lsddb_removePatchSpaceOut(int outId){
+    sqlite3_reset(REMOVE_PATCH_SPACE_OUT_S);
+    sqlite3_bind_int(REMOVE_PATCH_SPACE_OUT_S,1,outId);
+    if(sqlite3_step(REMOVE_PATCH_SPACE_OUT_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error while removing patch space output\n");
+        return -1;
+    }
+    return 0;
+}
+
+int lsddb_removePatchSpaceIn(int inId){
+    sqlite3_reset(REMOVE_PATCH_SPACE_IN_S);
+    sqlite3_bind_int(REMOVE_PATCH_SPACE_IN_S,1,inId);
+    if(sqlite3_step(REMOVE_PATCH_SPACE_IN_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error while removing patch space input\n");
+        return -1;
+    }
+    return 0;
+}
+
+static const char UPDATE_PATCH_SPACE_IN_NAME[] =
+"UPDATE SceneNodeInstInput SET name=?2 WHERE id=?1 AND facadeBool=1";
+static sqlite3_stmt* UPDATE_PATCH_SPACE_IN_NAME_S;
+
+static const char UPDATE_PATCH_SPACE_OUT_NAME[] =
+"UPDATE SceneNodeInstOutput SET name=?2 WHERE id=?1 AND facadeBool=1";
+static sqlite3_stmt* UPDATE_PATCH_SPACE_OUT_NAME_S;
+
+int lsddb_updatePatchSpaceInName(int inId, const char* name){
+    if(!name)
+        return -1;
+    
+    sqlite3_reset(UPDATE_PATCH_SPACE_IN_NAME_S);
+    sqlite3_bind_int(UPDATE_PATCH_SPACE_IN_NAME_S,1,inId);
+    sqlite3_bind_text(UPDATE_PATCH_SPACE_IN_NAME_S,2,name,-1,NULL);
+    
+    if(sqlite3_step(UPDATE_PATCH_SPACE_IN_NAME_S) != SQLITE_DONE){
+        fprintf(stderr,"Unable to update PS in name\n");
+        return -1;
+    }
+    
+    return 0;
+}
+
+int lsddb_updatePatchSpaceOutName(int outId, const char* name){
+    if(!name)
+        return -1;
+    
+    sqlite3_reset(UPDATE_PATCH_SPACE_OUT_NAME_S);
+    sqlite3_bind_int(UPDATE_PATCH_SPACE_OUT_NAME_S,1,outId);
+    sqlite3_bind_text(UPDATE_PATCH_SPACE_OUT_NAME_S,2,name,-1,NULL);
+    
+    if(sqlite3_step(UPDATE_PATCH_SPACE_OUT_NAME_S) != SQLITE_DONE){
+        fprintf(stderr,"Unable to update PS out name\n");
+        return -1;
+    }
+    
+    return 0;
+}
 
 
 static const char CREATE_PARTITION[] = 
@@ -1488,7 +1606,7 @@ static const char REMOVE_NODE_INST_INPUT_ARRIDX[] =
 static sqlite3_stmt* REMOVE_NODE_INST_INPUT_ARRIDX_S;
 
 static const char REMOVE_NODE_INST_INPUT[] =
-"DELETE FROM SceneNodeInstInput WHERE id=?1";
+"DELETE FROM SceneNodeInstInput WHERE id=?1 AND facadeBool=0";
 static sqlite3_stmt* REMOVE_NODE_INST_INPUT_S;
 
 static const char REMOVE_NODE_INST_INPUT_GET_WIRES[] =
@@ -1542,7 +1660,7 @@ static const char REMOVE_NODE_INST_OUTPUT_ARRIDX[] =
 static sqlite3_stmt* REMOVE_NODE_INST_OUTPUT_ARRIDX_S;
 
 static const char REMOVE_NODE_INST_OUTPUT[] =
-"DELETE FROM SceneNodeInstOutput WHERE id=?1";
+"DELETE FROM SceneNodeInstOutput WHERE id=?1 AND facadeBool=0";
 static sqlite3_stmt* REMOVE_NODE_INST_OUTPUT_S;
 
 static const char REMOVE_NODE_INST_OUTPUT_GET_WIRES[] =
@@ -1596,9 +1714,13 @@ int lsddb_removeNodeInstOutput(int outputId){
  * insertion of nodes
  */
 static const char ADD_NODE_INST[] =
-"INSERT INTO SceneNodeInst (arrIdx,classId,patchSpaceId) "
-"VALUES (?1,?2,?3)";
+"INSERT INTO SceneNodeInst (arrIdx,classId,patchSpaceId,name) "
+"VALUES (?1,?2,?3,?4)";
 static sqlite3_stmt* ADD_NODE_INST_S;
+
+static const char GET_NODE_CLASS_NAME[] =
+"SELECT name FROM SceneNodeClass WHERE id=?1";
+static sqlite3_stmt* GET_NODE_CLASS_NAME_S;
 
 int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
 					  int* idBinding, struct LSD_SceneNodeInst** ptrToBind){
@@ -1621,6 +1743,17 @@ int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
 	sqlite3_bind_int(ADD_NODE_INST_S,1,targetIdx);
 	sqlite3_bind_int(ADD_NODE_INST_S,2,nc->dbId);
 	sqlite3_bind_int(ADD_NODE_INST_S,3,patchSpaceId);
+    
+    // Get class name to make default inst name
+    sqlite3_reset(GET_NODE_CLASS_NAME_S);
+    sqlite3_bind_int(GET_NODE_CLASS_NAME_S,1,nc->dbId);
+    if(sqlite3_step(GET_NODE_CLASS_NAME_S)==SQLITE_ROW){
+        char newName[256];
+        const unsigned char* claName = sqlite3_column_text(GET_NODE_CLASS_NAME_S,0);
+        snprintf(newName,256,"New %s",(const char*)claName);
+        
+        sqlite3_bind_text(ADD_NODE_INST_S,4,newName,-1,NULL);
+    }
 	
 	if(sqlite3_step(ADD_NODE_INST_S)!=SQLITE_DONE){
 		fprintf(stderr,"Error inserting element into DB in addNodeInst()\n");
@@ -1723,6 +1856,56 @@ int lsddb_removeNodeInst(int nodeId){
 	return 0;
 }
 
+static const char UPDATE_NODE_NAME[] =
+"UPDATE SceneNodeInst SET name=?2 WHERE id=?1";
+static sqlite3_stmt* UPDATE_NODE_NAME_S;
+
+int lsddb_updateNodeName(int nodeId, const char* name){
+    if(!name)
+        return -1;
+    
+    sqlite3_reset(UPDATE_NODE_NAME_S);
+    sqlite3_bind_int(UPDATE_NODE_NAME_S,1,nodeId);
+    sqlite3_bind_text(UPDATE_NODE_NAME_S,2,name,-1,NULL);
+    
+    if(sqlite3_step(UPDATE_NODE_NAME_S)!=SQLITE_DONE){
+        fprintf(stderr,"error while updating node instance name\n");
+        return -1;
+    }
+    
+    return 0;
+}
+
+
+// Update node colour
+static const char SET_NODE_COLOUR[] =
+"UPDATE SceneNodeInst SET colourR=?2,colourG=?3,colourB=?4 WHERE id=?1";
+static sqlite3_stmt* SET_NODE_COLOUR_S;
+
+int lsddb_setNodeColour(int nodeId, cJSON* colour){
+    if(!colour || colour->type != cJSON_Object)
+        return -1;
+    
+    cJSON* rObj = cJSON_GetObjectItem(colour,"r");
+    cJSON* gObj = cJSON_GetObjectItem(colour,"g");
+    cJSON* bObj = cJSON_GetObjectItem(colour,"b");
+    
+    if(!rObj || rObj->type != cJSON_Number || 
+       !gObj || gObj->type != cJSON_Number || 
+       !bObj || bObj->type != cJSON_Number){
+        return -1;
+    }
+    
+    sqlite3_reset(SET_NODE_COLOUR_S);
+    sqlite3_bind_int(SET_NODE_COLOUR_S,1,nodeId);
+    sqlite3_bind_double(SET_NODE_COLOUR_S,2,rObj->valuedouble);
+    sqlite3_bind_double(SET_NODE_COLOUR_S,3,gObj->valuedouble);
+    sqlite3_bind_double(SET_NODE_COLOUR_S,4,bObj->valuedouble);
+
+    if(sqlite3_step(SET_NODE_COLOUR_S)!=SQLITE_DONE)
+        return -1;
+    return 0;
+}
 
 static const char NODE_INST_POS[] =
 "UPDATE SceneNodeInst SET posX=?2,posY=?3 WHERE id=?1";
@@ -2866,7 +3049,7 @@ int lsddb_jsonInsertClassObject(cJSON* target, int classId){
 }
 
 static const char JSON_NODES[] =
-"SELECT id,posX,posY,classId FROM SceneNodeInst WHERE patchSpaceId=?1";
+"SELECT id,posX,posY,classId,name,colourR,colourG,colourB FROM SceneNodeInst WHERE patchSpaceId=?1";
 static sqlite3_stmt* JSON_NODES_S;
 static const char JSON_NODES_INS[] =
 "SELECT id,typeId,name FROM SceneNodeInstInput WHERE instId=?1 AND facadeBool=0";
@@ -2876,7 +3059,7 @@ static const char JSON_NODES_OUTS[] =
 static sqlite3_stmt* JSON_NODES_OUTS_S;
 
 static const char JSON_NODES_FACADES[] =
-"SELECT id,posX,posY,name FROM ScenePatchSpace WHERE parentPatchSpace=?1";
+"SELECT id,posX,posY,name,colourR,colourG,colourB FROM ScenePatchSpace WHERE parentPatchSpace=?1";
 static sqlite3_stmt* JSON_NODES_FACADES_S;
 static const char JSON_NODES_FACADES_INS[] =
 "SELECT id,typeId,name FROM SceneNodeInstInput WHERE instId=?1 AND facadeBool=1";
@@ -2897,11 +3080,21 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
 		int nodeId = sqlite3_column_int(JSON_NODES_S,0);
 		int posX = sqlite3_column_int(JSON_NODES_S,1);
 		int posY = sqlite3_column_int(JSON_NODES_S,2);
+        const unsigned char* name = sqlite3_column_text(JSON_NODES_S,4);
 		int classId = sqlite3_column_int(JSON_NODES_S,3);
 		
 		cJSON_AddNumberToObject(nodeObj,"nodeId",nodeId);
 		cJSON_AddNumberToObject(nodeObj,"x",posX);
 		cJSON_AddNumberToObject(nodeObj,"y",posY);
+        cJSON_AddStringToObject(nodeObj,"name",(const char*)name);
+        
+        // Colour Object
+        cJSON* colourObj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(colourObj,"r",sqlite3_column_double(JSON_NODES_S,5));
+        cJSON_AddNumberToObject(colourObj,"g",sqlite3_column_double(JSON_NODES_S,6));
+        cJSON_AddNumberToObject(colourObj,"b",sqlite3_column_double(JSON_NODES_S,7));
+        cJSON_AddItemToObject(nodeObj,"colour",colourObj);
+        
         if(lsddb_checkClassEnabled(classId))
             cJSON_AddTrueToObject(nodeObj,"enabled");
         else
@@ -2972,6 +3165,13 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
 		cJSON_AddStringToObject(nodeObj,"name",(const char*)psName);
 		cJSON_AddNumberToObject(nodeObj,"x",posX);
 		cJSON_AddNumberToObject(nodeObj,"y",posY);
+        
+        // Colour Object
+        cJSON* colourObj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(colourObj,"r",sqlite3_column_double(JSON_NODES_FACADES_S,4));
+        cJSON_AddNumberToObject(colourObj,"g",sqlite3_column_double(JSON_NODES_FACADES_S,5));
+        cJSON_AddNumberToObject(colourObj,"b",sqlite3_column_double(JSON_NODES_FACADES_S,6));
+        cJSON_AddItemToObject(nodeObj,"colour",colourObj);
 		
 		// Get facade's ins
 		sqlite3_reset(JSON_NODES_FACADES_INS_S);
@@ -3024,6 +3224,39 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
 	
 	return 0;
 }
+
+
+// Return a single facade for editing purposes
+static const char JSON_GET_FACADE[] =
+"SELECT name FROM ScenePatchSpace WHERE id=?1";
+static sqlite3_stmt* JSON_GET_FACADE_S;
+
+int lsddb_jsonFacade(int psId, cJSON* resp){
+    sqlite3_reset(JSON_GET_FACADE_S);
+    sqlite3_bind_int(JSON_GET_FACADE_S,1,psId);
+    if(sqlite3_step(JSON_GET_FACADE_S)==SQLITE_ROW){
+        cJSON* facObj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(facObj,"psId",psId);
+        
+        const unsigned char* name = sqlite3_column_text(JSON_GET_FACADE_S,0);
+        cJSON_AddStringToObject(facObj,"name",(const char*)name);
+        
+        
+        lsddb_jsonGetFacadeIns(psId,facObj);
+        
+        lsddb_jsonGetFacadeOuts(psId,facObj);
+        
+        cJSON_AddItemToObject(resp,"facade",facObj);
+    }
+    else
+        return -1;
+    
+    return 0;
+}
+
+
+
+
 
 static const char JSON_WIRES[] =
 "SELECT id,srcOut,destIn FROM SceneNodeEdge WHERE patchSpaceId=?1";
@@ -3547,9 +3780,15 @@ int lsddb_prepStmts(){
 	PREP(REMOVE_PATCH_SPACE_INS,4);
 	PREP(REMOVE_PATCH_SPACE_OUTS,5);
 	
+    PREP(UPDATE_PATCH_SPACE_NAME,55);
+    PREP(SET_PS_COLOUR,555);
+    
 	PREP(CREATE_PATCH_SPACE_IN,6);
-	
 	PREP(CREATE_PATCH_SPACE_OUT,7);
+    PREP(REMOVE_PATCH_SPACE_OUT,777);
+    PREP(REMOVE_PATCH_SPACE_IN,888);
+    PREP(UPDATE_PATCH_SPACE_IN_NAME,999);
+    PREP(UPDATE_PATCH_SPACE_OUT_NAME,111);
 	
 	PREP(CREATE_PARTITION,8);
 	
@@ -3606,12 +3845,16 @@ int lsddb_prepStmts(){
 	PREP(REMOVE_NODE_INST_OUTPUT_GET_WIRES,43);
 	
 	PREP(ADD_NODE_INST,44);
+    PREP(GET_NODE_CLASS_NAME,444);
 	
 	PREP(REMOVE_NODE_INST_CHECK,45);
 	PREP(REMOVE_NODE_INST_GET_INS,46);
 	PREP(REMOVE_NODE_INST_GET_OUTS,47);
 	PREP(REMOVE_NODE_INST_DELETE,48);
 	
+    PREP(UPDATE_NODE_NAME,488);
+    PREP(SET_NODE_COLOUR,489);
+    
 	PREP(NODE_INST_POS,49);
 	
 	PREP(FACADE_INST_POS,50);
@@ -3674,6 +3917,8 @@ int lsddb_prepStmts(){
 	PREP(JSON_NODES_FACADES,80);
 	PREP(JSON_NODES_FACADES_INS,81);
 	PREP(JSON_NODES_FACADES_OUTS,82);
+    
+    PREP(JSON_GET_FACADE,882);
 	
 	PREP(JSON_WIRES,83);
 	
@@ -3710,10 +3955,16 @@ int lsddb_finishStmts(){
 	FINAL(REMOVE_PATCH_SPACE_NODES);
 	FINAL(REMOVE_PATCH_SPACE_INS);
 	FINAL(REMOVE_PATCH_SPACE_OUTS);
+    
+    FINAL(UPDATE_PATCH_SPACE_NAME);
+    FINAL(SET_PS_COLOUR);
 	
 	FINAL(CREATE_PATCH_SPACE_IN);
-	
 	FINAL(CREATE_PATCH_SPACE_OUT);
+    FINAL(REMOVE_PATCH_SPACE_OUT);
+    FINAL(REMOVE_PATCH_SPACE_IN);
+    FINAL(UPDATE_PATCH_SPACE_IN_NAME);
+    FINAL(UPDATE_PATCH_SPACE_OUT_NAME);
 	
 	FINAL(CREATE_PARTITION);
 	
@@ -3770,12 +4021,16 @@ int lsddb_finishStmts(){
 	FINAL(REMOVE_NODE_INST_OUTPUT_GET_WIRES);
 	
 	FINAL(ADD_NODE_INST);
+    FINAL(GET_NODE_CLASS_NAME);
 	
 	FINAL(REMOVE_NODE_INST_CHECK);
 	FINAL(REMOVE_NODE_INST_GET_INS);
 	FINAL(REMOVE_NODE_INST_GET_OUTS);
 	FINAL(REMOVE_NODE_INST_DELETE);
 	
+    FINAL(UPDATE_NODE_NAME);
+    FINAL(SET_NODE_COLOUR);
+    
 	FINAL(NODE_INST_POS);
 	
 	FINAL(FACADE_INST_POS);	
@@ -3838,6 +4093,8 @@ int lsddb_finishStmts(){
 	FINAL(JSON_NODES_FACADES);
 	FINAL(JSON_NODES_FACADES_INS);
 	FINAL(JSON_NODES_FACADES_OUTS);
+    
+    FINAL(JSON_GET_FACADE);
 	
 	FINAL(JSON_WIRES);
 	
