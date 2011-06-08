@@ -31,6 +31,7 @@
 #include "GarbageCollector.h"
 #include "DMX.h"
 #include "PluginLoader.h"
+#include "Node.h"
 
 #include <event.h>
 #include <signal.h>
@@ -54,36 +55,6 @@ void destruct_Univ(void* univ){
         }
     }
 }
-
-// Plugin SO loader - NOT READY FOR USE!
-/*
-int lsdLoadPlugin(const char* path, struct LSD_ScenePluginHEAD** headBind){
-    if(!headBind){
-        fprintf(stderr,"headBind must not be NULL in lsdLoadPlugin()\n");
-        return -1;
-    }
-    
-    void* soHandle;
-    soHandle = dlopen(path,RTLD_LAZY);
-    
-    if(!soHandle){
-        fprintf(stderr,"Unable to load specified plugin: %s\n",dlerror());
-        return -1;
-    }
-    
-    struct LSD_ScenePluginHEAD* ph;
-    ph = dlsym(soHandle,"pluginHead");
-    
-    if(!ph){
-        fprintf(stderr,"Unable to resolve 'pluginHead' symbol in plugin\n");
-        dlclose(soHandle);
-        return -1;
-    }
-    
-    *headBind = ph;
-    
-    return 0;
-}*/
 
 
 // Flag governing whether a loop_break should loop into itself
@@ -136,6 +107,7 @@ void updateBuffers(int one,short int two, void* three){
     
     // Do per-frame shite here
     //printf("Update...\n");
+    node_incFrameCount();
 	bufferUnivs();
 	writeUnivs();
     
@@ -283,6 +255,7 @@ int lsdSceneEntry(){
 		
         
         /** BEGIN PARTITION BUFFER LOOP **/
+        node_resetFrameCount();
 		updateBuffers(0,0,NULL);
         printf("Dispatching(Ctrl-c to quit)...\n");
         event_base_dispatch(ebMain);

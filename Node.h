@@ -54,14 +54,19 @@ struct LSD_SceneNodeOutput {
     int typeId;
     struct LSD_SceneNodeInst const * parentNode;
     uint64_t lastBufferedFrame;
-    size_t arrayLength;
     void* buffer;
     void(*bufferFunc)(struct LSD_SceneNodeOutput const * output);
-    void(*bufferIdxFunc)(struct LSD_SceneNodeOutput const * output,int idx);
     void*(*bufferPtr)(struct LSD_SceneNodeOutput const * output);
 };
 
 void destruct_SceneNodeOutput(void* nodeOutput);
+
+// Buffer frame counter manipulation
+void node_resetFrameCount();
+void node_incFrameCount();
+
+// Buffer wrapper func (eliminates redundant bufferings)
+void* node_bufferOutput(struct LSD_SceneNodeOutput* output);
 
 struct LSD_SceneNodeClass {
     int dbId;

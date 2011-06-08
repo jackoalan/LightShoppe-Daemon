@@ -41,3 +41,23 @@ void destruct_SceneNodeInst(void* nodeInst){
         }
     }
 }
+
+// Current frame count (for buffering purposes)
+static uint64_t curFrame;
+
+void node_resetFrameCount(){
+    curFrame = 0;
+}
+
+void node_incFrameCount(){
+    ++curFrame;
+}
+
+// Buffer wrapper func (eliminates redundant bufferings)
+void* node_bufferOutput(struct LSD_SceneNodeOutput* output){
+    if(output->lastBufferedFrame != curFrame){
+        output->bufferFunc(output);
+        output->lastBufferedFrame = curFrame;
+    }
+    return output->bufferPtr(output);
+}

@@ -35,6 +35,7 @@
 #include "CorePlugin.h"
 #include "DBArr.h"
 #include "SceneCore.h"
+#include "Node.h"
 
 
 int initDMX(){
@@ -68,8 +69,8 @@ int bufferUnivs(){
 				fprintf(stderr,"No buffer func to call!\n");
 			
 			//printf("Ran\n");
-			chan->output->bufferFunc(chan->output);
-			rgb = chan->output->bufferPtr(chan->output);
+            
+            rgb = node_bufferOutput(chan->output);
 
 			
 			// Red/Mono
