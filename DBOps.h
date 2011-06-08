@@ -57,7 +57,7 @@ struct LSD_Tuple {
  * accessing the statement.
  */
 struct LSD_SceneDBStmt {
-    struct LSD_ScenePlugin* pluginPtr;
+    struct LSD_ScenePlugin const * pluginPtr;
     sqlite3_stmt* stmt;
 };
 
@@ -220,6 +220,64 @@ int lsddb_PartitionIterationNext(struct LSD_SceneNodeOutput** ptrToBind);
 int lsddb_getPatchChannels(cJSON* target);
 
 int lsddb_addPatchChannel(int partId, cJSON* opts);
+
+// Plugin API stuff
+int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs);
+
+int lsddbapi_prepSelect(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
+                        const char* tblName, const char* colPortion,
+                        const char* wherePortion);
+
+int lsddbapi_prepInsert(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
+                        const char* tblName, const char* colPortion,
+                        const char* valuesPortion);
+
+int lsddbapi_prepUpdate(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
+                        const char* tblName, const char* setPortion,
+                        const char* wherePortion);
+
+int lsddbapi_prepDelete(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
+                        const char* tblName, const char* wherePortion);
+
+int lsddbapi_stmtReset(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, int* result);
+
+int lsddbapi_stmtStep(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, int* result);
+
+int lsddbapi_stmtBindDouble(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+							unsigned int sqlIdx, double data, int* result);
+
+int lsddbapi_stmtBindInt(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						 unsigned int sqlIdx, int data, int* result);
+
+int lsddbapi_stmtBindInt64(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						   unsigned int sqlIdx, sqlite3_int64 data, int* result);
+
+int lsddbapi_stmtBindNull(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						  unsigned int sqlIdx, int* result);
+
+int lsddbapi_stmtBindText(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						  unsigned int sqlIdx, const char* data, int length, 
+						  void(*destructor)(void*), int* result);
+
+int lsddbapi_stmtBindText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						    unsigned int sqlIdx, const void* data, int length, 
+						    void(*destructor)(void*), int* result);
+
+int lsddbapi_stmtColDouble(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						   unsigned int colIdx, double* result);
+
+int lsddbapi_stmtColInt(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						unsigned int colIdx, int* result);
+
+int lsddbapi_stmtColInt64(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						  unsigned int colIdx, sqlite3_int64* result);
+
+int lsddbapi_stmtColText(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						 unsigned int colIdx, const unsigned char** result);
+
+int lsddbapi_stmtColText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						   unsigned int colIdx, const void** result);
+
 
 
 #endif // DBOPS_H

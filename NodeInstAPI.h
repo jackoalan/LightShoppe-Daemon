@@ -36,7 +36,6 @@ int plugininst_addInstOutput(struct LSD_SceneNodeInst const * inst,
                              int typeId,
                              const char* name,
                              int bfFuncIdx,
-                             int biFuncIdx,
                              int bpFuncIdx);
 
 #endif // NODEINSTAPI_H

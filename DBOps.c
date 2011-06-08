@@ -1112,17 +1112,24 @@ int lsddb_structNodeInstInputArr(struct LSD_SceneNodeInst* nodeInst){
 // the class's instDataSize member.
 
 static const char STRUCT_NODE_INST_ARR_CHECK_ENABLE[] =
-"SELECT ScenePlugin.enabled FROM ScenePlugin,SceneNodeClass WHERE "
+"SELECT ScenePlugin.enabled,ScenePlugin.id FROM ScenePlugin,SceneNodeClass WHERE "
 "ScenePlugin.id=SceneNodeClass.pluginId AND SceneNodeClass.id=?1";
 static sqlite3_stmt* STRUCT_NODE_INST_ARR_CHECK_ENABLE_S;
 
 // Get Node's plugin enable status
 int lsddb_checkClassEnabled(int classId){
     int nodeEnabled = 0;
+    int pluginId = -1;
     sqlite3_reset(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S);
     sqlite3_bind_int(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S,1,classId);
-    if(sqlite3_step(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S)==SQLITE_ROW)
+    if(sqlite3_step(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S)==SQLITE_ROW){
         nodeEnabled = sqlite3_column_int(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S,0);
+        pluginId = sqlite3_column_int(STRUCT_NODE_INST_ARR_CHECK_ENABLE_S,1);
+    }
+    
+    // Exception: all classes of core plugin (1) are enabled by default
+    if(pluginId == 1)
+        return 1;
     
     return nodeEnabled;
 }
@@ -1782,9 +1789,9 @@ int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
 		*ptrToBind = targetPtr;
 	}
 	
-	if(nc->nodeInitFunc){
-		if(nc->nodeInitFunc(targetPtr,targetPtr->data)<0){
-			fprintf(stderr,"Node Init failer!\n");
+	if(nc->nodeMakeFunc){
+		if(nc->nodeMakeFunc(targetPtr,targetPtr->data)<0){
+			fprintf(stderr,"Node Make failer!\n");
 		}
 	}
 	
@@ -3759,9 +3766,552 @@ int lsddb_deletePatchChannel(int chanId){
 	return 0;
 }
 
+// Plugin API backend below
+
+// Table creation/deletion
+
+static const char API_GET_PLUGIN_NAME[] = 
+"SELECT pluginDomain FROM ScenePlugin WHERE id=?1";
+static sqlite3_stmt* API_GET_PLUGIN_NAME_S;
+
+static const char API_CHECK_PLUGIN_TABLE_REC[] =
+"SELECT tableName FROM ScenePluginTable WHERE pluginId=?1 AND tableName=?2";
+static sqlite3_stmt* API_CHECK_PLUGIN_TABLE_REC_S;
+
+static const char API_INSERT_PLUGIN_TABLE_REC[] = 
+"INSERT INTO ScenePluginTable (pluginId,tableName) VALUES (?1,?2)";
+static sqlite3_stmt* API_INSERT_PLUGIN_TABLE_REC_S;
+
+static const char API_CREATE_PLUGIN_TABLE[] = 
+"CREATE TABLE IF NOT EXISTS ?1 (?2)";
+static sqlite3_stmt* API_CREATE_PLUGIN_TABLE_S;
+
+
+// Check to see if table exists already
+int lsddbapi_verifyTable(int pluginId, const char* subName, 
+                         const unsigned char** bindName){
+    if(!subName){ // Improper use, no table
+        if(bindName)
+            *bindName = NULL;
+        return 0;
+    }
+    
+    // We need the name of the plugin in order to prevent name collisions
+    const unsigned char* pluginName;
+    sqlite3_reset(API_GET_PLUGIN_NAME_S);
+    sqlite3_bind_int(API_GET_PLUGIN_NAME_S,1,pluginId);
+    if(sqlite3_step(API_GET_PLUGIN_NAME_S) == SQLITE_ROW){
+        pluginName = sqlite3_column_text(API_GET_PLUGIN_NAME_S,0);
+    }
+    else{ // Plugin doesn't exist, therefore no table
+        fprintf(stderr,"Unable to create plugin table, plugin non existant\n");
+        if(bindName)
+            *bindName = NULL;
+        return 0;
+    }
+    
+    // Using the plugin name, we make a composite name for our individual table
+    char tableName[256];
+    snprintf(tableName,256,"%s_%s",pluginName,subName);
+    
+    // Now we check to see if the table has been registered in the past
+    // based on its name and pluginId
+    sqlite3_reset(API_CHECK_PLUGIN_TABLE_REC_S);
+    sqlite3_bind_int(API_CHECK_PLUGIN_TABLE_REC_S,1,pluginId);
+    sqlite3_bind_text(API_CHECK_PLUGIN_TABLE_REC_S,2,tableName,-1,NULL);
+    if(sqlite3_step(API_CHECK_PLUGIN_TABLE_REC_S) == SQLITE_ROW){ // Already exists
+        if(bindName)
+            *bindName = sqlite3_column_text(API_CHECK_PLUGIN_TABLE_REC_S,0);
+        return 1;
+    }
+    else{ // Table doesn't exist; string binding will be set to plugin name for convenience
+        if(bindName)
+            *bindName = pluginName;
+        return 0;
+    }
+}
+
+int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs){
+    if(!subName || !colDefs)
+        return -1;
+    
+    const unsigned char* pluginName;
+    if(lsddbapi_verifyTable(pluginId,subName,&pluginName)){ // Already exists
+        return 0;
+    }
+    else if(pluginName){ // Doesn't exist (but plugin does); make it!
+        
+        // Using the plugin name, we make a composite name for our individual table
+        char tableName[256];
+        snprintf(tableName,256,"%s_%s",pluginName,subName);
+        
+        sqlite3_reset(API_CREATE_PLUGIN_TABLE_S);
+        sqlite3_bind_text(API_CREATE_PLUGIN_TABLE_S,1,tableName,-1,NULL);
+        sqlite3_bind_text(API_CREATE_PLUGIN_TABLE_S,2,colDefs,-1,NULL);
+        if(sqlite3_step(API_CREATE_PLUGIN_TABLE_S) == SQLITE_DONE){
+            // Successful creation, make record
+            sqlite3_reset(API_INSERT_PLUGIN_TABLE_REC_S);
+            sqlite3_bind_int(API_INSERT_PLUGIN_TABLE_REC_S,1,pluginId);
+            sqlite3_bind_text(API_INSERT_PLUGIN_TABLE_REC_S,2,tableName,-1,NULL);
+            if(sqlite3_step(API_INSERT_PLUGIN_TABLE_REC_S) == SQLITE_DONE)
+                return 0;
+            else{
+                fprintf(stderr,"Unable to insert table record\n");
+                return -1;
+            }
+        }
+        else{
+            fprintf(stderr,"Unable to create table\n");
+            return -1;
+        }
+    }
+    else{
+        fprintf(stderr,"Plugin doesn't seem to exist for table creation\n");
+        return -1;
+    }
+}
+
+// All prep functions below make a statement object,
+// stores it internally, and provides an index to retrieve it later
+
+int lsddbapi_prepSelect(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
+                        const char* tblName, const char* colPortion,
+                        const char* wherePortion){
+    if(!pluginObj || !stmtIdxBind || !tblName || !colPortion || !wherePortion)
+        return -1;
+    
+    // First verify the table being accessed
+    const unsigned char* fullTableName;
+    if(!lsddbapi_verifyTable(pluginObj->dbId,tblName,&fullTableName)){
+        fprintf(stderr,"Table being accessed doesn't exist, unable to prep\n");
+        return -1;
+    }
+    
+    // Compose the statement source
+    char stmtSource[256];
+    snprintf(stmtSource,256,"SELECT %s FROM %s WHERE %s",colPortion,fullTableName,wherePortion);
+    
+    // Now prep the statement
+    sqlite3_stmt* newStmt;
+    if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
+        fprintf(stderr,"Sqlite was unable to prep a statement\n");
+        return -1;
+    }
+    
+    
+    // Insert the statement object into internal array
+    size_t newIdx;
+    struct LSD_SceneDBStmt* newStmtObj;
+    if(insertElem(getArr_lsdDBStmtArr(),&newIdx,(void**)&newStmtObj)<0){
+        fprintf(stderr,"Unable to insert new statement object into array\n");
+        return -1;
+    }
+    
+    newStmtObj->pluginPtr = pluginObj;
+    newStmtObj->stmt = newStmt;
+    
+    *stmtIdxBind = newIdx;
+    
+    return 0;
+}
+
+int lsddbapi_prepInsert(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
+                        const char* tblName, const char* colPortion,
+                        const char* valuesPortion){
+    if(!pluginObj || !stmtIdxBind || !tblName || !colPortion || !valuesPortion)
+        return -1;
+    
+    // First verify the table being accessed
+    const unsigned char* fullTableName;
+    if(!lsddbapi_verifyTable(pluginObj->dbId,tblName,&fullTableName)){
+        fprintf(stderr,"Table being accessed doesn't exist, unable to prep\n");
+        return -1;
+    }
+    
+    // Compose the statement source
+    char stmtSource[256];
+    snprintf(stmtSource,256,"INSERT INTO %s (%s) VALUES (%s)",fullTableName,colPortion,valuesPortion);
+    
+    // Now prep the statement
+    sqlite3_stmt* newStmt;
+    if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
+        fprintf(stderr,"Sqlite was unable to prep a statement\n");
+        return -1;
+    }
+    
+    
+    // Insert the statement object into internal array
+    size_t newIdx;
+    struct LSD_SceneDBStmt* newStmtObj;
+    if(insertElem(getArr_lsdDBStmtArr(),&newIdx,(void**)&newStmtObj)<0){
+        fprintf(stderr,"Unable to insert new statement object into array\n");
+        return -1;
+    }
+    
+    newStmtObj->pluginPtr = pluginObj;
+    newStmtObj->stmt = newStmt;
+    
+    *stmtIdxBind = newIdx;
+    
+    return 0;
+}
+
+int lsddbapi_prepUpdate(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
+                        const char* tblName, const char* setPortion,
+                        const char* wherePortion){
+    if(!pluginObj || !stmtIdxBind || !tblName || !setPortion || !wherePortion)
+        return -1;
+    
+    // First verify the table being accessed
+    const unsigned char* fullTableName;
+    if(!lsddbapi_verifyTable(pluginObj->dbId,tblName,&fullTableName)){
+        fprintf(stderr,"Table being accessed doesn't exist, unable to prep\n");
+        return -1;
+    }
+    
+    // Compose the statement source
+    char stmtSource[256];
+    snprintf(stmtSource,256,"UPDATE %s SET %s WHERE %s",fullTableName,setPortion,wherePortion);
+    
+    // Now prep the statement
+    sqlite3_stmt* newStmt;
+    if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
+        fprintf(stderr,"Sqlite was unable to prep a statement\n");
+        return -1;
+    }
+    
+    
+    // Insert the statement object into internal array
+    size_t newIdx;
+    struct LSD_SceneDBStmt* newStmtObj;
+    if(insertElem(getArr_lsdDBStmtArr(),&newIdx,(void**)&newStmtObj)<0){
+        fprintf(stderr,"Unable to insert new statement object into array\n");
+        return -1;
+    }
+    
+    newStmtObj->pluginPtr = pluginObj;
+    newStmtObj->stmt = newStmt;
+    
+    *stmtIdxBind = newIdx;
+    
+    return 0;
+}
+
+int lsddbapi_prepDelete(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
+                        const char* tblName, const char* wherePortion){
+    if(!pluginObj || !stmtIdxBind || !tblName || !wherePortion)
+        return -1;
+    
+    // First verify the table being accessed
+    const unsigned char* fullTableName;
+    if(!lsddbapi_verifyTable(pluginObj->dbId,tblName,&fullTableName)){
+        fprintf(stderr,"Table being accessed doesn't exist, unable to prep\n");
+        return -1;
+    }
+    
+    // Compose the statement source
+    char stmtSource[256];
+    snprintf(stmtSource,256,"DELETE FROM %s WHERE %s",fullTableName,wherePortion);
+    
+    // Now prep the statement
+    sqlite3_stmt* newStmt;
+    if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
+        fprintf(stderr,"Sqlite was unable to prep a statement\n");
+        return -1;
+    }
+    
+    
+    // Insert the statement object into internal array
+    size_t newIdx;
+    struct LSD_SceneDBStmt* newStmtObj;
+    if(insertElem(getArr_lsdDBStmtArr(),&newIdx,(void**)&newStmtObj)<0){
+        fprintf(stderr,"Unable to insert new statement object into array\n");
+        return -1;
+    }
+    
+    newStmtObj->pluginPtr = pluginObj;
+    newStmtObj->stmt = newStmt;
+    
+    *stmtIdxBind = newIdx;
+    
+    return 0;
+}
+
+int lsddbapi_stmtReset(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, int* result){
+    // Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_reset(stmtObj->stmt);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtStep(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, int* result){
+    // Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_step(stmtObj->stmt);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtBindDouble(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+							unsigned int sqlIdx, double data, int* result){
+    // Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_bind_double(stmtObj->stmt,sqlIdx,data);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtBindInt(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						 unsigned int sqlIdx, int data, int* result){
+    // Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_bind_int(stmtObj->stmt,sqlIdx,data);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtBindInt64(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						   unsigned int sqlIdx, sqlite3_int64 data, int* result){
+    // Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_bind_int64(stmtObj->stmt,sqlIdx,data);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtBindNull(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						  unsigned int sqlIdx, int* result){
+    // Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_bind_null(stmtObj->stmt,sqlIdx);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtBindText(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						  unsigned int sqlIdx, const char* data, int length, 
+						  void(*destructor)(void*), int* result){
+    // Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_bind_text(stmtObj->stmt,sqlIdx,data,length,destructor);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtBindText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						    unsigned int sqlIdx, const void* data, int length, 
+						    void(*destructor)(void*), int* result){
+    // Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_bind_text16(stmtObj->stmt,sqlIdx,data,length,destructor);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtColDouble(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						   unsigned int colIdx, double* result){
+	// Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_column_double(stmtObj->stmt,colIdx);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtColInt(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						   unsigned int colIdx, int* result){
+	// Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_column_int(stmtObj->stmt,colIdx);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtColInt64(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						unsigned int colIdx, sqlite3_int64* result){
+	// Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_column_int64(stmtObj->stmt,colIdx);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtColText(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						  unsigned int colIdx, const unsigned char** result){
+	// Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_column_text(stmtObj->stmt,colIdx);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int lsddbapi_stmtColText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
+						 unsigned int colIdx, const void** result){
+	// Pick stmt object and verify plugin ownership
+    struct LSD_SceneDBStmt* stmtObj;
+    if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
+        fprintf(stderr,"Unable to pick stmt from array\n");
+		return -1;
+    }
+	
+	if(plugin == stmtObj->pluginPtr){
+		*result = sqlite3_column_text16(stmtObj->stmt,colIdx);
+	}
+	else{
+		fprintf(stderr,"Unable to verify ownership of stmt\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+// Remove all traces of a plugin given its id
+// Removes plugin, classes, nodes, types, tables 
+int lsddbapi_purgePlugin(int pluginId){
+    // First disable plugin
+    // remove nodes
+    // remove classes
+    // remove types
+    // remove tables
+    // remove plugin
+    return 0;
+}
 
 
 
+// General database things below
 void lsddb_reportPrepProblem(int problem){
 	fprintf(stderr,"Prep problem: %d\nDetails: %s\n",problem,sqlite3_errmsg(memdb));
 }
@@ -3943,7 +4493,11 @@ int lsddb_prepStmts(){
     PREP(DELETE_PATCH_CHANNEL,97);
 	PREP(DELETE_PATCH_CHANNEL_FACADE_OUT,98);
 
-
+	PREP(API_GET_PLUGIN_NAME,99);
+	PREP(API_CHECK_PLUGIN_TABLE_REC,100);
+	PREP(API_INSERT_PLUGIN_TABLE_REC,101);
+	PREP(API_CREATE_PLUGIN_TABLE,102);
+	
 
 	return 0;
 }
@@ -4119,6 +4673,10 @@ int lsddb_finishStmts(){
     FINAL(DELETE_PATCH_CHANNEL);
 	FINAL(DELETE_PATCH_CHANNEL_FACADE_OUT);
 
+	FINAL(API_GET_PLUGIN_NAME);
+	FINAL(API_CHECK_PLUGIN_TABLE_REC);
+	FINAL(API_INSERT_PLUGIN_TABLE_REC);
+	FINAL(API_CREATE_PLUGIN_TABLE);
 
 	return 0;
 }

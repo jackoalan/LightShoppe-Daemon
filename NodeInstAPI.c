@@ -41,7 +41,6 @@ int plugininst_addInstOutput(struct LSD_SceneNodeInst const * inst,
                              int typeId,
                              const char* name,
                              int bfFuncIdx,
-                             int biFuncIdx,
                              int bpFuncIdx){
 	
 	struct LSD_SceneNodeOutput* addedOut;
@@ -55,8 +54,6 @@ int plugininst_addInstOutput(struct LSD_SceneNodeInst const * inst,
 	
 	if(bfFuncIdx>=0 && nc->bfFuncTbl[bfFuncIdx])
 		addedOut->bufferFunc = nc->bfFuncTbl[bfFuncIdx];
-	//if(bufferIdxFunc)
-		//addedOut->bufferIdxFunc = bufferIdxFunc;
 	if(bpFuncIdx>=0 && nc->bpFuncTbl[bpFuncIdx])
 		addedOut->bufferPtr = nc->bpFuncTbl[bpFuncIdx];
 	

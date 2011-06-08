@@ -70,9 +70,10 @@ void* node_bufferOutput(struct LSD_SceneNodeOutput* output);
 
 struct LSD_SceneNodeClass {
     int dbId;
-    int(*nodeInitFunc)(struct LSD_SceneNodeInst const *, void* instData);
+    int(*nodeMakeFunc)(struct LSD_SceneNodeInst const *, void* instData);
 	int(*nodeRestoreFunc)(struct LSD_SceneNodeInst const *, void* instData);
     void(*nodeCleanFunc)(struct LSD_SceneNodeInst const *, void* instData);
+	void(*nodeDeleteFunc)(struct LSD_SceneNodeInst const *, void* instData);
 	size_t instDataSize;
 	bfFunc* bfFuncTbl;
 	bpFunc* bpFuncTbl;

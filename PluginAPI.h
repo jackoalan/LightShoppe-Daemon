@@ -73,9 +73,10 @@ struct LSD_ScenePluginHEAD {
 
 int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
                                  struct LSD_SceneNodeClass** ptrToBind,
-                                 int(*nodeInitFunc)(struct LSD_SceneNodeInst const *, void* instData),
+                                 int(*nodeMakeFunc)(struct LSD_SceneNodeInst const *, void* instData),
 								 int(*nodeRestoreFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  void(*nodeCleanFunc)(struct LSD_SceneNodeInst const *, void* instData),
+                                 void(*nodeDeleteFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  size_t nodeDataSize,
                                  const char* name, const char* desc,
 								 int classIdx,
@@ -96,96 +97,76 @@ int plugininit_createTable(struct LSD_ScenePlugin const * key,
                                   const char* coldef);
 
 
-int plugininit_createIndex(struct LSD_ScenePlugin const * key,
-                                  const char* name,
-                                  const char* tblName,
-                                  const char* coldef);
-
-int pluginclean_dropTable(struct LSD_ScenePlugin const * key,
-                                 const char* tblName);
 
 // Database statement Prep
 
-int plugininit_prepSelect(struct LSD_ScenePlugin const * key,
-                               unsigned int* stmtBinding,
-                               const char* tblName,
-                               const char* wherePortion);
+int plugindb_prepSelect(struct LSD_ScenePlugin const * key,
+                        unsigned int* stmtBinding,
+                        const char* tblName,
+                        const char* colPortion,
+                        const char* wherePortion);
 
-int plugininit_prepInsert(struct LSD_ScenePlugin const * key,
-                               unsigned int* stmtBinding,
-                               const char* tblName,
-                               const char* valuesPortion);
+int plugindb_prepInsert(struct LSD_ScenePlugin const * key,
+                        unsigned int* stmtBinding,
+                        const char* tblName,
+                        const char* colPortion,
+                        const char* valuesPortion);
 
-int plugininit_prepUpdate(struct LSD_ScenePlugin const * key,
-                               unsigned int* stmtBinding,
-                               const char* tblName,
-                               const char* setPortion);
+int plugindb_prepUpdate(struct LSD_ScenePlugin const * key,
+                        unsigned int* stmtBinding,
+                        const char* tblName,
+                        const char* setPortion,
+                        const char* wherePortion);
 
-int plugininit_prepDelete(struct LSD_ScenePlugin const * key,
-                               unsigned int* stmtBinding,
-                               const char* tblName,
-                               const char* wherePortion);
+int plugindb_prepDelete(struct LSD_ScenePlugin const * key,
+                        unsigned int* stmtBinding,
+                        const char* tblName,
+                        const char* wherePortion);
 
-// Database Flow Control
+// Database Control Flow
 
-int plugindb_reset(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding);
+int plugindb_reset(struct LSD_ScenePlugin const * key, unsigned int stmtBinding);
 
-int plugindb_step(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding);
+int plugindb_step(struct LSD_ScenePlugin const * key, unsigned int stmtBinding);
 
 // Database binding functions
 
-int plugindb_bind_blob(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                              int sqlBinding, const void* data, int length,
-                              void(*destructor)(void*));
 
-int plugindb_bind_double(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                              int sqlBinding, double data);
+int plugindb_bind_double(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                         unsigned int sqlBinding, double data);
 
-int plugindb_bind_int(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                int sqlBinding, int data);
+int plugindb_bind_int(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                      unsigned int sqlBinding, int data);
 
-int plugindb_bind_int64(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                             int sqlBinding, sqlite3_int64 data);
+int plugindb_bind_int64(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                        unsigned int sqlBinding, sqlite3_int64 data);
 
-int plugindb_bind_null(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                              int sqlBinding);
+int plugindb_bind_null(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                       unsigned int sqlBinding);
 
-int plugindb_bind_text(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                              int sqlBinding, const char* data, int length,
-                              void(*destructor)(void*));
+int plugindb_bind_text(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                       unsigned int sqlBinding, const char* data, int length,
+                       void(*destructor)(void*));
 
-int plugindb_bind_text16(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                int sqlBinding, const void* data, int length,
-                                void(*destructor)(void*));
+int plugindb_bind_text16(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                         unsigned int sqlBinding, const void* data, int length,
+                         void(*destructor)(void*));
 
-// Used to free memory associated with prepared statements
-int plugindb_finalizeStmt(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding);
 
 // Database column return functions
 
-const void* plugindb_column_blob(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                int colIdx);
+double plugindb_column_double(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                              int colIdx);
 
-int plugindb_column_bytes(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                 int colIdx);
+int plugindb_column_int(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                        int colIdx);
 
-int plugindb_column_bytes16(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                   int colIdx);
-
-double plugindb_column_double(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                  int colIdx);
-
-int plugindb_column_int(struct LSD_ScenePlugin const * key,unsigned int* stmtBinding,
-                               int colIdx);
-
-sqlite3_int64 plugindb_column_int64(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                           int colIdx);
+sqlite3_int64 plugindb_column_int64(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                                    int colIdx);
 
 const unsigned char* plugindb_column_text(struct LSD_ScenePlugin const * key,
-                                                 unsigned int* stmtBinding,
-                                                 int colIdx);
+                                          unsigned int stmtBinding, int colIdx);
 
-const void* plugindb_column_text16(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                          int colIdx);
-
+const void* plugindb_column_text16(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                                   int colIdx);
 #endif // PLUGINAPI_H

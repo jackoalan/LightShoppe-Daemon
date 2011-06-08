@@ -26,7 +26,6 @@
 
 #include "../../PluginAPI.h"
 #include "../../NodeInstAPI.h"
-#include "../../DBOps.h"
 #include "../../CorePlugin.h"
 #include "../../cJSON.h"
 
@@ -85,27 +84,27 @@ static const bpFunc bpFuncs[] =
 int faderNodeInit(struct LSD_SceneNodeInst const * inst, void* instData){
 	int rgbType = core_getRGBTypeID();
 	
-	if(plugininst_addInstOutput(inst,rgbType,"Colour One",0,-1,0)<0){
+	if(plugininst_addInstOutput(inst,rgbType,"Colour One",0,0)<0){
 		fprintf(stderr,"Problem while adding instOutput in test node constructor\n");
 		return -1;
 	}
 	
-	if(plugininst_addInstOutput(inst,rgbType,"Colour Two",0,-1,1)<0){
+	if(plugininst_addInstOutput(inst,rgbType,"Colour Two",0,1)<0){
 		fprintf(stderr,"Problem while adding instOutput in test node constructor\n");
 		return -1;
 	}
 	
-	if(plugininst_addInstOutput(inst,rgbType,"Colour Three",0,-1,2)<0){
+	if(plugininst_addInstOutput(inst,rgbType,"Colour Three",0,2)<0){
 		fprintf(stderr,"Problem while adding instOutput in test node constructor\n");
 		return -1;
 	}
 	
-	if(plugininst_addInstOutput(inst,rgbType,"Colour Four",0,-1,3)<0){
+	if(plugininst_addInstOutput(inst,rgbType,"Colour Four",0,3)<0){
 		fprintf(stderr,"Problem while adding instOutput in test node constructor\n");
 		return -1;
 	}
 	
-	if(plugininst_addInstOutput(inst,rgbType,"Colour Five",0,-1,4)<0){
+	if(plugininst_addInstOutput(inst,rgbType,"Colour Five",0,4)<0){
 		fprintf(stderr,"Problem while adding instOutput in test node constructor\n");
 		return -1;
 	}
@@ -113,7 +112,16 @@ int faderNodeInit(struct LSD_SceneNodeInst const * inst, void* instData){
 	return 0;
 }
 
+int faderNodeRestore(struct LSD_SceneNodeInst const * inst, void* instData){
+    return 0;
+}
+
 void faderNodeClean(struct LSD_SceneNodeInst const * inst, void* instData){
+    
+}
+
+void faderNodeDelete(struct LSD_SceneNodeInst const * inst, void* instData){
+    
 }
 
 void faderRPCHandler(cJSON* in, cJSON* out){
@@ -181,7 +189,9 @@ int faderPluginInit(struct LSD_ScenePlugin const * plugin, cJSON const * confjso
 	}
 	
     // Register fader class
-    if(plugininit_registerNodeClass(plugin,&faderClass,faderNodeInit,NULL,faderNodeClean,0,"Fader","Fader Class",0,bfFuncs,bpFuncs)<0){
+    if(plugininit_registerNodeClass(plugin,&faderClass,faderNodeInit,faderNodeRestore,
+									faderNodeClean,faderNodeDelete,0,"Fader","Fader Class",
+									0,bfFuncs,bpFuncs)<0){
         fprintf(stderr, "Error while registering fader class\n");
         return -1;
     }

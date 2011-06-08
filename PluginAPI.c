@@ -57,9 +57,10 @@ int lsdapi_setState(enum API_STATE state){
 
 int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
                                  struct LSD_SceneNodeClass** ptrToBind,
-                                 int(*nodeInitFunc)(struct LSD_SceneNodeInst const *, void* instData),
+                                 int(*nodeMakeFunc)(struct LSD_SceneNodeInst const *, void* instData),
 								 int(*nodeRestoreFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  void(*nodeCleanFunc)(struct LSD_SceneNodeInst const *, void* instData),
+                                 void(*nodeDeleteFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  size_t nodeDataSize,
                                  const char* name, const char* desc,
 								 int classIdx,
@@ -67,7 +68,7 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
     if(apistate != STATE_PINIT)
         return -10;
     
-    if(!key || !ptrToBind || !nodeInitFunc || !nodeCleanFunc || !name){
+    if(!key || !ptrToBind || !nodeMakeFunc || !nodeRestoreFunc || !nodeCleanFunc || !nodeDeleteFunc || !name){
         fprintf(stderr,"Improper use of registerNodeClass(), all args must be filled\n");
         return -1;
     }
@@ -80,9 +81,10 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
         return -1;
     }
     
-    tempClass->nodeInitFunc = nodeInitFunc;
+    tempClass->nodeMakeFunc = nodeMakeFunc;
 	tempClass->nodeRestoreFunc = nodeRestoreFunc;
     tempClass->nodeCleanFunc = nodeCleanFunc;
+	tempClass->nodeDeleteFunc = nodeDeleteFunc;
     tempClass->instDataSize = nodeDataSize;
 	tempClass->bfFuncTbl = bfFuncTbl;
 	tempClass->bpFuncTbl = bpFuncTbl;
@@ -131,39 +133,33 @@ int plugininit_createTable(struct LSD_ScenePlugin const * key,
                            const char* coldef){
     if(apistate != STATE_PINIT)
         return -10;
-    return 0;
-
-}
-
-
-int plugininit_createIndex(struct LSD_ScenePlugin const * key,
-                           const char* name,
-                           const char* tblName,
-                           const char* coldef){
-    if(apistate != STATE_PINIT)
-        return -10;
+    
+    if(lsddbapi_createTable(key->dbId, name, coldef)<0){
+        fprintf(stderr,"error while creating table in plugin API\n");
+        return -1;
+    }
     
     return 0;
-
 }
 
-int pluginclean_dropTable(struct LSD_ScenePlugin const * key,
-                          const char* tblName){
-    if(apistate != STATE_PCLEAN)
-        return -10;
-    
-    return 0;
 
-}
 
 // Database statement Prep
 
 int plugindb_prepSelect(struct LSD_ScenePlugin const * key,
                         unsigned int* stmtBinding,
                         const char* tblName,
+                        const char* colPortion,
                         const char* wherePortion){
     if(apistate != STATE_PINIT)
         return -10;
+    
+    if(lsddbapi_prepSelect(key, stmtBinding, 
+                           tblName, colPortion, wherePortion)<0){
+        fprintf(stderr,"Error while prepping SELECT in plugin API\n");
+        return -1;
+    }
+    
     return 0;
 
 }
@@ -171,9 +167,16 @@ int plugindb_prepSelect(struct LSD_ScenePlugin const * key,
 int plugindb_prepInsert(struct LSD_ScenePlugin const * key,
                         unsigned int* stmtBinding,
                         const char* tblName,
+                        const char* colPortion,
                         const char* valuesPortion){
     if(apistate != STATE_PINIT)
         return -10;
+    
+    if(lsddbapi_prepInsert(key, stmtBinding, 
+                           tblName, colPortion, valuesPortion)<0){
+        fprintf(stderr,"Error while prepping INSERT in plugin API\n");
+        return -1;
+    }
     
     return 0;
 
@@ -182,9 +185,16 @@ int plugindb_prepInsert(struct LSD_ScenePlugin const * key,
 int plugindb_prepUpdate(struct LSD_ScenePlugin const * key,
                         unsigned int* stmtBinding,
                         const char* tblName,
-                        const char* setPortion){
+                        const char* setPortion,
+                        const char* wherePortion){
     if(apistate != STATE_PINIT)
         return -10;
+    
+    if(lsddbapi_prepUpdate(key, stmtBinding, 
+                           tblName, setPortion, wherePortion)<0){
+        fprintf(stderr,"Error while prepping UPDATE in plugin API\n");
+        return -1;
+    }
     
     return 0;
 
@@ -197,123 +207,176 @@ int plugindb_prepDelete(struct LSD_ScenePlugin const * key,
     if(apistate != STATE_PINIT)
         return -10;
     
+    if(lsddbapi_prepDelete(key, stmtBinding, tblName, wherePortion)<0){
+        fprintf(stderr,"Error while prepping DELETE in plugin API\n");
+        return -1;
+    }
+    
     return 0;
 
 }
 
 // Database Control Flow
 
-int plugindb_reset(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding){
-    return 0;
-
+int plugindb_reset(struct LSD_ScenePlugin const * key, unsigned int stmtBinding){
+    
+	int result;
+    if(lsddbapi_stmtReset(key, stmtBinding, &result)<0){
+        fprintf(stderr,"Unable to reset stmt\n");
+        return -1;
+    }
+    
+    return result;
 }
 
-int plugindb_step(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding){
-    return 0;
-
+int plugindb_step(struct LSD_ScenePlugin const * key, unsigned int stmtBinding){
+	
+	int result;
+	if(lsddbapi_stmtStep(key, stmtBinding, &result)<0){
+        fprintf(stderr,"Unable to step stmt\n");
+        return -1;
+    }
+	
+    return result;
 }
 
 // Database binding functions
 
-int plugindb_bind_blob(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                       int sqlBinding, const void* data, int length,
+
+int plugindb_bind_double(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                         unsigned int sqlBinding, double data){
+	
+	int result;
+	if(lsddbapi_stmtBindDouble(key, stmtBinding, sqlBinding, data, &result)<0){
+        fprintf(stderr,"Unable to bind double to stmt\n");
+        return -1;
+    }
+	
+    return result;
+}
+
+int plugindb_bind_int(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                      unsigned int sqlBinding, int data){
+	
+	int result;
+	if(lsddbapi_stmtBindInt(key, stmtBinding, sqlBinding, data, &result)<0){
+        fprintf(stderr,"Unable to bind int to stmt\n");
+        return -1;
+    }
+	
+    return result;
+}
+
+int plugindb_bind_int64(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                        unsigned int sqlBinding, sqlite3_int64 data){
+	
+	int result;
+	if(lsddbapi_stmtBindInt64(key, stmtBinding, sqlBinding, data, &result)<0){
+        fprintf(stderr,"Unable to bind int64 to stmt\n");
+        return -1;
+    }
+	
+    return result;
+}
+
+int plugindb_bind_null(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                       unsigned int sqlBinding){
+	
+	int result;
+	if(lsddbapi_stmtBindNull(key, stmtBinding, sqlBinding, &result)<0){
+        fprintf(stderr,"Unable to bind null to stmt\n");
+        return -1;
+    }
+	
+    return result;
+}
+
+int plugindb_bind_text(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                       unsigned int sqlBinding, const char* data, int length,
                        void(*destructor)(void*)){
-    return 0;
-
+	
+	int result;
+	if(lsddbapi_stmtBindText(key, stmtBinding, sqlBinding, data, length, destructor, &result)<0){
+        fprintf(stderr,"Unable to bind text to stmt\n");
+        return -1;
+    }
+	
+    return result;
 }
 
-int plugindb_bind_double(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                         int sqlBinding, double data){
-    return 0;
-
-}
-
-int plugindb_bind_int(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                      int sqlBinding, int data){
-    return 0;
-
-}
-
-int plugindb_bind_int64(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                        int sqlBinding, sqlite3_int64 data){
-    return 0;
-
-}
-
-int plugindb_bind_null(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                       int sqlBinding){
-    return 0;
-
-}
-
-int plugindb_bind_text(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                       int sqlBinding, const char* data, int length,
-                       void(*destructor)(void*)){
-    return 0;
-
-}
-
-int plugindb_bind_text16(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                         int sqlBinding, const void* data, int length,
+int plugindb_bind_text16(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
+                         unsigned int sqlBinding, const void* data, int length,
                          void(*destructor)(void*)){
-    return 0;
-
+	
+	int result;
+	if(lsddbapi_stmtBindText16(key, stmtBinding, sqlBinding, data, length, destructor, &result)<0){
+        fprintf(stderr,"Unable to bind text16 to stmt\n");
+        return -1;
+    }
+	
+    return result;
 }
 
-// Used to free memory associated with prepared statements
-int plugindb_finalizeStmt(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding){
-    if(apistate != STATE_PCLEAN)
-        return -10;
-    return 0;
-
-}
 
 // Database column return functions
 
-/*const void* plugindb_column_blob(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                                 int colIdx){
-    return 0;
-
-}*/
-
-int plugindb_column_bytes(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                          int colIdx){
-    return 0;
-
-}
-
-int plugindb_column_bytes16(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
-                            int colIdx){
-    return 0;
-
-}
-
-double plugindb_column_double(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
+double plugindb_column_double(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
                               int colIdx){
-    return 0;
-
+	
+	double result;
+	if(lsddbapi_stmtColDouble(key, stmtBinding, colIdx, &result)<0){
+        fprintf(stderr,"Unable to get column from stmt\n");
+        return 0.0;
+    }
+	
+    return result;
 }
 
-int plugindb_column_int(struct LSD_ScenePlugin const * key,unsigned int* stmtBinding,
+int plugindb_column_int(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
                         int colIdx){
-    return 0;
-
+	
+	int result;
+	if(lsddbapi_stmtColInt(key, stmtBinding, colIdx, &result)<0){
+        fprintf(stderr,"Unable to get column from stmt\n");
+        return 0;
+    }
+	
+    return result;
 }
 
-sqlite3_int64 plugindb_column_int64(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
+sqlite3_int64 plugindb_column_int64(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
                                     int colIdx){
-    return 0;
-
+	
+	sqlite3_int64 result;
+	if(lsddbapi_stmtColInt64(key, stmtBinding, colIdx, &result)<0){
+        fprintf(stderr,"Unable to get column from stmt\n");
+        return 0;
+    }
+	
+    return result;
 }
 
-/*const unsigned char* plugindb_column_text(struct LSD_ScenePlugin const * key,
-                                          unsigned int* stmtBinding,
-                                          int colIdx){
+const unsigned char* plugindb_column_text(struct LSD_ScenePlugin const * key,
+                                          unsigned int stmtBinding, int colIdx){
+	
+	const unsigned char* result;
+	if(lsddbapi_stmtColText(key, stmtBinding, colIdx, &result)<0){
+        fprintf(stderr,"Unable to get column from stmt\n");
+        return NULL;
+    }
+	
+    return result;
+}
 
-}*/
-
-/*const void* plugindb_column_text16(struct LSD_ScenePlugin const * key, unsigned int* stmtBinding,
+const void* plugindb_column_text16(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
                                    int colIdx){
-    
-}*/
+	
+	const void* result;
+	if(lsddbapi_stmtColText16(key, stmtBinding, colIdx, &result)<0){
+        fprintf(stderr,"Unable to get column from stmt\n");
+        return NULL;
+    }
+	
+    return result;
+}
 
