@@ -3782,10 +3782,6 @@ static const char API_INSERT_PLUGIN_TABLE_REC[] =
 "INSERT INTO ScenePluginTable (pluginId,tableName) VALUES (?1,?2)";
 static sqlite3_stmt* API_INSERT_PLUGIN_TABLE_REC_S;
 
-static const char API_CREATE_PLUGIN_TABLE[] = 
-"CREATE TABLE IF NOT EXISTS ?1 (?2)";
-static sqlite3_stmt* API_CREATE_PLUGIN_TABLE_S;
-
 
 // Check to see if table exists already
 int lsddbapi_verifyTable(int pluginId, const char* subName, 
@@ -3842,13 +3838,20 @@ int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs)
     else if(pluginName){ // Doesn't exist (but plugin does); make it!
         
         // Using the plugin name, we make a composite name for our individual table
-        char tableName[256];
-        snprintf(tableName,256,"%s_%s",pluginName,subName);
+		char tableName[256];
+		snprintf(tableName,256,"%s_%s",pluginName,subName);
+        char tableStmt[512];
+        snprintf(tableStmt,512,"CREATE TABLE IF NOT EXISTS %s (%s);",tableName,colDefs);
+		
+		// Ensure there is only one semicolon to prevent SQL injection attacks
+		if(strchr(strchr(tableStmt,';'),';')){
+			fprintf(stderr,"Two or more semicolons were detected in table creation statement, aborting\n");
+			return -1;
+		}
         
-        sqlite3_reset(API_CREATE_PLUGIN_TABLE_S);
-        sqlite3_bind_text(API_CREATE_PLUGIN_TABLE_S,1,tableName,-1,NULL);
-        sqlite3_bind_text(API_CREATE_PLUGIN_TABLE_S,2,colDefs,-1,NULL);
-        if(sqlite3_step(API_CREATE_PLUGIN_TABLE_S) == SQLITE_DONE){
+		char* createErr;
+		sqlite3_exec(memdb,tableStmt,NULL,NULL,&createErr);
+        if(!createErr){
             // Successful creation, make record
             sqlite3_reset(API_INSERT_PLUGIN_TABLE_REC_S);
             sqlite3_bind_int(API_INSERT_PLUGIN_TABLE_REC_S,1,pluginId);
@@ -3861,7 +3864,8 @@ int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs)
             }
         }
         else{
-            fprintf(stderr,"Unable to create table\n");
+            fprintf(stderr,"Unable to create table: %s\n",createErr);
+			sqlite3_free(createErr);
             return -1;
         }
     }
@@ -4496,7 +4500,6 @@ int lsddb_prepStmts(){
 	PREP(API_GET_PLUGIN_NAME,99);
 	PREP(API_CHECK_PLUGIN_TABLE_REC,100);
 	PREP(API_INSERT_PLUGIN_TABLE_REC,101);
-	PREP(API_CREATE_PLUGIN_TABLE,102);
 	
 
 	return 0;
@@ -4676,7 +4679,6 @@ int lsddb_finishStmts(){
 	FINAL(API_GET_PLUGIN_NAME);
 	FINAL(API_CHECK_PLUGIN_TABLE_REC);
 	FINAL(API_INSERT_PLUGIN_TABLE_REC);
-	FINAL(API_CREATE_PLUGIN_TABLE);
 
 	return 0;
 }
