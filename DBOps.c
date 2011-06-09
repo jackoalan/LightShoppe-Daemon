@@ -428,6 +428,10 @@ static const char REMOVE_PATCH_SPACE_NODES[] =
 "SELECT id FROM SceneNodeInst WHERE patchSpaceId=?1";
 static sqlite3_stmt* REMOVE_PATCH_SPACE_NODES_S;
 
+static const char REMOVE_PATCH_SPACE_FACADES[] =
+"SELECT id FROM ScenePatchSpace WHERE parentPatchSpace=?1";
+static sqlite3_stmt* REMOVE_PATCH_SPACE_FACADES_S;
+
 static const char REMOVE_PATCH_SPACE_INS[] =
 "SELECT id FROM SceneNodeInstInput WHERE instId=?1 AND facadeBool=1";
 static sqlite3_stmt* REMOVE_PATCH_SPACE_INS_S;
@@ -443,6 +447,14 @@ int lsddb_removePatchSpace(int psid){
 	while(sqlite3_step(REMOVE_PATCH_SPACE_NODES_S)==SQLITE_ROW){
 		int nodeId = sqlite3_column_int(REMOVE_PATCH_SPACE_NODES_S,0);
 		lsddb_removeNodeInst(nodeId);
+	}
+	
+	// remove children patch spaces
+	sqlite3_reset(REMOVE_PATCH_SPACE_FACADES_S);
+	sqlite3_bind_int(REMOVE_PATCH_SPACE_FACADES_S,1,psid);
+	while(sqlite3_step(REMOVE_PATCH_SPACE_FACADES_S) == SQLITE_ROW){
+		int cpsId = sqlite3_column_int(REMOVE_PATCH_SPACE_FACADES_S,0);
+		lsddb_removePatchSpace(cpsId);
 	}
 	
 	// remove ins
@@ -2444,11 +2456,13 @@ static sqlite3_stmt* WIRE_NODES_SET_FACADE_OUT_DATA_S;
 
 // Four statements below used to ensure same patch space and both node's plugins enabled
 static const char WIRE_NODES_GET_FACADE_IN_CPS[] =
-"SELECT instId FROM SceneNodeInstInput WHERE id=?1 AND facadeBool=1";
+"SELECT SceneNodeInstInput.instId,ScenePatchSpace.parentPatchSpace FROM SceneNodeInstInput,ScenePatchSpace WHERE "
+"SceneNodeInstInput.instId=ScenePatchSpace.id AND SceneNodeInstInput.id=?1 AND SceneNodeInstInput.facadeBool=1";
 static sqlite3_stmt* WIRE_NODES_GET_FACADE_IN_CPS_S;
 
 static const char WIRE_NODES_GET_FACADE_OUT_CPS[] =
-"SELECT instId FROM SceneNodeInstOutput WHERE id=?1 AND facadeBool=1";
+"SELECT SceneNodeInstOutput.instId,ScenePatchSpace.parentPatchSpace FROM SceneNodeInstOutput,ScenePatchSpace WHERE "
+"SceneNodeInstOutput.instId=ScenePatchSpace.id AND SceneNodeInstOutput.id=?1 AND SceneNodeInstOutput.facadeBool=1";
 static sqlite3_stmt* WIRE_NODES_GET_FACADE_OUT_CPS_S;
 
 static const char WIRE_NODES_GET_IN_PS[] =
@@ -2623,9 +2637,18 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 			srcPS = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,0);
             srcClass = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,2);
 		}
-		else{
-			fprintf(stderr,"Unable to verify node output's patch space\n");
-			return -1;
+		else{ // Try connecting with facade src
+			sqlite3_reset(WIRE_NODES_GET_FACADE_OUT_CPS_S);
+			sqlite3_bind_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1,srcId);
+			if(sqlite3_step(WIRE_NODES_GET_FACADE_OUT_CPS_S)==SQLITE_ROW){
+				srcPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1);
+				srcClass = -1;
+			}
+			else{
+				fprintf(stderr,"Unable to verify node output's patch space 1\n");
+				return -1;
+			}
+			
 		}
 		
 		// Dest
@@ -2644,8 +2667,20 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 			fprintf(stderr,"Patch Spaces Do not match in wireNodes()\n");
 			return -1;
 		}
-        
-        if(!lsddb_checkClassEnabled(srcClass)){
+
+		if(srcClass == -1){ // Verify internal connection
+			sqlite3_reset(WIRE_NODES_CHECK_SRC_OUT_S);
+			sqlite3_bind_int(WIRE_NODES_CHECK_SRC_OUT_S,1,srcId);
+			int aliasedOut = -1;
+			if(sqlite3_step(WIRE_NODES_CHECK_SRC_OUT_S) == SQLITE_ROW){
+				aliasedOut = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,2);
+			}
+			if(aliasedOut <= 0){
+				fprintf(stderr,"Unable to connect wire's source; not internally connected\n");
+				return -1;
+			}
+		}
+        else if(!lsddb_checkClassEnabled(srcClass)){
             fprintf(stderr,"Unable to connect wire's source; source class disabled\n");
             return -1;
         }
@@ -2734,7 +2769,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
         srcClass = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,2);
 	}
 	else{
-		fprintf(stderr,"Unable to verify node output's patch space\n");
+		fprintf(stderr,"Unable to verify node output's patch space 2\n");
 		return -1;
 	}
 	
@@ -4333,6 +4368,7 @@ int lsddb_prepStmts(){
 	
 	PREP(REMOVE_PATCH_SPACE,2);
 	PREP(REMOVE_PATCH_SPACE_NODES,3);
+	PREP(REMOVE_PATCH_SPACE_FACADES,33);
 	PREP(REMOVE_PATCH_SPACE_INS,4);
 	PREP(REMOVE_PATCH_SPACE_OUTS,5);
 	
@@ -4512,6 +4548,7 @@ int lsddb_finishStmts(){
 	
 	FINAL(REMOVE_PATCH_SPACE);
 	FINAL(REMOVE_PATCH_SPACE_NODES);
+	FINAL(REMOVE_PATCH_SPACE_FACADES);
 	FINAL(REMOVE_PATCH_SPACE_INS);
 	FINAL(REMOVE_PATCH_SPACE_OUTS);
     
