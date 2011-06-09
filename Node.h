@@ -26,27 +26,22 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+
 struct LSD_SceneNodeOutput;
+struct LSD_SceneNodeInst;
+struct LSD_SceneNodeClass;
 
 // Function Pointer types used to port around plugin
 // functions on existing data. Located here for centrality
 typedef void(* const bfFunc)(struct LSD_SceneNodeOutput const *);
 typedef void*(* const bpFunc)(struct LSD_SceneNodeOutput const *);
 
-/*
-struct LSD_SceneDataType {
-    int dbId;
-    short isArray;
-    size_t elemSize;
-};*/
 
 struct LSD_SceneNodeInput {
     int dbId;
     int typeId;
     struct LSD_SceneNodeInst const * parentNode;
     struct LSD_SceneNodeOutput* connection;
-    void(*connectCB)(struct LSD_SceneNodeInput const * input, struct LSD_SceneNodeOutput const * connection);
-    void(*disconnectCB)(struct LSD_SceneNodeInput const * input);
 };
 
 struct LSD_SceneNodeOutput {
@@ -68,8 +63,11 @@ void node_incFrameCount();
 // Buffer wrapper func (eliminates redundant bufferings)
 void* node_bufferOutput(struct LSD_SceneNodeOutput* output);
 
+#include "PluginAPI.h"
+
 struct LSD_SceneNodeClass {
     int dbId;
+	struct LSD_ScenePlugin const * plugin;
     int(*nodeMakeFunc)(struct LSD_SceneNodeInst const *, void* instData);
 	int(*nodeRestoreFunc)(struct LSD_SceneNodeInst const *, void* instData);
     void(*nodeCleanFunc)(struct LSD_SceneNodeInst const *, void* instData);

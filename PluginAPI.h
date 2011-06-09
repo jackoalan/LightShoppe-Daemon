@@ -62,7 +62,7 @@ void destruct_ScenePlugin(void* plugin);
  * deallocation (From a restart or shutdown)
  */
 struct LSD_ScenePluginHEAD {
-    int(*initFunc)(struct LSD_ScenePlugin const * plugin, cJSON const * confjson);
+    int(*initFunc)(struct LSD_ScenePlugin const * plugin);
     void(*cleanupFunc)(struct LSD_ScenePlugin const * plugin);
 	void(*handler)(cJSON* in, cJSON* out);
 };
@@ -88,6 +88,7 @@ int plugininit_registerDataType(struct LSD_ScenePlugin const * key,
                                 const char* name, const char* desc);
 
 
+struct LSD_SceneNodeInst const * plugin_getInstById(struct LSD_ScenePlugin const * key,int nodeId,void** dataBind);
 
 
 // Initialiser's database api

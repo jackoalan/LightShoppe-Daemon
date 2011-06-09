@@ -191,6 +191,12 @@ int lsddb_jsonClassLibrary(cJSON* target);
 
 int lsddb_resolveClassFromId(struct LSD_SceneNodeClass** ptrToBind, int classId);
 
+int lsddb_resolveInstFromId(struct LSD_SceneNodeInst const ** target, int nodeId, void** dataBind);
+
+int lsddb_resolveInstFromInId(struct LSD_SceneNodeInst const ** target, int inId);
+
+int lsddb_resolveInstFromOutId(struct LSD_SceneNodeInst const ** target, int outId);
+
 int lsddb_jsonNodes(int patchSpaceId, cJSON* target);
 
 int lsddb_jsonFacade(int psId, cJSON* resp);

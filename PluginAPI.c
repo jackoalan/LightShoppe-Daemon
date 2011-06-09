@@ -81,6 +81,7 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
         return -1;
     }
     
+	tempClass->plugin = key;
     tempClass->nodeMakeFunc = nodeMakeFunc;
 	tempClass->nodeRestoreFunc = nodeRestoreFunc;
     tempClass->nodeCleanFunc = nodeCleanFunc;
@@ -123,7 +124,16 @@ int plugininit_registerDataType(struct LSD_ScenePlugin const * key,
 }
 
 
-
+struct LSD_SceneNodeInst const * plugin_getInstById(struct LSD_ScenePlugin const * key,int nodeId,void** dataBind){
+	struct LSD_SceneNodeInst const * inst;
+	if(lsddb_resolveInstFromId(&inst, nodeId, dataBind) == 0){
+		if(inst->nodeClass->plugin == key){
+			return inst;
+		}
+		fprintf(stderr,"Inst request failed ownership test\n");
+	}
+	return NULL;
+}
 
 
 // Initialiser's database api

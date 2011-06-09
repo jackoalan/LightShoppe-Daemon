@@ -88,7 +88,7 @@ static const bpFunc testBpFuncs[] =
 
 
 int testNodeMake(struct LSD_SceneNodeInst const * inst, void* instData){
-	if(plugininst_addInstOutput(inst,rgbType,"Amber Out",0,0)<0){
+	if(plugininst_addInstOutput(inst,rgbType,"Amber Out",0,0,NULL)<0){
 		fprintf(stderr,"Problem while adding instOutput in test node constructor\n");
 		return -1;
 	}
@@ -147,7 +147,7 @@ void intGenDelete(struct LSD_SceneNodeInst const * inst, void* instData){
 
 // Plugin init funcs
 
-int coreInit(struct LSD_ScenePlugin const * plugin, cJSON const * confjson){
+int coreInit(struct LSD_ScenePlugin const * plugin){
 	
     
     // Register RGB Type

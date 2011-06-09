@@ -1200,6 +1200,20 @@ int lsddb_structNodeInstArr(int patchSpaceId){
 				fprintf(stderr,"Unable to struct node's outputs in structNodeInstArr()\n");
 				return -1;
 			}
+			
+			// Allocate inst's memory
+			if(nodeInst->nodeClass->instDataSize>0){
+				nodeInst->data = malloc(nodeInst->nodeClass->instDataSize);
+				
+				if(!nodeInst->data){
+					fprintf(stderr,"Unable to allocate memory for node inst data in structNodeInstArr()\n");
+					return -1;
+				}
+			}
+			
+			// Run restore func
+			if(nodeInst->nodeClass->nodeRestoreFunc)
+				nodeInst->nodeClass->nodeRestoreFunc(nodeInst,nodeInst->data);
 		}
 	}
 	if(errcode!=SQLITE_DONE){
@@ -1807,6 +1821,12 @@ int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
 		}
 	}
 	
+	if(nc->nodeRestoreFunc){
+		if(nc->nodeRestoreFunc(targetPtr,targetPtr->data)<0){
+			fprintf(stderr,"Node Restore failer!\n");
+		}
+	}
+	
 	return 0;
 }
 
@@ -1835,6 +1855,22 @@ int lsddb_removeNodeInst(int nodeId){
 	if(sqlite3_step(REMOVE_NODE_INST_CHECK_S)==SQLITE_ROW){
 		int arrIdx = sqlite3_column_int(REMOVE_NODE_INST_CHECK_S,0);
 		
+		// Pick node, run delete, remove from array (which runs clean)
+		struct LSD_SceneNodeInst* condemnedNode;
+		
+		if(pickIdx(getArr_lsdNodeInstArr(),(void**)&condemnedNode,arrIdx)<0){
+			fprintf(stderr,"Unable to pick inst from array in removeNodeInst()\n");
+			return -1;
+		}
+		
+		if(condemnedNode->nodeClass->nodeDeleteFunc){
+			condemnedNode->nodeClass->nodeDeleteFunc(condemnedNode,condemnedNode->data);
+		}
+		
+		if(delIdx(getArr_lsdNodeInstArr(),arrIdx)<0){
+			fprintf(stderr,"Unable to remove node from array in removeNodeInst()\n");
+		}
+		
 		// Remove each inst input
 		sqlite3_reset(REMOVE_NODE_INST_GET_INS_S);
 		sqlite3_bind_int(REMOVE_NODE_INST_GET_INS_S,1,nodeId);
@@ -1853,10 +1889,6 @@ int lsddb_removeNodeInst(int nodeId){
 			lsddb_removeNodeInstOutput(outId);
 		}
 		
-		// Remove From Array
-		if(delIdx(getArr_lsdNodeInstArr(),arrIdx)<0){
-			fprintf(stderr,"Error while removing node from array in removeNodeInst()\n");
-		}
 		
 		// Remove node
 		sqlite3_reset(REMOVE_NODE_INST_DELETE_S);
@@ -2008,10 +2040,12 @@ static const char INDEX_HTML_HEAD[] =
 static const char INDEX_HTML_FOOT[] =
 "\n\t\t<!-- END PROCEDURALLY GENERATED CONTENT -->\n\n"
 "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../LSDClient.css\" />\n"
-"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../fileuploader.css\" />\n"
+"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../imageuploader/fileuploader.css\" />\n"
+"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../farbtastic/farbtastic.css\" />\n"
 "\t\t<script type=\"text/javascript\" src=\"../LSDClientIF.js\"></script>\n"
 "\t\t<script type=\"text/javascript\" src=\"../LSDClient.js\"></script>\n"
-"\t\t<script type=\"text/javascript\" src=\"../fileuploader.js\"></script>\n"
+"\t\t<script type=\"text/javascript\" src=\"../imageuploader/fileuploader.js\"></script>\n"
+"\t\t<script type=\"text/javascript\" src=\"../farbtastic/farbtastic.js\"></script>\n"
 "\t</head>\n"
 "\t<body>\n"
 "\t\t<div id=\"bg\"></div>\n"
@@ -2206,7 +2240,7 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable,
 		
 		scenePlugin->dbId = pluginId;
 		
-		if(ph->initFunc(scenePlugin,NULL)<0){ // Second argument for future JSON conf interface
+		if(ph->initFunc(scenePlugin)<0){ // Second argument for future JSON conf interface
 			fprintf(stderr,"Plugin's own init failed within pluginHeadLoader()\n");
 			return -1;
 		}
@@ -3394,6 +3428,105 @@ int lsddb_resolveClassFromId(struct LSD_SceneNodeClass** ptrToBind, int classId)
 	return 0;
 }
 
+static const char RESOLVE_INST_FROM_ID[] =
+"SELECT arrIdx FROM SceneNodeInst WHERE id=?1";
+static sqlite3_stmt* RESOLVE_INST_FROM_ID_S;
+
+int lsddb_resolveInstFromId(struct LSD_SceneNodeInst const ** target, int nodeId, void** dataBind){
+	if(!target)
+		return -1;
+	
+	sqlite3_reset(RESOLVE_INST_FROM_ID_S);
+	sqlite3_bind_int(RESOLVE_INST_FROM_ID_S,1,nodeId);
+	
+	struct LSD_SceneNodeInst* pickedInst;
+	
+	if(sqlite3_step(RESOLVE_INST_FROM_ID_S)==SQLITE_ROW){
+		int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_ID_S,0);
+		
+		if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
+			fprintf(stderr,"Unable to pick inst from array in resolveInstFromId()\n");
+			return -1;
+		}
+	}
+	else{
+		fprintf(stderr,"Inst could not be resolved in DB in resolveInstFromId()\n");
+		return -1;
+	}
+	
+	*target=pickedInst;
+	
+	if(dataBind)
+		*dataBind = pickedInst->data;
+	
+	return 0;
+}
+
+static const char RESOLVE_INST_FROM_IN_ID[] =
+"SELECT SceneNodeInst.arrIdx FROM SceneNodeInst,SceneNodeInstInput WHERE "
+"SceneNodeInstInput.instId=SceneNodeInst.id AND SceneNodeInstInput.facadeBool=0 "
+"AND SceneNodeInstInput.id=?1";
+static sqlite3_stmt* RESOLVE_INST_FROM_IN_ID_S;
+
+int lsddb_resolveInstFromInId(struct LSD_SceneNodeInst const ** target, int inId){
+	if(!target)
+		return -1;
+	
+	sqlite3_reset(RESOLVE_INST_FROM_IN_ID_S);
+	sqlite3_bind_int(RESOLVE_INST_FROM_IN_ID_S,1,inId);
+	
+	struct LSD_SceneNodeInst* pickedInst;
+	
+	if(sqlite3_step(RESOLVE_INST_FROM_IN_ID_S)==SQLITE_ROW){
+		int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_IN_ID_S,0);
+		
+		if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
+			fprintf(stderr,"Unable to pick inst from array in resolveInstFromInId()\n");
+			return -1;
+		}
+	}
+	else{
+		fprintf(stderr,"Inst could not be resolved in DB in resolveInstFromInId()\n");
+		return -1;
+	}
+	
+	*target=pickedInst;
+	
+	return 0;
+}
+
+static const char RESOLVE_INST_FROM_OUT_ID[] =
+"SELECT SceneNodeInst.arrIdx FROM SceneNodeInst,SceneNodeInstOutput WHERE "
+"SceneNodeInstOutput.instId=SceneNodeInst.id AND SceneNodeInstOutput.facadeBool=0 "
+"AND SceneNodeInstOutput.id=?1";
+static sqlite3_stmt* RESOLVE_INST_FROM_OUT_ID_S;
+
+int lsddb_resolveInstFromOutId(struct LSD_SceneNodeInst const ** target, int outId){
+	if(!target)
+		return -1;
+	
+	sqlite3_reset(RESOLVE_INST_FROM_OUT_ID_S);
+	sqlite3_bind_int(RESOLVE_INST_FROM_OUT_ID_S,1,outId);
+	
+	struct LSD_SceneNodeInst* pickedInst;
+	
+	if(sqlite3_step(RESOLVE_INST_FROM_OUT_ID_S)==SQLITE_ROW){
+		int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_OUT_ID_S,0);
+		
+		if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
+			fprintf(stderr,"Unable to pick inst from array in resolveInstFromOutId()\n");
+			return -1;
+		}
+	}
+	else{
+		fprintf(stderr,"Inst %d could not be resolved in DB in resolveInstFromOutId()\n%s\n",outId,sqlite3_errmsg(memdb));
+		return -1;
+	}
+	
+	*target=pickedInst;
+	
+	return 0;
+}
 
 
 // Channel patch operations below
@@ -3881,7 +4014,8 @@ int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs)
         snprintf(tableStmt,512,"CREATE TABLE IF NOT EXISTS %s (%s);",tableName,colDefs);
 		
 		// Ensure there is only one semicolon to prevent SQL injection attacks
-		if(strchr(strchr(tableStmt,';'),';')){
+		const char* semicolon = strchr(tableStmt,';');
+		if(semicolon[1] != '\0'){
 			fprintf(stderr,"Two or more semicolons were detected in table creation statement, aborting\n");
 			return -1;
 		}
@@ -3929,7 +4063,7 @@ int lsddbapi_prepSelect(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     }
     
     // Compose the statement source
-    char stmtSource[256];
+    char stmtSource[256] = "";
     snprintf(stmtSource,256,"SELECT %s FROM %s WHERE %s",colPortion,fullTableName,wherePortion);
     
     // Now prep the statement
@@ -3970,7 +4104,7 @@ int lsddbapi_prepInsert(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     }
     
     // Compose the statement source
-    char stmtSource[256];
+    char stmtSource[256] = "";
     snprintf(stmtSource,256,"INSERT INTO %s (%s) VALUES (%s)",fullTableName,colPortion,valuesPortion);
     
     // Now prep the statement
@@ -4011,7 +4145,7 @@ int lsddbapi_prepUpdate(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     }
     
     // Compose the statement source
-    char stmtSource[256];
+    char stmtSource[256] = "";
     snprintf(stmtSource,256,"UPDATE %s SET %s WHERE %s",fullTableName,setPortion,wherePortion);
     
     // Now prep the statement
@@ -4051,7 +4185,7 @@ int lsddbapi_prepDelete(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     }
     
     // Compose the statement source
-    char stmtSource[256];
+    char stmtSource[256] = "";
     snprintf(stmtSource,256,"DELETE FROM %s WHERE %s",fullTableName,wherePortion);
     
     // Now prep the statement
@@ -4517,6 +4651,9 @@ int lsddb_prepStmts(){
 	PREP(JSON_PATCH_SPACE,84);
 	
 	PREP(RESOLVE_CLASS_FROM_ID,85);
+	PREP(RESOLVE_INST_FROM_ID,885);
+	PREP(RESOLVE_INST_FROM_IN_ID,886);
+	PREP(RESOLVE_INST_FROM_OUT_ID,887);
 		
 	PREP(GET_PATCH_CHANNELS_PARTS,87);
 	PREP(GET_PATCH_CHANNELS_CHANS,88);
@@ -4697,6 +4834,9 @@ int lsddb_finishStmts(){
 	FINAL(JSON_PATCH_SPACE);
 	
 	FINAL(RESOLVE_CLASS_FROM_ID);
+	FINAL(RESOLVE_INST_FROM_ID);
+	FINAL(RESOLVE_INST_FROM_IN_ID);
+	FINAL(RESOLVE_INST_FROM_OUT_ID);
 		
 	FINAL(GET_PATCH_CHANNELS_PARTS);
 	FINAL(GET_PATCH_CHANNELS_CHANS);

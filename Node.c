@@ -39,6 +39,8 @@ void destruct_SceneNodeInst(void* nodeInst){
         if(castInst->nodeClass && castInst->nodeClass->nodeCleanFunc){
             castInst->nodeClass->nodeCleanFunc(castInst,castInst->data);
         }
+		free(castInst->data);
+		castInst->data = NULL;
     }
 }
 

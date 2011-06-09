@@ -26,9 +26,7 @@
 
 int plugininst_addInstInput(struct LSD_SceneNodeInst const * inst,
                             int typeId,
-                            const char* name,
-                            void(*connectCB)(struct LSD_SceneNodeInput* input, struct LSD_SceneNodeOutput const * connection),
-                            void(*disconnectCB)(struct LSD_SceneNodeInput* input)){
+                            const char* name){
 	
 	if(lsddb_addNodeInstInput(inst,typeId,name,NULL,NULL)<0){
 		fprintf(stderr,"Problem adding inst input\n");
@@ -41,14 +39,18 @@ int plugininst_addInstOutput(struct LSD_SceneNodeInst const * inst,
                              int typeId,
                              const char* name,
                              int bfFuncIdx,
-                             int bpFuncIdx){
+                             int bpFuncIdx,
+							 int* outIdBind){
 	
+	int outId;
 	struct LSD_SceneNodeOutput* addedOut;
-	if(lsddb_addNodeInstOutput(inst,typeId,name,&addedOut,NULL,bfFuncIdx,bpFuncIdx)<0){
+	if(lsddb_addNodeInstOutput(inst,typeId,name,&addedOut,&outId,bfFuncIdx,bpFuncIdx)<0){
 		fprintf(stderr,"Problem adding inst output\n");
 		return -1;
 	}
 	
+	if(outIdBind)
+		*outIdBind = outId;
 
 	struct LSD_SceneNodeClass* nc = inst->nodeClass;
 	
@@ -56,6 +58,48 @@ int plugininst_addInstOutput(struct LSD_SceneNodeInst const * inst,
 		addedOut->bufferFunc = nc->bfFuncTbl[bfFuncIdx];
 	if(bpFuncIdx>=0 && nc->bpFuncTbl[bpFuncIdx])
 		addedOut->bufferPtr = nc->bpFuncTbl[bpFuncIdx];
+	
+	return 0;
+}
+
+int plugininst_removeInstInput(struct LSD_SceneNodeInst const * inst, int inId){
+	// Verify ownership of input
+	struct LSD_SceneNodeInst const * verInst;
+	if(lsddb_resolveInstFromInId(&verInst, inId)<0){
+		fprintf(stderr,"Unable to get inst from inId\n");
+		return -1;
+	}
+	
+	if(verInst != inst){
+		fprintf(stderr,"Inst failed ownership test in removeInstInput()\n");
+		return -1;
+	}
+	
+	if(lsddb_removeNodeInstInput(inId)<0){
+		fprintf(stderr,"There was an error removing inst input from node\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int plugininst_removeInstOutput(struct LSD_SceneNodeInst const * inst, int outId){
+	// Verify ownership of output
+	struct LSD_SceneNodeInst const * verInst;
+	if(lsddb_resolveInstFromOutId(&verInst, outId)<0){
+		fprintf(stderr,"Unable to get inst from outId\n");
+		return -1;
+	}
+	
+	if(verInst != inst){
+		fprintf(stderr,"Inst failed ownership test in removeInstOutput()\n");
+		return -1;
+	}
+	
+	if(lsddb_removeNodeInstOutput(outId)<0){
+		fprintf(stderr,"There was an error removing inst output from node\n");
+		return -1;
+	}
 	
 	return 0;
 }

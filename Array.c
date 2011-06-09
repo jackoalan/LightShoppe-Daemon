@@ -227,6 +227,21 @@ int pickIdx(struct LSD_ArrayHead* array, void** targetPtrBind, size_t idx){
     }
 }
 
+int zeroIdx(struct LSD_ArrayHead* array, size_t idx){
+	int unitnum;
+    int elemidx;
+    unitnum = idx / array->mul;
+    elemidx = idx % array->mul;
+	
+    struct LSD_ArrayUnit* targetUnit;
+    if(recursiveResolve(array->firstUnit, unitnum, &targetUnit) == 0){
+		memset(targetUnit->buffer + array->elemSize*elemidx, 0, array->elemSize);
+        return 0;
+    }
+	fprintf(stderr,"Unable to zero memory for delIdx()\n");
+    return -1;
+}
+
 int delIdx(struct LSD_ArrayHead* array, size_t idx){
     if(!array){
         fprintf(stderr,"array is NULL for delIdx()\n");
@@ -247,6 +262,16 @@ int delIdx(struct LSD_ArrayHead* array, size_t idx){
         fprintf(stderr,"Delete is explicitly not allowed on this array\n");
         return -1;
     }
+	
+	// Run destructor for index
+	void* destructTarget;
+	if(pickIdx(array,&destructTarget,idx) == 0){
+		if(array->destructor)
+			array->destructor(destructTarget);
+	}
+	
+	// Zero out this memory region
+	zeroIdx(array,idx);
     
     if(array->delStat == DEL_ALLOWED){
         int arrId;
