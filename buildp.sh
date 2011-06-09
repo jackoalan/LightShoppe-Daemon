@@ -46,6 +46,6 @@ gcc -o lsd -O2 -Wall -rdynamic -lm -ldl -lmagic -lsqlite3 -levent -lola /usr/lib
 
 echo "Compiling Plugins"
 cd Plugins
-./build.sh
+./buildp.sh
 cd ..
 
