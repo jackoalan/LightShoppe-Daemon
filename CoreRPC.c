@@ -548,9 +548,15 @@ void lsdCreatePartition(cJSON* req, cJSON* resp){
         return;
     }
     
-    if(lsddb_createPartition(partName->valuestring,NULL)<0){
+	int partId;
+    if(lsddb_createPartition(partName->valuestring,&partId)<0){
         cJSON_AddStringToObject(resp,"error","Unable to insert partition into DB");
         return;
+    }
+	
+	cJSON* imageFile = cJSON_GetObjectItem(req,"imageFile");
+    if(imageFile && imageFile->type == cJSON_String){
+		lsddb_updatePartitionImage(partId,imageFile->valuestring);
     }
     
     cJSON_AddStringToObject(resp,"success","success");
@@ -572,6 +578,11 @@ void lsdUpdatePartition(cJSON* req, cJSON* resp){
     if(lsddb_updatePartitionName(partId->valueint,partName->valuestring)<0){
         cJSON_AddStringToObject(resp,"error","Unable to update partition name");
         return;
+    }
+	
+	cJSON* imageFile = cJSON_GetObjectItem(req,"imageFile");
+    if(imageFile && imageFile->type == cJSON_String){
+		lsddb_updatePartitionImage(partId->valueint,imageFile->valuestring);
     }
     
     cJSON_AddStringToObject(resp,"success","success");

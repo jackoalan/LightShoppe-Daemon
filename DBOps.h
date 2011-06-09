@@ -102,7 +102,7 @@ int lsddb_updatePatchSpaceOutName(int outId, const char* name);
 // May only be called in a series immediately before a state reload
 int lsddb_createPartition(const char* name, int* idBinding);
 
-int lsddb_setPartitionImage(int partId, const char* imageUrl);
+int lsddb_updatePartitionImage(int partId, const char* imageUrl);
 
 int lsddb_removePartition(int partId);
 

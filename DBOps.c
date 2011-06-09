@@ -706,7 +706,7 @@ static const char SET_PARTITION_IMAGE[] =
 "UPDATE SystemPartition SET imageUrl=?2 WHERE id=?1";
 static sqlite3_stmt* SET_PARTITION_IMAGE_S;
 
-int lsddb_setPartitionImage(int partId, const char* imageUrl){
+int lsddb_updatePartitionImage(int partId, const char* imageUrl){
 	if(!imageUrl){
 		return -1;
 	}
@@ -1996,8 +1996,10 @@ static const char INDEX_HTML_HEAD[] =
 static const char INDEX_HTML_FOOT[] =
 "\n\t\t<!-- END PROCEDURALLY GENERATED CONTENT -->\n\n"
 "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../LSDClient.css\" />\n"
+"\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../fileuploader.css\" />\n"
 "\t\t<script type=\"text/javascript\" src=\"../LSDClientIF.js\"></script>\n"
 "\t\t<script type=\"text/javascript\" src=\"../LSDClient.js\"></script>\n"
+"\t\t<script type=\"text/javascript\" src=\"../fileuploader.js\"></script>\n"
 "\t</head>\n"
 "\t<body>\n"
 "\t\t<div id=\"bg\"></div>\n"
