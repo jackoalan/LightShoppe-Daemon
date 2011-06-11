@@ -112,7 +112,7 @@ int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, cons
 					   const char* desc, int classIdx);
 
 int lsddb_addDataType(int* ptrToBind, int pluginId, const char* name,
-                      const char* desc, int isArray);
+                      const char* desc);
 
 int lsddb_structUnivArr();
 
@@ -219,9 +219,7 @@ int lsddb_structPluginArr();
 
 int lsddb_destructPluginArr();
 
-int lsddb_PartitionIterationBegin();
-
-int lsddb_PartitionIterationNext(struct LSD_SceneNodeOutput** ptrToBind);
+int lsddb_resolveInputFromId(struct LSD_SceneNodeInput** inBind, int inId);
 
 int lsddb_getPatchChannels(cJSON* target);
 

@@ -253,8 +253,8 @@ static const char INIT_QUERIES[] =
 
 // CREATE: SceneDataType
 "CREATE TABLE IF NOT EXISTS SceneDataType (id INTEGER PRIMARY KEY,"
-"pluginId INTEGER NOT NULL,  isArray INTEGER NOT NULL,"
-"name TEXT NOT NULL, desc TEXT NULL, FOREIGN KEY(pluginId) REFERENCES ScenePlugin(id));\n"
+"pluginId INTEGER NOT NULL, name TEXT NOT NULL, desc TEXT NULL, "
+"FOREIGN KEY(pluginId) REFERENCES ScenePlugin(id));\n"
 
 // Reserve RGB[Array] type
 //"REPLACE INTO SceneDataType (id,pluginId,isArray,name,desc) "
@@ -957,11 +957,11 @@ static const char ADD_DATA_TYPE_CHECK[] =
 static sqlite3_stmt* ADD_DATA_TYPE_CHECK_S;
 
 static const char ADD_DATA_TYPE_INSERT[] =
-"INSERT INTO SceneDataType (pluginId,name,desc,isArray) VALUES (?1,?2,?3,?4)";
+"INSERT INTO SceneDataType (pluginId,name,desc) VALUES (?1,?2,?3)";
 static sqlite3_stmt* ADD_DATA_TYPE_INSERT_S;
 
 int lsddb_addDataType(int* ptrToBind, int pluginId, const char* name,
-					  const char* desc, int isArray){
+					  const char* desc){
 	if(!name){
 		fprintf(stderr,"Name not provided in addDataType()\n");
 		return -1;
@@ -987,7 +987,6 @@ int lsddb_addDataType(int* ptrToBind, int pluginId, const char* name,
 		sqlite3_bind_int(ADD_DATA_TYPE_INSERT_S,1,pluginId);
 		sqlite3_bind_text(ADD_DATA_TYPE_INSERT_S,2,name,-1,NULL);
 		sqlite3_bind_text(ADD_DATA_TYPE_INSERT_S,3,desc,-1,NULL);
-		sqlite3_bind_int(ADD_DATA_TYPE_INSERT_S,4,isArray);
 		
 		if(sqlite3_step(ADD_DATA_TYPE_INSERT_S)!=SQLITE_DONE){
 			fprintf(stderr,"Unable to insert new class entry into DB in addDataType()\n");
@@ -1463,24 +1462,13 @@ int lsddb_structPartitionArr(){
 			return -1;
 		}
 		
-		// Get pointer to facade node (initialised during structNodeInstArr)
-		/*
-		struct LSD_SceneNodeInst* partFacade;
-		if(lsddb_getFacadeNodeInst(&partFacade,patchSpaceId)<0){
-			fprintf(stderr,"Unable to resolve facade node in structPartitionArr()\n");
-			return -1;
-		}*/
-		
-		/*
-		char psName[256];
-		strcat(psName,(const char*)partName);
-		strcat(psName,"_patch_space");
-		int psId;
-		struct LSD_SceneNodeInst* facade;
-		if(lsddb_createPatchSpace(psName,NULL,&psId,&facade)<0){
-			fprintf(stderr,"createPatchSpace failed in createPartition()\n");
-			return -1;
-		}*/
+		// Construct nodes within facades in the partition's patchSpace
+		sqlite3_reset(REMOVE_PATCH_SPACE_FACADES_S);
+		sqlite3_bind_int(REMOVE_PATCH_SPACE_FACADES_S,1,patchSpaceId);
+		while(sqlite3_step(REMOVE_PATCH_SPACE_FACADES_S)==SQLITE_ROW){
+			int cpsId = sqlite3_column_int(REMOVE_PATCH_SPACE_FACADES_S,0);
+			lsddb_structNodeInstArr(cpsId);
+		}
 		
 		
 		// Update arr idx
@@ -2021,7 +2009,7 @@ int lsddb_panPatchSpace(int psId, int xVal, int yVal, double scale){
 #include <evhttp.h>
 
 static const char INDEX_HTML_GEN[] =
-"SELECT pluginDomain,id FROM ScenePlugin WHERE id!=1 AND enabled=1";
+"SELECT pluginDomain,id FROM ScenePlugin WHERE enabled=1 OR id=1";
 static sqlite3_stmt* INDEX_HTML_GEN_S;
 
 static const char INDEX_HTML_HEAD[] =
@@ -2357,6 +2345,10 @@ int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId){
 	}
 	// Finally done
 	int arrIdx = sqlite3_column_int(TRACE_OUTPUT_S,2);
+	if(arrIdx == -1){
+		fprintf(stderr,"Output is not constructed in memory; its plugin may be disabled\n");
+		return -1;
+	}
 	
 	// Bind output object for caller
 	struct LSD_SceneNodeOutput* outputObj;
@@ -3529,6 +3521,28 @@ int lsddb_resolveInstFromOutId(struct LSD_SceneNodeInst const ** target, int out
 }
 
 
+int lsddb_resolveInputFromId(struct LSD_SceneNodeInput** inBind, int inId){
+	if(!inBind)
+		return -1;
+	
+	sqlite3_reset(REMOVE_NODE_INST_INPUT_ARRIDX_S);
+	sqlite3_bind_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,1,inId);
+	if(sqlite3_step(REMOVE_NODE_INST_INPUT_ARRIDX_S) == SQLITE_ROW){
+		int arrIdx = sqlite3_column_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,0);
+		if(arrIdx < 0)
+			return -1;
+		
+		if(pickIdx(getArr_lsdNodeInputArr(),(void**)inBind,arrIdx)<0){
+			fprintf(stderr,"Unable to pick input from array in resolveInputFromId()\n");
+			return -1;
+		}
+		return 0;
+	}
+	
+	return -1;
+}
+
+
 // Channel patch operations below
 
 static const char GET_PATCH_CHANNELS_PARTS[] =
@@ -4070,6 +4084,7 @@ int lsddbapi_prepSelect(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     sqlite3_stmt* newStmt;
     if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
         fprintf(stderr,"Sqlite was unable to prep a statement\n");
+		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
     
@@ -4111,6 +4126,7 @@ int lsddbapi_prepInsert(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     sqlite3_stmt* newStmt;
     if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
         fprintf(stderr,"Sqlite was unable to prep a statement\n");
+		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
     
@@ -4152,6 +4168,7 @@ int lsddbapi_prepUpdate(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     sqlite3_stmt* newStmt;
     if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
         fprintf(stderr,"Sqlite was unable to prep a statement\n");
+		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
     
@@ -4192,6 +4209,7 @@ int lsddbapi_prepDelete(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     sqlite3_stmt* newStmt;
     if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
         fprintf(stderr,"Sqlite was unable to prep a statement\n");
+		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
     

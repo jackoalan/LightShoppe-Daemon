@@ -26,9 +26,10 @@
 
 int plugininst_addInstInput(struct LSD_SceneNodeInst const * inst,
                             int typeId,
-                            const char* name){
+                            const char* name,
+							int* inIdBind){
 	
-	if(lsddb_addNodeInstInput(inst,typeId,name,NULL,NULL)<0){
+	if(lsddb_addNodeInstInput(inst,typeId,name,NULL,inIdBind)<0){
 		fprintf(stderr,"Problem adding inst input\n");
 		return -1;
 	}
@@ -101,5 +102,26 @@ int plugininst_removeInstOutput(struct LSD_SceneNodeInst const * inst, int outId
 		return -1;
 	}
 	
+	return 0;
+}
+
+int plugininst_getInputStruct(struct LSD_SceneNodeInst const * inst, 
+							  struct LSD_SceneNodeInput const ** inBind, int inId){
+	if(!inst || !inBind)
+		return -1;
+	
+	// Verify ownership of input
+	struct LSD_SceneNodeInput* theIn;
+	if(lsddb_resolveInputFromId(&theIn, inId)<0){
+		fprintf(stderr,"Unable to getInputStruct()\n");
+		return -1;
+	}
+	
+	if(theIn->parentNode != inst){
+		fprintf(stderr,"Input failed ownership test in getInputStruct()\n");
+		return -1;
+	}
+	
+	*inBind = theIn;
 	return 0;
 }

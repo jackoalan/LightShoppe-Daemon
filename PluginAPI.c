@@ -97,7 +97,6 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
 
 int plugininit_registerDataType(struct LSD_ScenePlugin const * key,
                                 int* ptrToBind,
-                                unsigned short int isArray,
                                 const char* name, const char* desc){
     if(apistate != STATE_PINIT)
         return -10;
@@ -111,7 +110,7 @@ int plugininit_registerDataType(struct LSD_ScenePlugin const * key,
     int typeId;
     
     // Backend function
-    if(lsddb_addDataType(&typeId,key->dbId,name,desc,isArray)<0){
+    if(lsddb_addDataType(&typeId,key->dbId,name,desc)<0){
         fprintf(stderr,"Error while running DB and Array portion of registerDataType()\n");
         return -1;
     }

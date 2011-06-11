@@ -30,6 +30,9 @@ struct RGB_TYPE {
 };
 
 int core_getRGBTypeID();
+int core_getIntegerTypeID();
+int core_getFloatTypeID();
+int core_getTriggerTypeID();
 
 const struct LSD_ScenePluginHEAD* getCoreHead();
 

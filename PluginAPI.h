@@ -84,7 +84,6 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
 
 int plugininit_registerDataType(struct LSD_ScenePlugin const * key,
                                 int* ptrToBind,
-                                unsigned short int isArray,
                                 const char* name, const char* desc);
 
 
