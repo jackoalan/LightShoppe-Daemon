@@ -146,16 +146,8 @@ int intViewMake(struct LSD_SceneNodeInst const * inst, void* instData){
 }
 
 int intViewRestore(struct LSD_SceneNodeInst const * inst, void* instData){
-	plugindb_reset(corePlugin,intViewSelectStmt);
-	plugindb_bind_int(corePlugin,intViewSelectStmt,1,inst->dbId);
-	if(plugindb_step(corePlugin,intViewSelectStmt) == SQLITE_ROW){
-		int inId = plugindb_column_int(corePlugin,intViewSelectStmt,0);
-		
-		struct LSD_SceneNodeInput const * castData = (struct LSD_SceneNodeInput*)instData;
-		return plugininst_getInputStruct(inst, &castData, inId);
-	}
-
-    return -1;
+    // Nothing to do
+    return 0;
 }
 
 void intViewClean(struct LSD_SceneNodeInst const * inst, void* instData){
@@ -388,7 +380,7 @@ int coreInit(struct LSD_ScenePlugin const * plugin){
 	
 	// Register int viewer
 	plugininit_registerNodeClass(plugin,&intViewClass,intViewMake,intViewRestore,intViewClean,intViewDelete,
-								 sizeof(struct LSD_SceneNodeInput*),"Integer Viewer","Desc",2,NULL,NULL);
+								 0,"Integer Viewer","Desc",2,NULL,NULL);
 	
 	// Register float generator
 	plugininit_registerNodeClass(plugin,&floatGenClass,floatGenMake,floatGenRestore,floatGenClean,floatGenDelete,
@@ -396,7 +388,7 @@ int coreInit(struct LSD_ScenePlugin const * plugin){
 	
 	// Register float viewer
 	plugininit_registerNodeClass(plugin,&floatViewClass,floatViewMake,floatViewRestore,floatViewClean,floatViewDelete,
-								 sizeof(struct LSD_SceneNodeInput*),"Float Viewer","Desc",4,NULL,NULL);
+								 0,"Float Viewer","Desc",4,NULL,NULL);
 	
 	// Register rgb generator
 	plugininit_registerNodeClass(plugin,&rgbGenClass,rgbGenMake,rgbGenRestore,rgbGenClean,rgbGenDelete,
@@ -404,7 +396,7 @@ int coreInit(struct LSD_ScenePlugin const * plugin){
 	
 	// Register rgb viewer
 	plugininit_registerNodeClass(plugin,&rgbViewClass,rgbViewMake,rgbViewRestore,rgbViewClean,rgbViewDelete,
-								 sizeof(struct LSD_SceneNodeInput*),"RGB Viewer","Desc",6,NULL,NULL);
+								 0,"RGB Viewer","Desc",6,NULL,NULL);
 	
 	// Register trigger generator
 	plugininit_registerNodeClass(plugin,&triggerGenClass,triggerGenMake,triggerGenRestore,triggerGenClean,triggerGenDelete,
@@ -491,16 +483,41 @@ void rpcHandler(cJSON* in, cJSON* out){
 			*intGenInt = val->valueint;
 		
     }
+    else if(strcasecmp(coreMethod->valuestring,"getIntGenVal") == 0){
+		
+		plugindb_reset(corePlugin,intGenSelectStmt);
+		plugindb_bind_int(corePlugin,intGenSelectStmt,1,nodeId->valueint);
+		if(plugindb_step(corePlugin,intGenSelectStmt) == SQLITE_ROW)
+            cJSON_AddNumberToObject(out,"val",plugindb_column_int(corePlugin,intGenSelectStmt,0));
+		else
+			cJSON_AddStringToObject(out,"error","Unable to update val");
+		
+    }
     else if(strcasecmp(coreMethod->valuestring,"getIntViewVal") == 0){
-		struct LSD_SceneNodeInput* intViewerIn = NULL;
-        plugin_getInstById(corePlugin,nodeId->valueint,(void**)&intViewerIn);
-		if(intViewerIn){
-			if(intViewerIn->connection){
-				int* connectedInt = node_bufferOutput(intViewerIn->connection);
-				if(connectedInt)
-					cJSON_AddNumberToObject(out,"value",*connectedInt);
-			}
-		}
+        plugindb_reset(corePlugin,intViewSelectStmt);
+        plugindb_bind_int(corePlugin,intViewSelectStmt,1,nodeId->valueint);
+        int inId;
+        if(plugindb_step(corePlugin,intViewSelectStmt) == SQLITE_ROW){
+            inId = plugindb_column_int(corePlugin,intViewSelectStmt,0);
+        }
+        else{
+            cJSON_AddStringToObject(out,"error","Unable to find nodeInst in DB");
+            return;
+        }
+        
+        struct LSD_SceneNodeInst const * viewInst = plugin_getInstById(corePlugin,nodeId->valueint,
+                                                                NULL);
+        
+		struct LSD_SceneNodeInput const * intViewerIn = NULL;
+        plugininst_getInputStruct(viewInst, &intViewerIn, inId);
+        
+        if(intViewerIn && intViewerIn->connection){
+            int* theVal = node_bufferOutput(intViewerIn->connection);
+            if(theVal)
+                cJSON_AddNumberToObject(out,"val",*theVal);
+        }
+        else
+            cJSON_AddStringToObject(out,"error","Unable to resolve viewer's connection");
     }
 	else if(strcasecmp(coreMethod->valuestring,"setFloatGenVal") == 0){
 		val = cJSON_GetObjectItem(in,"val");

@@ -35,9 +35,10 @@
 // Forward-decl for statement compilation and cleanup
 int lsddb_prepStmts();
 int lsddb_finishStmts();
-int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId);
-int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId);
+int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId, int* typeIdBind, int* tracedIn);
+int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId, int* typeIdBind, int* tracedOut);
 int lsddb_resolveClassFromId(struct LSD_SceneNodeClass** ptrToBind, int classId);
+int lsddb_rewireNodes();
 
 static sqlite3* memdb;
 
@@ -1145,6 +1146,36 @@ int lsddb_checkClassEnabled(int classId){
     return nodeEnabled;
 }
 
+static const char CHECK_INPUT_ENABLE[] =
+"SELECT SceneNodeInst.classId FROM SceneNodeInst,SceneNodeInstInput WHERE "
+"SceneNodeInstInput.facadeBool=0 AND SceneNodeInstInput.instId=SceneNodeInst.id "
+"AND SceneNodeInstInput.id=?1";
+static sqlite3_stmt* CHECK_INPUT_ENABLE_S;
+
+int lsddb_getInputClassId(int inId){
+    sqlite3_reset(CHECK_INPUT_ENABLE_S);
+    sqlite3_bind_int(CHECK_INPUT_ENABLE_S,1,inId);
+    if(sqlite3_step(CHECK_INPUT_ENABLE_S) == SQLITE_ROW){
+        return sqlite3_column_int(CHECK_INPUT_ENABLE_S,0);
+    }
+    return -2;
+}
+
+static const char CHECK_OUTPUT_ENABLE[] =
+"SELECT SceneNodeInst.classId FROM SceneNodeInst,SceneNodeInstOutput WHERE "
+"SceneNodeInstOutput.facadeBool=0 AND SceneNodeInstOutput.instId=SceneNodeInst.id "
+"AND SceneNodeInstOutput.id=?1";
+static sqlite3_stmt* CHECK_OUTPUT_ENABLE_S;
+
+int lsddb_getOutputClassId(int outId){
+    sqlite3_reset(CHECK_OUTPUT_ENABLE_S);
+    sqlite3_bind_int(CHECK_OUTPUT_ENABLE_S,1,outId);
+    if(sqlite3_step(CHECK_OUTPUT_ENABLE_S) == SQLITE_ROW){
+        return sqlite3_column_int(CHECK_OUTPUT_ENABLE_S,0);
+    }
+    return -2;
+}
+
 static const char STRUCT_NODE_INST_ARR[] =
 "SELECT id,classId FROM SceneNodeInst WHERE patchSpaceId=?1";
 static const char STRUCT_NODE_INST_ARR_UPDIDX[] =
@@ -1387,7 +1418,7 @@ int lsddb_structChannelArr(){
 		
 		// Resolve and set channel object's aliased output (if exists)
 		chanBind->output = NULL;
-		lsddb_traceOutput(&(chanBind->output), facadeOutId);
+		lsddb_traceOutput(&(chanBind->output), facadeOutId, NULL, NULL);
 		if(chanBind->output)
 			printf("structChannelArr() output id %d\n",chanBind->output->dbId);
 
@@ -1490,6 +1521,10 @@ int lsddb_structPartitionArr(){
 		fprintf(stderr,"structPartitionArr() did not loop cleanly\n");
 		return -1;
 	}
+    
+    // Iterate to reestablish wire connections
+    lsddb_rewireNodes();
+    
 	return 0;
 }
 
@@ -2285,10 +2320,10 @@ int lsddb_resolvePluginFromNodeId(struct LSD_ScenePlugin** pluginBind, int nodeI
 }
 
 static const char TRACE_INPUT[] =
-"SELECT facadeBool,aliasedIn,arrIdx FROM SceneNodeInstInput WHERE id=?1";
+"SELECT facadeBool,aliasedIn,arrIdx,typeId,id FROM SceneNodeInstInput WHERE id=?1";
 static sqlite3_stmt* TRACE_INPUT_S;
 
-int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId){
+int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId, int* typeIdBind, int* tracedIn){
 	// Recursively drill down to find a standard node's input (i.e. not a facade input)
 	int facadeBool = 1;
 	int aliasedIn = inputId;
@@ -2301,12 +2336,26 @@ int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId){
 			aliasedIn = sqlite3_column_int(TRACE_INPUT_S,1);
 		}
 		else{
-			fprintf(stderr,"Unable to traceInput()\n");
+			fprintf(stderr,"Unable to traceInput %d()\n",inputId);
+            fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
 			return -1;
 		}
 	}
 	// Finally done
-	int arrIdx = sqlite3_column_int(TRACE_INPUT_S,3);
+	int arrIdx = sqlite3_column_int(TRACE_INPUT_S,2);
+    if(arrIdx == -1){
+		fprintf(stderr,"Input is not constructed in memory; its plugin may be disabled\n");
+		return -1;
+	}
+    
+    if(tracedIn)
+        *tracedIn = sqlite3_column_int(TRACE_INPUT_S,4);
+    
+    if(typeIdBind)
+        *typeIdBind = sqlite3_column_int(TRACE_INPUT_S,3);
+    
+    if(!ptrToBind)
+        return 0;
 	
 	// Bind input object for caller
 	struct LSD_SceneNodeInput* inputObj;
@@ -2315,18 +2364,16 @@ int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId){
 		return -1;
 	}
 	
-	if(ptrToBind){
-		*ptrToBind = inputObj;
-	}
+    *ptrToBind = inputObj;
 	
 	return 0;
 }
 
 static const char TRACE_OUTPUT[] =
-"SELECT facadeBool,aliasedOut,arrIdx FROM SceneNodeInstOutput WHERE id=?1";
+"SELECT facadeBool,aliasedOut,arrIdx,typeId,id FROM SceneNodeInstOutput WHERE id=?1";
 static sqlite3_stmt* TRACE_OUTPUT_S;
 
-int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId){
+int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId, int* typeIdBind, int* tracedOut){
 	// Recursively drill down to find a standard node's output (i.e. not a facade output)
 	int facadeBool = 1;
 	int aliasedOut = outputId;
@@ -2349,6 +2396,15 @@ int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId){
 		fprintf(stderr,"Output is not constructed in memory; its plugin may be disabled\n");
 		return -1;
 	}
+    
+    if(tracedOut)
+        *tracedOut = sqlite3_column_int(TRACE_OUTPUT_S,4);
+    
+    if(typeIdBind)
+        *typeIdBind = sqlite3_column_int(TRACE_OUTPUT_S,3);
+    
+    if(!ptrToBind)
+        return 0;
 	
 	// Bind output object for caller
 	struct LSD_SceneNodeOutput* outputObj;
@@ -2357,9 +2413,7 @@ int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId){
 		return -1;
 	}
 	
-	if(ptrToBind){
-		*ptrToBind = outputObj;
-	}
+    *ptrToBind = outputObj;
 	
 	return 0;
 }
@@ -2400,7 +2454,7 @@ int lsddb_checkChannelWiring(int facadeOutId, int srcOut){
 				
 				// Trace the output and connect on channel
 				chan->output = NULL;
-				lsddb_traceOutput(&(chan->output),srcOut);
+				lsddb_traceOutput(&(chan->output),srcOut,NULL,NULL);
 
 				
 			}
@@ -2573,7 +2627,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
             destClass = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,2);
 		}
 		else{
-			fprintf(stderr,"Unable to verify node input's patch space\n");
+			fprintf(stderr,"Unable to verify node input's patch space 1\n");
 			return -1;
 		}
 		
@@ -2605,7 +2659,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 		if(sqlite3_step(WIRE_NODES_CHECK_DEST_IN_S)==SQLITE_ROW){
 			int typeId = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,0);
 			//int facadeBool = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,1);
-			int aliasedIn = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,2);
+			//int aliasedIn = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,2);
 			
 			if(typeId<0){
 				fprintf(stderr,"Facade Plug not internally connected on input %d\n",destId);
@@ -2616,7 +2670,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 			sqlite3_reset(WIRE_NODES_SET_FACADE_IN_DATA_S);
 			sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,1,srcId);
 			sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,2,typeId);
-			sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,3,aliasedIn);
+			sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,3,destId);
 			
 			if(sqlite3_step(WIRE_NODES_SET_FACADE_IN_DATA_S)!=SQLITE_DONE){
 				fprintf(stderr,"Unable to update facade plug data after internal connection in wireNodes()\n");
@@ -2783,8 +2837,8 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 	// First ensure that the src is
 	// within the same patchSpace as the dest being connected to
 	
-	int srcType;
-	int destType;
+	int srcType = -2;
+	int destType = -2;
 	
 	// Src
 	sqlite3_reset(WIRE_NODES_GET_OUT_PS_S);
@@ -2794,9 +2848,23 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 		srcType = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,1);
         srcClass = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,2);
 	}
-	else{
-		fprintf(stderr,"Unable to verify node output's patch space 2\n");
-		return -1;
+	else{ // Try testing as facade
+        
+        sqlite3_reset(WIRE_NODES_GET_FACADE_OUT_CPS_S);
+        sqlite3_bind_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1,srcId);
+        if(sqlite3_step(WIRE_NODES_GET_FACADE_OUT_CPS_S) == SQLITE_ROW){
+            srcPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1);
+            int typeId;
+            int tracedOut;
+            if(lsddb_traceOutput(NULL,srcId,&typeId,&tracedOut) == 0){
+                srcType = typeId;
+                srcClass = lsddb_getOutputClassId(tracedOut);
+            }
+        }
+        else{
+            fprintf(stderr,"Unable to verify node output's patch space 2\n");
+            return -1;
+        }
 	}
 	
 	// Dest
@@ -2807,9 +2875,23 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 		destType = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,1);
         destClass = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,2);
 	}
-	else{
-		fprintf(stderr,"Unable to verify node input's patch space\n");
-		return -1;
+	else{ // Try testing as facade
+        
+        sqlite3_reset(WIRE_NODES_GET_FACADE_IN_CPS_S);
+        sqlite3_bind_int(WIRE_NODES_GET_FACADE_IN_CPS_S,1,destId);
+        if(sqlite3_step(WIRE_NODES_GET_FACADE_IN_CPS_S) == SQLITE_ROW){
+            destPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_IN_CPS_S,1);
+            int typeId;
+            int tracedIn;
+            if(lsddb_traceInput(NULL,destId,&typeId,&tracedIn) == 0){
+                destType = typeId;
+                destClass = lsddb_getInputClassId(tracedIn);
+            }
+        }
+        else{
+            fprintf(stderr,"Unable to verify node input's patch space 2\n");
+            return -1;
+        }
 	}
 	
 	
@@ -2829,7 +2911,7 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
     }
     
     if(!lsddb_checkClassEnabled(destClass)){
-        fprintf(stderr,"Unable to connect wire's destination; destination class disabled\n");
+        fprintf(stderr,"Unable to connect wire's destination; destination class %d,%d disabled\n",destId,destClass);
         return -1;
     }
 	
@@ -2837,9 +2919,9 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 	struct LSD_SceneNodeOutput* src;
 	struct LSD_SceneNodeInput* dest;
 	
-	if(lsddb_traceOutput(&src,srcId)<0)
+	if(lsddb_traceOutput(&src,srcId,NULL,NULL)<0)
 		return -1;
-	if(lsddb_traceInput(&dest,destId)<0)
+	if(lsddb_traceInput(&dest,destId,NULL,NULL)<0)
 		return -1;
 	
 	// Now the Edge can be added to DB
@@ -2934,7 +3016,7 @@ int lsddb_unwireNodes(int wireId){
 			// Use trace functions to resolve the source and destination objects
 			struct LSD_SceneNodeInput* dest;
 			
-			if(lsddb_traceInput(&dest,destIn)<0){
+			if(lsddb_traceInput(&dest,destIn,NULL,NULL)<0){
 				fprintf(stderr,"Unable to trace input for node disconnection in unwireNodes()\n");
 				return -1;
 			}
@@ -2954,6 +3036,53 @@ int lsddb_unwireNodes(int wireId){
 	}
 	
 	return 0;
+}
+
+static const char REWIRE_NODES[] =
+"SELECT srcFacadeInt,srcOut,destIn FROM SceneNodeEdge WHERE destFacadeInt=0";
+static sqlite3_stmt* REWIRE_NODES_S;
+
+static const char REWIRE_NODES_DEST[] =
+"SELECT srcFacadeInt,srcOut FROM SceneNodeEdge WHERE destIn=?1";
+static sqlite3_stmt* REWIRE_NODES_DEST_S;
+
+int lsddb_rewireNodes(){
+    sqlite3_reset(REWIRE_NODES_S);
+    while(sqlite3_step(REWIRE_NODES_S) == SQLITE_ROW){
+        int destIn = sqlite3_column_int(REWIRE_NODES_S,2);
+        int srcOut = sqlite3_column_int(REWIRE_NODES_S,1);
+        int srcFacadeInt = sqlite3_column_int(REWIRE_NODES_S,0);
+        
+        while(srcFacadeInt){
+            sqlite3_reset(REWIRE_NODES_DEST_S);
+            sqlite3_bind_int(REWIRE_NODES_DEST_S,1,srcOut);
+            if(sqlite3_step(REWIRE_NODES_DEST_S) == SQLITE_ROW){
+                srcOut = sqlite3_column_int(REWIRE_NODES_DEST_S,1);
+                srcFacadeInt = sqlite3_column_int(REWIRE_NODES_DEST_S,0);
+            }
+            else{ // No external facade input connection
+                srcOut = -2;
+                break;
+            }
+        }
+        
+        if(srcOut >= 0){
+            
+            struct LSD_SceneNodeInput* dest;
+            lsddb_traceInput(&dest,destIn,NULL,NULL);
+            struct LSD_SceneNodeOutput* src;
+            lsddb_traceOutput(&src,srcOut,NULL,NULL);
+            
+            if(dest && src){
+                dest->connection = src;
+            }
+            else
+                fprintf(stderr,"Problem while rewiring nodes\n");
+            
+        }
+    }
+    
+    return 0;
 }
 
 static const char JSON_CLASS_LIBRARY[] = 
@@ -4559,6 +4688,8 @@ int lsddb_prepStmts(){
 	PREP(STRUCT_NODE_INST_INPUT_ARR_UPDIDX,23);
 	
     PREP(STRUCT_NODE_INST_ARR_CHECK_ENABLE,123);
+    PREP(CHECK_INPUT_ENABLE,124);
+    PREP(CHECK_OUTPUT_ENABLE,125);
 	PREP(STRUCT_NODE_INST_ARR,24);
 	PREP(STRUCT_NODE_INST_ARR_UPDIDX,25);
 	
@@ -4643,6 +4774,9 @@ int lsddb_prepStmts(){
 	PREP(UNWIRE_NODES_GET_SRC_FACADE_EDGE,71);
 	PREP(UNWIRE_NODES_GET_DEST_FACADE_EDGE,72);
 	PREP(UNWIRE_FACADE_OUT_ALIAS,722);
+    
+    PREP(REWIRE_NODES,777);
+    PREP(REWIRE_NODES_DEST,778);
 
 	PREP(JSON_CLASS_LIBRARY,73);
 	
@@ -4742,6 +4876,8 @@ int lsddb_finishStmts(){
 	FINAL(STRUCT_NODE_INST_INPUT_ARR_UPDIDX);
 	
     FINAL(STRUCT_NODE_INST_ARR_CHECK_ENABLE);
+    FINAL(CHECK_INPUT_ENABLE);
+    FINAL(CHECK_OUTPUT_ENABLE);
 	FINAL(STRUCT_NODE_INST_ARR);
 	FINAL(STRUCT_NODE_INST_ARR_UPDIDX);
 	
@@ -4826,6 +4962,9 @@ int lsddb_finishStmts(){
 	FINAL(UNWIRE_NODES_GET_SRC_FACADE_EDGE);
 	FINAL(UNWIRE_NODES_GET_DEST_FACADE_EDGE);
 	FINAL(UNWIRE_FACADE_OUT_ALIAS);
+    
+    FINAL(REWIRE_NODES);
+    FINAL(REWIRE_NODES_DEST);
 	
 	FINAL(JSON_CLASS_LIBRARY);
 	
