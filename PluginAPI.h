@@ -93,8 +93,14 @@ struct LSD_SceneNodeInst const * plugin_getInstById(struct LSD_ScenePlugin const
 // Initialiser's database api
 
 int plugininit_createTable(struct LSD_ScenePlugin const * key,
-                                  const char* name,
-                                  const char* coldef);
+						   const char* name,
+						   const char* coldef);
+
+int plugininit_createIndex(struct LSD_ScenePlugin const * key,
+						   const char* idxName,
+						   const char* tblName,
+						   const char* coldef);
+								 
 
 
 
@@ -169,4 +175,7 @@ const unsigned char* plugindb_column_text(struct LSD_ScenePlugin const * key,
 
 const void* plugindb_column_text16(struct LSD_ScenePlugin const * key, unsigned int stmtBinding,
                                    int colIdx);
+
+int plugindb_getLastInsertRowId();
+
 #endif // PLUGINAPI_H

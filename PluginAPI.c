@@ -151,6 +151,21 @@ int plugininit_createTable(struct LSD_ScenePlugin const * key,
     return 0;
 }
 
+int plugininit_createIndex(struct LSD_ScenePlugin const * key,
+						   const char* idxName,
+						   const char* tblName,
+                           const char* coldef){
+    if(apistate != STATE_PINIT)
+        return -10;
+    
+    if(lsddbapi_createIndex(key->dbId, idxName, tblName, coldef)<0){
+        fprintf(stderr,"error while creating table index in plugin API\n");
+        return -1;
+    }
+    
+    return 0;
+}
+
 
 
 // Database statement Prep
@@ -387,5 +402,9 @@ const void* plugindb_column_text16(struct LSD_ScenePlugin const * key, unsigned 
     }
 	
     return result;
+}
+
+int plugindb_getLastInsertRowId(){
+	lsddbapi_getLastInsertRowId();
 }
 

@@ -228,6 +228,8 @@ int lsddb_addPatchChannel(int partId, cJSON* opts);
 // Plugin API stuff
 int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs);
 
+int lsddbapi_createIndex(int pluginId, const char* idxName, const char* subName, const char* colDefs);
+
 int lsddbapi_prepSelect(struct LSD_ScenePlugin const * pluginObj, unsigned int* stmtIdxBind, 
                         const char* tblName, const char* colPortion,
                         const char* wherePortion);
@@ -281,6 +283,8 @@ int lsddbapi_stmtColText(struct LSD_ScenePlugin const * plugin, unsigned int stm
 
 int lsddbapi_stmtColText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
 						   unsigned int colIdx, const void** result);
+
+int lsddbapi_getLastInsertRowId();
 
 
 

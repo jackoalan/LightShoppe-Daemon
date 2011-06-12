@@ -4193,6 +4193,49 @@ int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs)
     }
 }
 
+int lsddbapi_createIndex(int pluginId, const char* idxName, const char* subName, const char* colDefs){
+    if(!subName || !colDefs || !idxName)
+        return -1;
+    
+    const unsigned char* pluginName;
+    if(lsddbapi_verifyTable(pluginId,subName,&pluginName)){ // Already exists
+        return 0;
+    }
+    else if(pluginName){ // Doesn't exist (but plugin does); make it!
+        
+        // Using the plugin name, we make a composite name for our individual table
+		char indexName[256];
+		snprintf(indexName,256,"%s_%s",pluginName,idxName);
+		char tableName[256];
+		snprintf(tableName,256,"%s_%s",pluginName,subName);
+
+		char indexStmt[512];
+		snprintf(indexStmt,512,"CREATE INDEX IF NOT EXISTS %s ON %s (%s);",indexName,tableName,colDefs);
+		
+		// Ensure there is only one semicolon to prevent SQL injection attacks
+		const char* semicolon = strchr(indexStmt,';');
+		if(semicolon[1] != '\0'){
+			fprintf(stderr,"Two or more semicolons were detected in table creation statement, aborting\n");
+			return -1;
+		}
+        
+		char* createErr;
+		sqlite3_exec(memdb,indexStmt,NULL,NULL,&createErr);
+        if(!createErr){
+            return 0;
+        }
+        else{
+            fprintf(stderr,"Unable to create table index: %s\n",createErr);
+			sqlite3_free(createErr);
+            return -1;
+        }
+    }
+    else{
+        fprintf(stderr,"Plugin doesn't seem to exist for table index creation\n");
+        return -1;
+    }
+}
+
 // All prep functions below make a statement object,
 // stores it internally, and provides an index to retrieve it later
 
@@ -4621,6 +4664,10 @@ int lsddbapi_stmtColText16(struct LSD_ScenePlugin const * plugin, unsigned int s
 	}
 	
 	return 0;
+}
+
+int lsddbapi_getLastInsertRowId(){
+	return sqlite3_last_insert_rowid(memdb);
 }
 
 // Remove all traces of a plugin given its id
