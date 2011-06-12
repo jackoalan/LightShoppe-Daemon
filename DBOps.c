@@ -3458,7 +3458,7 @@ int lsddb_jsonFacade(int psId, cJSON* resp){
 
 
 static const char JSON_WIRES[] =
-"SELECT id,srcOut,destIn FROM SceneNodeEdge WHERE patchSpaceId=?1";
+"SELECT id,srcOut,destIn,srcFacadeInt,destFacadeInt FROM SceneNodeEdge WHERE patchSpaceId=?1";
 static sqlite3_stmt* JSON_WIRES_S;
 
 int lsddb_jsonWires(int patchSpaceId, cJSON* resp){
@@ -3473,9 +3473,13 @@ int lsddb_jsonWires(int patchSpaceId, cJSON* resp){
 		int wireId = sqlite3_column_int(JSON_WIRES_S,0);
 		int wireLeft = sqlite3_column_int(JSON_WIRES_S,1);
 		int wireRight = sqlite3_column_int(JSON_WIRES_S,2);
+        int wireLeftInt = sqlite3_column_int(JSON_WIRES_S,3);
+        int wireRightInt = sqlite3_column_int(JSON_WIRES_S,4);
 		
 		cJSON_AddNumberToObject(wireObj,"wireId",wireId);
+        cJSON_AddNumberToObject(wireObj,"wireLeftInt",wireLeftInt);
 		cJSON_AddNumberToObject(wireObj,"wireLeft",wireLeft);
+        cJSON_AddNumberToObject(wireObj,"wireRightInt",wireRightInt);
 		cJSON_AddNumberToObject(wireObj,"wireRight",wireRight);
 		
 		cJSON_AddItemToArray(wireArr,wireObj);

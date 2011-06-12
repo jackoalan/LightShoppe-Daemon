@@ -187,11 +187,25 @@ static const bpFunc floatGenBpFuncs[] =
 {floatGenPtrOut};
 
 int floatGenMake(struct LSD_SceneNodeInst const * inst, void* instData){
+    plugininst_addInstOutput(inst,floatType,"Float Out",0,0,NULL);
+	
+	plugindb_reset(corePlugin,floatGenInsertStmt);
+	plugindb_bind_int(corePlugin,floatGenInsertStmt,1,inst->dbId);
+	if(plugindb_step(corePlugin,floatGenInsertStmt) != SQLITE_DONE)
+		return -1;
     return 0;
 }
 
 int floatGenRestore(struct LSD_SceneNodeInst const * inst, void* instData){
-    return 0;
+	double* castData = (double*)instData;
+	plugindb_reset(corePlugin,floatGenSelectStmt);
+	plugindb_bind_int(corePlugin,floatGenSelectStmt,1,inst->dbId);
+	if(plugindb_step(corePlugin,floatGenSelectStmt) == SQLITE_ROW){
+		*castData = plugindb_column_double(corePlugin,floatGenSelectStmt,0);
+		return 0;
+	}
+	
+    return -1;
 }
 
 void floatGenClean(struct LSD_SceneNodeInst const * inst, void* instData){
@@ -199,7 +213,9 @@ void floatGenClean(struct LSD_SceneNodeInst const * inst, void* instData){
 }
 
 void floatGenDelete(struct LSD_SceneNodeInst const * inst, void* instData){
-    
+    plugindb_reset(corePlugin,floatGenDeleteStmt);
+	plugindb_bind_int(corePlugin,floatGenDeleteStmt,1,inst->dbId);
+	plugindb_step(corePlugin,floatGenDeleteStmt);
 }
 
 /****** FLOAT VIEW STUFF ******/
@@ -212,6 +228,14 @@ static unsigned int floatViewInsertStmt;
 static unsigned int floatViewDeleteStmt;
 
 int floatViewMake(struct LSD_SceneNodeInst const * inst, void* instData){
+	int inId;
+	plugininst_addInstInput(inst,floatType,"Float In",&inId);
+	
+	plugindb_reset(corePlugin,floatViewInsertStmt);
+	plugindb_bind_int(corePlugin,floatViewInsertStmt,1,inst->dbId);
+	plugindb_bind_int(corePlugin,floatViewInsertStmt,2,inId);
+	plugindb_step(corePlugin,floatViewInsertStmt);
+	
     return 0;
 }
 
@@ -224,7 +248,9 @@ void floatViewClean(struct LSD_SceneNodeInst const * inst, void* instData){
 }
 
 void floatViewDelete(struct LSD_SceneNodeInst const * inst, void* instData){
-    
+    plugindb_reset(corePlugin,floatViewDeleteStmt);
+	plugindb_bind_int(corePlugin,floatViewDeleteStmt,1,inst->dbId);
+	plugindb_step(corePlugin,floatViewDeleteStmt);
 }
 
 /****** RGB GEN STUFF ******/
@@ -254,11 +280,28 @@ static const bpFunc rgbGenBpFuncs[] =
 {rgbGenPtrOut};
 
 int rgbGenMake(struct LSD_SceneNodeInst const * inst, void* instData){
+    plugininst_addInstOutput(inst,rgbType,"RGB Out",0,0,NULL);
+	
+	plugindb_reset(corePlugin,rgbGenInsertStmt);
+	plugindb_bind_int(corePlugin,rgbGenInsertStmt,1,inst->dbId);
+	if(plugindb_step(corePlugin,rgbGenInsertStmt) != SQLITE_DONE)
+		return -1;
     return 0;
 }
 
 int rgbGenRestore(struct LSD_SceneNodeInst const * inst, void* instData){
-    return 0;
+    struct RGB_TYPE* castData = (struct RGB_TYPE*)instData;
+	plugindb_reset(corePlugin,rgbGenSelectStmt);
+	plugindb_bind_int(corePlugin,rgbGenSelectStmt,1,inst->dbId);
+	if(plugindb_step(corePlugin,rgbGenSelectStmt) == SQLITE_ROW){
+		castData->r = plugindb_column_double(corePlugin,rgbGenSelectStmt,0);
+        castData->g = plugindb_column_double(corePlugin,rgbGenSelectStmt,1);
+		castData->b = plugindb_column_double(corePlugin,rgbGenSelectStmt,2);
+
+		return 0;
+	}
+	
+    return -1;
 }
 
 void rgbGenClean(struct LSD_SceneNodeInst const * inst, void* instData){
@@ -266,7 +309,9 @@ void rgbGenClean(struct LSD_SceneNodeInst const * inst, void* instData){
 }
 
 void rgbGenDelete(struct LSD_SceneNodeInst const * inst, void* instData){
-    
+    plugindb_reset(corePlugin,rgbGenDeleteStmt);
+	plugindb_bind_int(corePlugin,rgbGenDeleteStmt,1,inst->dbId);
+	plugindb_step(corePlugin,rgbGenDeleteStmt);
 }
 
 /****** RGB VIEW STUFF ******/
@@ -279,6 +324,14 @@ static unsigned int rgbViewInsertStmt;
 static unsigned int rgbViewDeleteStmt;
 
 int rgbViewMake(struct LSD_SceneNodeInst const * inst, void* instData){
+    int inId;
+	plugininst_addInstInput(inst,rgbType,"RGB In",&inId);
+	
+	plugindb_reset(corePlugin,rgbViewInsertStmt);
+	plugindb_bind_int(corePlugin,rgbViewInsertStmt,1,inst->dbId);
+	plugindb_bind_int(corePlugin,rgbViewInsertStmt,2,inId);
+	plugindb_step(corePlugin,rgbViewInsertStmt);
+	
     return 0;
 }
 
@@ -291,7 +344,9 @@ void rgbViewClean(struct LSD_SceneNodeInst const * inst, void* instData){
 }
 
 void rgbViewDelete(struct LSD_SceneNodeInst const * inst, void* instData){
-    
+	plugindb_reset(corePlugin,rgbViewDeleteStmt);
+	plugindb_bind_int(corePlugin,rgbViewDeleteStmt,1,inst->dbId);
+	plugindb_step(corePlugin,rgbViewDeleteStmt);
 }
 
 /****** TRIGGER GEN STUFF ******/
@@ -314,11 +369,15 @@ static const bfFunc triggerGenBfFuncs[] =
 static const bpFunc triggerGenBpFuncs[] =
 {triggerGenPtrOut};
 
-int triggerGenMake(struct LSD_SceneNodeInst const * inst, void* instData){
+int triggerGenMake(struct LSD_SceneNodeInst const * inst, void* instData){    
+    plugininst_addInstOutput(inst,triggerType,"Trigger Out",0,0,NULL);
+
     return 0;
 }
 
 int triggerGenRestore(struct LSD_SceneNodeInst const * inst, void* instData){
+    int* castData = (int*)instData;
+    *castData = 0;
     return 0;
 }
 
@@ -333,26 +392,109 @@ void triggerGenDelete(struct LSD_SceneNodeInst const * inst, void* instData){
 /****** TRIGGER COUNT STUFF ******/
 
 struct TriggerCounter {
-	int count;
+	int phase;
+    struct RGB_TYPE out;
 	int triggerKnown;
+    int inId;
 };
 
-static struct LSD_SceneNodeClass* triggerCountClass;
+static struct LSD_SceneNodeClass* rgbTriggerClass;
 
-int triggerCountMake(struct LSD_SceneNodeInst const * inst, void* instData){
+static unsigned int rgbTriggerSelectStmt;
+static unsigned int rgbTriggerInsertStmt;
+static unsigned int rgbTriggerDeleteStmt;
+
+
+// Plug funcs
+void rgbTriggerBufferOut(struct LSD_SceneNodeOutput const * output){
+	struct TriggerCounter* trigCount = output->parentNode->data;
+    
+    struct LSD_SceneNodeInput const * trigIn;
+    plugininst_getInputStruct(output->parentNode,&trigIn,trigCount->inId);
+    
+    if(trigIn && trigIn->connection){
+        int* curTrig = node_bufferOutput(trigIn->connection);
+        if(curTrig){
+            if((*curTrig - trigCount->triggerKnown) == 1){
+                ++trigCount->phase;
+                if(trigCount->phase > 2)
+                    trigCount->phase = 0;
+            }
+            trigCount->triggerKnown = *curTrig;
+        }
+    }
+    
+    if(trigCount->phase == 0){
+        trigCount->out.r = 1.0;
+        trigCount->out.g = 0.0;
+        trigCount->out.b = 0.0;
+    }
+    else if(trigCount->phase == 1){
+        trigCount->out.r = 0.0;
+        trigCount->out.g = 1.0;
+        trigCount->out.b = 0.0;
+    }
+    else if(trigCount->phase == 2){
+        trigCount->out.r = 0.0;
+        trigCount->out.g = 0.0;
+        trigCount->out.b = 1.0;
+    }
+    else{
+        trigCount->phase = 0;
+        trigCount->out.r = 1.0;
+        trigCount->out.g = 0.0;
+        trigCount->out.b = 0.0;
+    }
+}
+
+void* rgbTriggerPtrOut(struct LSD_SceneNodeOutput const * output){
+    struct TriggerCounter* trigCount = output->parentNode->data;
+	return (void*)&(trigCount->out);
+}
+
+// Plug func tables
+static const bfFunc rgbTriggerBfFuncs[] =
+{rgbTriggerBufferOut};
+
+static const bpFunc rgbTriggerBpFuncs[] =
+{rgbTriggerPtrOut};
+
+int rgbTriggerMake(struct LSD_SceneNodeInst const * inst, void* instData){
+    plugininst_addInstOutput(inst,rgbType,"RGB Out",0,0,NULL);
+    
+    int inId;
+	plugininst_addInstInput(inst,triggerType,"Trigger In",&inId);
+	
+	plugindb_reset(corePlugin,rgbTriggerInsertStmt);
+	plugindb_bind_int(corePlugin,rgbTriggerInsertStmt,1,inst->dbId);
+	plugindb_bind_int(corePlugin,rgbTriggerInsertStmt,2,inId);
+	plugindb_step(corePlugin,rgbTriggerInsertStmt);
+    
     return 0;
 }
 
-int triggerCountRestore(struct LSD_SceneNodeInst const * inst, void* instData){
-    return 0;
+int rgbTriggerRestore(struct LSD_SceneNodeInst const * inst, void* instData){
+    struct TriggerCounter* castData = (struct TriggerCounter*)instData;
+    castData->phase = 0;
+    castData->triggerKnown = 0;
+    
+    plugindb_reset(corePlugin,rgbTriggerSelectStmt);
+    plugindb_bind_int(corePlugin,rgbTriggerSelectStmt,1,inst->dbId);
+    if(plugindb_step(corePlugin,rgbTriggerSelectStmt) == SQLITE_ROW){
+        castData->inId = plugindb_column_int(corePlugin,rgbTriggerSelectStmt,0);
+        return 0;
+    }
+    return -1;
 }
 
-void triggerCountClean(struct LSD_SceneNodeInst const * inst, void* instData){
+void rgbTriggerClean(struct LSD_SceneNodeInst const * inst, void* instData){
     
 }
 
-void triggerCountDelete(struct LSD_SceneNodeInst const * inst, void* instData){
-    
+void rgbTriggerDelete(struct LSD_SceneNodeInst const * inst, void* instData){
+    plugindb_reset(corePlugin,rgbTriggerDeleteStmt);
+	plugindb_bind_int(corePlugin,rgbTriggerDeleteStmt,1,inst->dbId);
+	plugindb_step(corePlugin,rgbTriggerDeleteStmt);
 }
 
 
@@ -402,9 +544,9 @@ int coreInit(struct LSD_ScenePlugin const * plugin){
 	plugininit_registerNodeClass(plugin,&triggerGenClass,triggerGenMake,triggerGenRestore,triggerGenClean,triggerGenDelete,
 								 sizeof(int),"Trigger Generator","Desc",7,triggerGenBfFuncs,triggerGenBpFuncs);
 	
-	// Register trigger counter
-	plugininit_registerNodeClass(plugin,&triggerCountClass,triggerCountMake,triggerCountRestore,triggerCountClean,triggerCountDelete,
-								 sizeof(struct TriggerCounter),"Trigger Counter","Desc",8,NULL,NULL);
+	// Register rgb trigger
+	plugininit_registerNodeClass(plugin,&rgbTriggerClass,rgbTriggerMake,rgbTriggerRestore,rgbTriggerClean,rgbTriggerDelete,
+								 sizeof(struct TriggerCounter),"RGB Trigger","Desc",8,rgbTriggerBfFuncs,rgbTriggerBpFuncs);
 	
 	// Create Int Gen DB stuff
 	plugininit_createTable(plugin,"intGen","id INTEGER PRIMARY KEY, value INTEGER DEFAULT 0");
@@ -446,6 +588,11 @@ int coreInit(struct LSD_ScenePlugin const * plugin){
 	plugindb_prepInsert(plugin,&rgbViewInsertStmt,"rgbView","id,inId","?1,?2");
 	plugindb_prepDelete(plugin,&rgbViewDeleteStmt,"rgbView","id=?1");
 	
+    // Create RGB Trigger DB stuff
+    plugininit_createTable(plugin,"rgbTrigger","id INTEGER PRIMARY KEY, inId INTEGER NOT NULL");
+    plugindb_prepSelect(plugin,&rgbTriggerSelectStmt,"rgbTrigger","inId","id=?1");
+    plugindb_prepInsert(plugin,&rgbTriggerInsertStmt,"rgbTrigger","id,inId","?1,?2");
+    plugindb_prepDelete(plugin,&rgbTriggerDeleteStmt,"rgbTrigger","id=?1");
     
     return 0;
 }
@@ -490,7 +637,7 @@ void rpcHandler(cJSON* in, cJSON* out){
 		if(plugindb_step(corePlugin,intGenSelectStmt) == SQLITE_ROW)
             cJSON_AddNumberToObject(out,"val",plugindb_column_int(corePlugin,intGenSelectStmt,0));
 		else
-			cJSON_AddStringToObject(out,"error","Unable to update val");
+			cJSON_AddStringToObject(out,"error","Unable to get val");
 		
     }
     else if(strcasecmp(coreMethod->valuestring,"getIntViewVal") == 0){
@@ -523,9 +670,56 @@ void rpcHandler(cJSON* in, cJSON* out){
 		val = cJSON_GetObjectItem(in,"val");
 		if(!val || val->type != cJSON_Number)
 			return;
+		
+		plugindb_reset(corePlugin,floatGenUpdateStmt);
+		plugindb_bind_int(corePlugin,floatGenUpdateStmt,1,nodeId->valueint);
+		plugindb_bind_double(corePlugin,floatGenUpdateStmt,2,val->valuedouble);
+		if(plugindb_step(corePlugin,floatGenUpdateStmt) == SQLITE_DONE)
+			cJSON_AddStringToObject(out,"success","success");
+		else
+			cJSON_AddStringToObject(out,"error","Unable to update val");
+		
+		double* floatGenDbl = NULL;
+        plugin_getInstById(corePlugin,nodeId->valueint,(void**)&floatGenDbl);
+		if(floatGenDbl)
+			*floatGenDbl = val->valuedouble;
+        
+    }
+    else if(strcasecmp(coreMethod->valuestring,"getFloatGenVal") == 0){
+		
+		plugindb_reset(corePlugin,floatGenSelectStmt);
+		plugindb_bind_int(corePlugin,floatGenSelectStmt,1,nodeId->valueint);
+		if(plugindb_step(corePlugin,floatGenSelectStmt) == SQLITE_ROW)
+            cJSON_AddNumberToObject(out,"val",plugindb_column_double(corePlugin,floatGenSelectStmt,0));
+		else
+			cJSON_AddStringToObject(out,"error","Unable to get val");
+		
     }
 	else if(strcasecmp(coreMethod->valuestring,"getFloatViewVal") == 0){
+        plugindb_reset(corePlugin,floatViewSelectStmt);
+        plugindb_bind_int(corePlugin,floatViewSelectStmt,1,nodeId->valueint);
+        int inId;
+        if(plugindb_step(corePlugin,floatViewSelectStmt) == SQLITE_ROW){
+            inId = plugindb_column_int(corePlugin,floatViewSelectStmt,0);
+        }
+        else{
+            cJSON_AddStringToObject(out,"error","Unable to find nodeInst in DB");
+            return;
+        }
         
+        struct LSD_SceneNodeInst const * viewInst = plugin_getInstById(corePlugin,nodeId->valueint,
+                                                                       NULL);
+        
+		struct LSD_SceneNodeInput const * floatViewerIn = NULL;
+        plugininst_getInputStruct(viewInst, &floatViewerIn, inId);
+        
+        if(floatViewerIn && floatViewerIn->connection){
+            double* theVal = node_bufferOutput(floatViewerIn->connection);
+            if(theVal)
+                cJSON_AddNumberToObject(out,"val",*theVal);
+        }
+        else
+            cJSON_AddStringToObject(out,"error","Unable to resolve viewer's connection");
     }
 	else if(strcasecmp(coreMethod->valuestring,"setRgbGenVal") == 0){
 		val = cJSON_GetObjectItem(in,"val");
@@ -544,15 +738,76 @@ void rpcHandler(cJSON* in, cJSON* out){
 		if(!bVal || bVal->type != cJSON_Number)
 			return;
 		
+        plugindb_reset(corePlugin,rgbGenUpdateStmt);
+		plugindb_bind_int(corePlugin,rgbGenUpdateStmt,1,nodeId->valueint);
+		plugindb_bind_double(corePlugin,rgbGenUpdateStmt,2,rVal->valuedouble);
+        plugindb_bind_double(corePlugin,rgbGenUpdateStmt,3,gVal->valuedouble);
+		plugindb_bind_double(corePlugin,rgbGenUpdateStmt,4,bVal->valuedouble);
+
+		if(plugindb_step(corePlugin,rgbGenUpdateStmt) == SQLITE_DONE)
+			cJSON_AddStringToObject(out,"success","success");
+		else
+			cJSON_AddStringToObject(out,"error","Unable to update val");
+		
+		struct RGB_TYPE* rgbGenObj = NULL;
+        plugin_getInstById(corePlugin,nodeId->valueint,(void**)&rgbGenObj);
+		if(rgbGenObj){
+			rgbGenObj->r = rVal->valuedouble;
+            rgbGenObj->g = gVal->valuedouble;
+			rgbGenObj->b = bVal->valuedouble;
+        }
+    }
+    else if(strcasecmp(coreMethod->valuestring,"getRgbGenVal") == 0){
+		
+		plugindb_reset(corePlugin,rgbGenSelectStmt);
+		plugindb_bind_int(corePlugin,rgbGenSelectStmt,1,nodeId->valueint);
+		if(plugindb_step(corePlugin,rgbGenSelectStmt) == SQLITE_ROW){
+            cJSON* rgbObj = cJSON_CreateObject();
+            cJSON_AddNumberToObject(rgbObj,"r",plugindb_column_double(corePlugin,rgbGenSelectStmt,0));
+            cJSON_AddNumberToObject(rgbObj,"g",plugindb_column_double(corePlugin,rgbGenSelectStmt,1));
+            cJSON_AddNumberToObject(rgbObj,"b",plugindb_column_double(corePlugin,rgbGenSelectStmt,2));
+            cJSON_AddItemToObject(out,"val",rgbObj);
+        }
+		else
+			cJSON_AddStringToObject(out,"error","Unable to get val");
+		
     }
 	else if(strcasecmp(coreMethod->valuestring,"getRgbViewVal") == 0){
+        plugindb_reset(corePlugin,rgbViewSelectStmt);
+        plugindb_bind_int(corePlugin,rgbViewSelectStmt,1,nodeId->valueint);
+        int inId;
+        if(plugindb_step(corePlugin,rgbViewSelectStmt) == SQLITE_ROW){
+            inId = plugindb_column_int(corePlugin,rgbViewSelectStmt,0);
+        }
+        else{
+            cJSON_AddStringToObject(out,"error","Unable to find nodeInst in DB");
+            return;
+        }
         
+        struct LSD_SceneNodeInst const * viewInst = plugin_getInstById(corePlugin,nodeId->valueint,
+                                                                       NULL);
+        
+		struct LSD_SceneNodeInput const * rgbViewerIn = NULL;
+        plugininst_getInputStruct(viewInst, &rgbViewerIn, inId);
+        
+        if(rgbViewerIn && rgbViewerIn->connection){
+            struct RGB_TYPE* theVal = node_bufferOutput(rgbViewerIn->connection);
+            if(theVal){
+                cJSON* rgbObj = cJSON_CreateObject();
+                cJSON_AddNumberToObject(rgbObj,"r",theVal->r);
+                cJSON_AddNumberToObject(rgbObj,"g",theVal->g);
+                cJSON_AddNumberToObject(rgbObj,"b",theVal->b);
+                cJSON_AddItemToObject(out,"val",rgbObj);
+            }
+        }
+        else
+            cJSON_AddStringToObject(out,"error","Unable to resolve viewer's connection");
     }
 	else if(strcasecmp(coreMethod->valuestring,"triggerGen") == 0){
-        
-    }
-	else if(strcasecmp(coreMethod->valuestring,"getTriggerCount") == 0){
-        
+        int* trigVal = NULL;
+        plugin_getInstById(corePlugin,nodeId->valueint,(void**)&trigVal);
+		if(trigVal)
+			*trigVal += 1;
     }
 }
 
