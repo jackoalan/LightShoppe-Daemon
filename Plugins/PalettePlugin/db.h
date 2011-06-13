@@ -45,15 +45,17 @@ int paletteDBReorderSwatches(int paletteId, cJSON* swatchIdArr);
 
 int paletteDBActivatePalette(int nodeId, int paletteId);
 
-int paletteDBSetNumOut(int nodeId);
+int paletteDBSetNumOut(int nodeId, int numOut);
 
 int paletteDBSampleMode(int nodeId, int mode);
 
-int paletteDBSamplePos(int nodeId, int mode);
+int paletteDBSamplePos(int nodeId, double pos);
 
 int paletteDBRepeatMode(int nodeId, int mode);
 
 int restorePaletteInst(struct LSD_SceneNodeInst* inst);
+
+int deletePaletteInst(int nodeId);
 
 
 // Gradient helpers

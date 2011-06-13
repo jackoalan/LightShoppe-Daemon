@@ -382,6 +382,41 @@ int restorePaletteInst(struct LSD_SceneNodeInst* inst){
 		instData->outDataArr = outDataArr;
 		
 		// Repopulate swatches
+        if(instData->selMode == MANUAL){
+            // Lookup swatch as referenced in the struct
+            plugindb_reset(palettePlugin,selectSwatchStmt);
+            plugindb_bind_int(palettePlugin,selectSwatchStmt,1,instData->curPaletteId);
+            int swatchCount = 0;
+            while(plugindb_step(palettePlugin,selectSwatchStmt) == SQLITE_ROW){
+                // Count swatches in palette
+                ++swatchCount;
+            }
+            
+            instData->swatchCount = swatchCount;
+            
+            struct RGB_TYPE* swatchArr = malloc(sizeof(struct RGB_TYPE)*swatchCount);
+            
+            if(!swatchArr)
+                return -1;
+            
+            instData->swatchArr = swatchArr;
+            
+            // Copy swatches into struct
+            int i = 0;
+            plugindb_reset(palettePlugin,selectSwatchStmt);
+            plugindb_bind_int(palettePlugin,selectSwatchStmt,1,instData->curPaletteId);
+            while(plugindb_step(palettePlugin,selectSwatchStmt) == SQLITE_ROW && i<swatchCount){
+                instData->swatchArr[i].r = plugindb_column_double(palettePlugin,selectSwatchStmt,1);
+                instData->swatchArr[i].g = plugindb_column_double(palettePlugin,selectSwatchStmt,2);
+                instData->swatchArr[i].b = plugindb_column_double(palettePlugin,selectSwatchStmt,3);
+                ++i;
+            }
+            
+        }
+        else if(instData->selMode == PARAM){
+            // Remove curPalette Reference and wait for buffering
+            instData->curPaletteId = -1;
+        }
 		
 		// Reference inputs
 		
@@ -391,38 +426,51 @@ int restorePaletteInst(struct LSD_SceneNodeInst* inst){
 	}
 }
 
+
+// Tracks individual instance's parameters
 static const char NODE_SETTING[] = "NodeSetting";
 static const char NODE_SETTING_COLS[] =
 "nodeId INTEGER PRIMARY KEY, selMode INTEGER, manualPaletteId INTEGER, "
 "numOuts INTEGER, sampleMode INTEGER, paramSampleRepeatMode INTEGER";
 
+// Shared Palette DB
 static const char PALETTE[] = "Palette";
 static const char PALETTE_COLS[] =
 "id INTEGER PRIMARY KEY, name TEXT";
 
+// Shared Swatch DB
 static const char SWATCH[] = "Swatch";
 static const char SWATCH_COLS[] =
 "id INTEGER PRIMARY KEY, parentPalette INTEGER, posIdx INTEGER, "
 "rVal REAL, gVal REAL, bVal REAL";
 
+// Tracks selector inputs bound to instances
 static const char SELECT_IN[] = "SelectIn";
 static const char SELECT_IN_COLS[] =
 "inId INTEGER PRIMARY KEY, nodeId INTEGER";
 
+// Tracks stop position inputs bound to instances
 static const char SAMPLE_STOP_IN[] = "SampleStopIn";
 static const char SAMPLE_STOP_IN_COLS[] =
 "inId INTEGER PRIMARY KEY, nodeId INTEGER";
 
+// Tracks outputs bound to instances
 static const char RGB_OUT[] = "RGBOut";
 static const char RGB_OUT_COLS[] = 
 "outId INTEGER PRIMARY KEY, nodeId INTEGER, outIdx INTEGER";
 
+// When an instance is in manual sampling mode,
+// this is where static stop positions are stored
+// This table is emptied for an instance when switched to param mode
+// and repopulated as a default linear spread when switched to manual
 static const char MANUAL_STOP[] = "ManualStop";
 static const char MANUAL_STOP_COLS[] =
 "outId INTEGER PRIMARY KEY, nodeId INTEGER, outIdx INTEGER, pos REAL";
 
 int paletteSamplerDBInit(struct LSD_ScenePlugin const * plugin){
 	palettePlugin = plugin;
+    
+    
 	
 	plugininit_createTable(palettePlugin, NODE_SETTING, NODE_SETTING_COLS);
 	plugindb_prepSelect(palettePlugin, &selectNodeSettingStmt, NODE_SETTING, 
@@ -501,6 +549,8 @@ int paletteSamplerDBInit(struct LSD_ScenePlugin const * plugin){
 						"pos=?2","outId=?1");
 	plugindb_prepDelete(palettePlugin, &deleteManualStopStmt, MANUAL_STOP,
 						"nodeId=?1");
+    
+    return 0;
 	
 }
 
