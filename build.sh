@@ -11,10 +11,10 @@ gcc -o DBArr.o -c -g -O0 -Wall DBArr.c
 echo "Compiling Array"
 gcc -o Array.o -c -g -O0 -Wall Array.c
 
-echo "Compiling LSD DB Array Operatives"
+echo "Compiling LSD DB Array Operations"
 gcc -o DBArrOps.o -c -g -O0 -Wall DBArrOps.c
 
-echo "Compiling DB Operatives"
+echo "Compiling DB Operations"
 gcc -o DBOps.o -c -g -O0 -Wall DBOps.c
 
 echo "Compiling Node"

@@ -405,6 +405,6 @@ const void* plugindb_column_text16(struct LSD_ScenePlugin const * key, unsigned 
 }
 
 int plugindb_getLastInsertRowId(){
-	lsddbapi_getLastInsertRowId();
+	return lsddbapi_getLastInsertRowId();
 }
 

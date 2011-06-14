@@ -126,7 +126,8 @@ static const bpFunc bpFuncs[] =
 
 
 int paletteSamplerMake(struct LSD_SceneNodeInst const * inst, void* instData){
-    // Nothing to do...honestly!
+    // Create Default entries in DB
+	newPaletteInst(inst->dbId);
 	return 0;
 }
 
@@ -200,31 +201,61 @@ void paletteRPCHandler(cJSON* in, cJSON* out){
 		paletteDBInsertPalette(name->valuestring);
 	}
 	else if(strcasecmp(paletteMethod->valuestring,"updatePalette") == 0){
+		cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
+		if(!paletteId || paletteId->type != cJSON_Number){
+			cJSON_AddStringToObject(out,"error","paletteId not provided");
+			return;
+		}
+		
         cJSON* name = cJSON_GetObjectItem(in,"name");
         if(!name || name->type != cJSON_String)
             return;
         
-		paletteDBUpdatePalette(nodeId->valueint, name->valuestring);
+		paletteDBUpdatePalette(paletteId->valueint, name->valuestring);
 	}	
 	else if(strcasecmp(paletteMethod->valuestring,"deletePalette") == 0){
-		paletteDBDeletePalette(nodeId->valueint);
+		cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
+		if(!paletteId || paletteId->type != cJSON_Number){
+			cJSON_AddStringToObject(out,"error","paletteId not provided");
+			return;
+		}
+		
+		paletteDBDeletePalette(paletteId->valueint);
 	}	
 	else if(strcasecmp(paletteMethod->valuestring,"insertSwatch") == 0){
         cJSON* colour = cJSON_GetObjectItem(in,"colour");
         if(!colour || colour->type != cJSON_Object)
             return;
+		
+		cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
+		if(!paletteId || paletteId->type != cJSON_Number){
+			cJSON_AddStringToObject(out,"error","paletteId not provided");
+			return;
+		}
         
-		paletteDBInsertSwatch(nodeId->valueint, colour);
+		paletteDBInsertSwatch(paletteId->valueint, colour);
 	}	
 	else if(strcasecmp(paletteMethod->valuestring,"updateSwatch") == 0){
         cJSON* colour = cJSON_GetObjectItem(in,"colour");
         if(!colour || colour->type != cJSON_Object)
             return;
+		
+		cJSON* swatchId = cJSON_GetObjectItem(in,"swatchId");
+		if(!swatchId || swatchId->type != cJSON_Number){
+			cJSON_AddStringToObject(out,"error","swatchId not provided");
+			return;
+		}
         
-		paletteDBUpdateSwatch(nodeId->valueint, colour);
+		paletteDBUpdateSwatchColour(swatchId->valueint, colour);
 	}	
 	else if(strcasecmp(paletteMethod->valuestring,"deleteSwatch") == 0){
-		paletteDBDeleteSwatch(nodeId->valueint);
+		cJSON* swatchId = cJSON_GetObjectItem(in,"swatchId");
+		if(!swatchId || swatchId->type != cJSON_Number){
+			cJSON_AddStringToObject(out,"error","swatchId not provided");
+			return;
+		}
+		
+		paletteDBDeleteSwatch(swatchId->valueint);
 	}
     else if(strcasecmp(paletteMethod->valuestring,"reorderSwatches") == 0){
         cJSON* swatchIdArr = cJSON_GetObjectItem(in,"swatchIdArr");
@@ -259,7 +290,7 @@ void paletteRPCHandler(cJSON* in, cJSON* out){
         if(!pos || pos->type != cJSON_Number)
             return;
         
-		paletteDBSamplePos(nodeId->valueint, pos->valuedouble);
+		paletteDBManualSampleStopPos(nodeId->valueint, pos->valuedouble);
 	}	
 	else if(strcasecmp(paletteMethod->valuestring,"setRepeatMode") == 0){
         cJSON* mode = cJSON_GetObjectItem(in,"mode");
@@ -283,7 +314,7 @@ int palettePluginInit(struct LSD_ScenePlugin const * plugin){
                                  paletteSamplerDelete, sizeof(struct PaletteSamplerInstData),
                                  "Palette Sampler","Desc",0,bfFuncs,bpFuncs);
     
-    paletteDBInit(plugin);
+    paletteSamplerDBInit(plugin);
 	
 	return 0;
 }

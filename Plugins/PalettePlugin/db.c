@@ -60,9 +60,9 @@ static unsigned int selectSampleStopInStmt;
 static unsigned int insertSampleStopInStmt;
 static unsigned int deleteSampleStopInStmt;
 
-//static unsigned int selectRGBOutStmt;
-//static unsigned int insertRGBOutStmt;
-//static unsigned int deleteRGBOutStmt;
+static unsigned int selectRGBOutStmt;
+static unsigned int insertRGBOutStmt;
+static unsigned int deleteRGBOutStmt;
 
 static unsigned int selectManualStopStmt;
 static unsigned int insertManualStopStmt;
@@ -179,6 +179,7 @@ int paletteDBGetSampler(cJSON* target, int nodeId){
 		struct PaletteSamplerOutputData* outData = &(instData->outDataArr[i]);
 		
 		cJSON_AddNumberToObject(stopObj,"stopId",outData->outId);
+		cJSON_AddNumberToObject(stopObj,"stopIdx",outData->outIdx);
 		cJSON_AddNumberToObject(stopObj,"pos",outData->samplePos);
 		
 		cJSON_AddItemToArray(stopArr,stopObj);
@@ -353,6 +354,14 @@ int paletteDBRepeatMode(int nodeId, enum RepeatMode mode){
 	return -1;
 }
 
+int newPaletteInst(int instId){
+	plugindb_reset(palettePlugin,insertNodeSettingStmt);
+	plugindb_bind_int(palettePlugin,insertNodeSettingStmt,1,instId);
+	if(plugindb_step(palettePlugin,insertNodeSettingStmt) == SQLITE_DONE)
+		return 0;
+	return -1;
+}
+
 int restorePaletteInst(struct LSD_SceneNodeInst const * inst){
 	if(!inst)
 		return -1;
@@ -380,6 +389,16 @@ int restorePaletteInst(struct LSD_SceneNodeInst const * inst){
 			return -1;
 		
 		instData->outDataArr = outDataArr;
+		
+		// Struct outputs
+		int i = 0;
+		plugindb_reset(palettePlugin,selectRGBOutStmt);
+		plugindb_bind_int(palettePlugin,selectRGBOutStmt,1,inst->dbId);
+		while(plugindb_step(palettePlugin,selectRGBOutStmt) == SQLITE_ROW && i < instData->numOuts){
+			instData->outDataArr[i].outId = plugindb_column_int(palettePlugin,selectRGBOutStmt,0);
+			instData->outDataArr[i].outIdx = plugindb_column_int(palettePlugin,selectRGBOutStmt,2);
+			++i;
+		}
 		
 		// Repopulate swatches
         if(instData->selMode == MANUAL){
@@ -569,9 +588,14 @@ int paletteSamplerDBInit(struct LSD_ScenePlugin const * plugin){
 	plugindb_prepDelete(palettePlugin, &deleteSampleStopInStmt, SAMPLE_STOP_IN,
 						"nodeId=?1");
 	
-	//plugininit_createTable(palettePlugin, RGB_OUT, RGB_OUT_COLS);
-	//plugininit_createIndex(palettePlugin, "RgbOutIdx", RGB_OUT, "nodeId,outIdx");
-	//plugindb_prepSelect(palettePlugin, &selectRGBOutStmt, RGB_OUT,
+	plugininit_createTable(palettePlugin, RGB_OUT, RGB_OUT_COLS);
+	plugininit_createIndex(palettePlugin, "RgbOutIdx", RGB_OUT, "nodeId,outIdx");
+	plugindb_prepSelect(palettePlugin, &selectRGBOutStmt, RGB_OUT,
+						"outId,outIdx","nodeId=?1");
+	plugindb_prepInsert(palettePlugin, &insertRGBOutStmt, RGB_OUT,
+						"outId,nodeId,outIdx","?1,?2,?3");
+	plugindb_prepDelete(palettePlugin, &deleteRGBOutStmt, RGB_OUT,
+						"nodeId=?1");
 	
 	plugininit_createTable(palettePlugin, MANUAL_STOP, MANUAL_STOP_COLS);
 	plugininit_createIndex(palettePlugin, "ManualStopIdx", MANUAL_STOP, "nodeId,outIdx");
@@ -604,6 +628,10 @@ int deletePaletteInst(int instId){
 	plugindb_reset(palettePlugin,deleteManualStopStmt);
 	plugindb_bind_int(palettePlugin,deleteManualStopStmt,1,instId);
 	plugindb_step(palettePlugin,deleteManualStopStmt);
+	
+	plugindb_reset(palettePlugin,deleteRGBOutStmt);
+	plugindb_bind_int(palettePlugin,deleteRGBOutStmt,1,instId);
+	plugindb_step(palettePlugin,deleteRGBOutStmt);
 	
 	return 0;
 }

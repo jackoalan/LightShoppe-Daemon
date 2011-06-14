@@ -39,7 +39,7 @@ int paletteDBDeletePalette(int paletteId);
 
 int paletteDBInsertSwatch(int paletteId, cJSON* colour);
 
-int paletteDBUpdateSwatch(int swatchId, cJSON* colour);
+int paletteDBUpdateSwatchColour(int swatchId, cJSON* colour);
 
 int paletteDBDeleteSwatch(int swatchId);
 
@@ -51,9 +51,11 @@ int paletteDBSetNumOut(int nodeId, int numOut);
 
 int paletteDBSampleMode(int nodeId, enum SourceModeEnum mode);
 
-int paletteDBSamplePos(int nodeId, double pos);
+int paletteDBManualSampleStopPos(int nodeId, double pos);
 
 int paletteDBRepeatMode(int nodeId, enum RepeatMode mode);
+
+int newPaletteInst(int instId);
 
 int restorePaletteInst(struct LSD_SceneNodeInst const * inst);
 
@@ -65,6 +67,6 @@ int deletePaletteInst(int nodeId);
 
 // Init method
 
-int paletteDBInit(struct LSD_ScenePlugin const * plugin);
+int paletteSamplerDBInit(struct LSD_ScenePlugin const * plugin);
 
 #endif // PALETTE_SAMPLE_DB_H

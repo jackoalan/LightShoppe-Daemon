@@ -25,6 +25,7 @@
 
 struct PaletteSamplerOutputData {
 	int outId;
+	int outIdx;
 	double samplePos;
 	struct RGB_TYPE outVal;
 };
