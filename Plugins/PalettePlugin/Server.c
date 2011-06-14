@@ -113,7 +113,7 @@ void paletteRgbBuffer(struct LSD_SceneNodeOutput const * output){
 }
 
 void* paletteRgbPtr(struct LSD_SceneNodeOutput const * output){
-    
+    return NULL;
 }
 
 
@@ -127,10 +127,11 @@ static const bpFunc bpFuncs[] =
 
 int paletteSamplerMake(struct LSD_SceneNodeInst const * inst, void* instData){
     // Nothing to do...honestly!
+	return 0;
 }
 
 int paletteSamplerRestore(struct LSD_SceneNodeInst const * inst, void* instData){
-    restorePaletteInst(inst);
+    return restorePaletteInst(inst);
 }
 
 void paletteSamplerClean(struct LSD_SceneNodeInst const * inst, void* instData){
@@ -283,6 +284,8 @@ int palettePluginInit(struct LSD_ScenePlugin const * plugin){
                                  "Palette Sampler","Desc",0,bfFuncs,bpFuncs);
     
     paletteDBInit(plugin);
+	
+	return 0;
 }
 
 void palettePluginClean(struct LSD_ScenePlugin const * plugin){}

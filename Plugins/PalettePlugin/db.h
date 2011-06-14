@@ -22,12 +22,14 @@
  */
 
 #include "../../cJSON.h"
+#include "../../Node.h"
+#include "PaletteSampler.h"
 
 // RPC methods
 
 int paletteDBGetSampler(cJSON* target, int nodeId);
 
-int paletteDBSetSelMode(int nodeId, int mode);
+int paletteDBSetSelMode(int nodeId, enum SourceModeEnum mode);
 
 int paletteDBInsertPalette(const char* name);
 
@@ -47,13 +49,13 @@ int paletteDBActivatePalette(int nodeId, int paletteId);
 
 int paletteDBSetNumOut(int nodeId, int numOut);
 
-int paletteDBSampleMode(int nodeId, int mode);
+int paletteDBSampleMode(int nodeId, enum SourceModeEnum mode);
 
 int paletteDBSamplePos(int nodeId, double pos);
 
-int paletteDBRepeatMode(int nodeId, int mode);
+int paletteDBRepeatMode(int nodeId, enum RepeatMode mode);
 
-int restorePaletteInst(struct LSD_SceneNodeInst* inst);
+int restorePaletteInst(struct LSD_SceneNodeInst const * inst);
 
 int deletePaletteInst(int nodeId);
 

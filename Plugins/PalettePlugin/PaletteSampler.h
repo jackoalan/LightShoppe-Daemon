@@ -30,14 +30,14 @@ struct PaletteSamplerOutputData {
 };
 
 enum SourceModeEnum {
-	MANUAL, // Takes data from user
-	PARAM // Takes data from node input
+	MANUAL = 0, // Takes data from user
+	PARAM = 1 // Takes data from node input
 };
 
 enum RepeatMode { // Determines how gradient extrapolations behave
-	CLAMP, // Static colour (default)
-	AUTO_LOOP, // Seamless loop around (start's stop added to end)
-	AUTO_BLACKOUT // Black stops added to ends
+	CLAMP = 0, // Static colour (default)
+	AUTO_LOOP = 1, // Seamless loop around (start's stop added to end)
+	AUTO_BLACKOUT = 2 // Black stops added to ends
 };
 
 struct PaletteSamplerInstData {
@@ -48,8 +48,8 @@ struct PaletteSamplerInstData {
 	int numOuts;
 	enum SourceModeEnum sampleMode;
 	enum RepeatMode paramSampleRepeatMode;
-	struct LSD_SceneNodeInput* selIn;
-	struct LSD_SceneNodeInput* sampleStopInArr;
+	struct LSD_SceneNodeInput const * selIn;
+	struct LSD_SceneNodeInput const ** sampleStopInArr;
 	struct PaletteSamplerOutputData* outDataArr;
 };
 

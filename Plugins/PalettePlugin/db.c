@@ -25,6 +25,7 @@
 
 #include "db.h"
 #include "PaletteSampler.h"
+#include "../../NodeInstAPI.h"
 
 // Main plugin object
 static struct LSD_ScenePlugin const * palettePlugin;
@@ -59,9 +60,9 @@ static unsigned int selectSampleStopInStmt;
 static unsigned int insertSampleStopInStmt;
 static unsigned int deleteSampleStopInStmt;
 
-static unsigned int selectRGBOutStmt;
-static unsigned int insertRGBOutStmt;
-static unsigned int deleteRGBOutStmt;
+//static unsigned int selectRGBOutStmt;
+//static unsigned int insertRGBOutStmt;
+//static unsigned int deleteRGBOutStmt;
 
 static unsigned int selectManualStopStmt;
 static unsigned int insertManualStopStmt;
@@ -132,7 +133,7 @@ int paletteDBGetSampler(cJSON* target, int nodeId){
 		int paletteId = plugindb_column_int(palettePlugin,selectPaletteStmt,0);
 		cJSON_AddNumberToObject(paletteObj,"paletteId",paletteId);
 		cJSON_AddStringToObject(paletteObj,"paletteName",
-								plugindb_column_text(palettePlugin,selectPaletteStmt,1));
+								(const char*)plugindb_column_text(palettePlugin,selectPaletteStmt,1));
 		
 		getPaletteSwatches(paletteObj,paletteId);
 		
@@ -145,7 +146,7 @@ int paletteDBGetSampler(cJSON* target, int nodeId){
 	// cur grad colours
 	// Get inst data for this
 	struct PaletteSamplerInstData* instData;
-	plugin_getInstById(palettePlugin,nodeId,&instData);
+	plugin_getInstById(palettePlugin,nodeId,(void**)&instData);
 	
 	int i;
 
@@ -352,8 +353,7 @@ int paletteDBRepeatMode(int nodeId, enum RepeatMode mode){
 	return -1;
 }
 
-// TODO: FINISH
-int restorePaletteInst(struct LSD_SceneNodeInst* inst){
+int restorePaletteInst(struct LSD_SceneNodeInst const * inst){
 	if(!inst)
 		return -1;
 	
@@ -416,14 +416,48 @@ int restorePaletteInst(struct LSD_SceneNodeInst* inst){
         else if(instData->selMode == PARAM){
             // Remove curPalette Reference and wait for buffering
             instData->curPaletteId = -1;
+			
+			// Set SelIn
+			plugindb_reset(palettePlugin,selectSelectInStmt);
+			plugindb_bind_int(palettePlugin,selectSelectInStmt,1,inst->dbId);
+			if(plugindb_step(palettePlugin,selectSelectInStmt) == SQLITE_ROW){
+				plugininst_getInputStruct(inst, &(instData->selIn), 
+										  plugindb_column_int(palettePlugin,selectSelectInStmt,0));
+			}
         }
 		
-		// Reference inputs
-		
+		if(instData->sampleMode == PARAM){
+			struct LSD_SceneNodeInput const ** sampleStopInArr = 
+			malloc(sizeof(struct LSD_SceneNodeInput*)*instData->numOuts);
+			if(!sampleStopInArr)
+				return -1;
+			
+			instData->sampleStopInArr = sampleStopInArr;
+			
+			plugindb_reset(palettePlugin,selectSampleStopInStmt);
+			plugindb_bind_int(palettePlugin,selectSampleStopInStmt,1,inst->dbId);
+			int i = 0;
+			while(plugindb_step(palettePlugin,selectSampleStopInStmt) == SQLITE_ROW && i < instData->numOuts){
+				plugininst_getInputStruct(inst, &(instData->sampleStopInArr[i]), 
+										  plugindb_column_int(palettePlugin,selectSampleStopInStmt,0));
+				++i;
+			}
+		}
+		else if(instData->sampleMode == MANUAL){
+			plugindb_reset(palettePlugin,selectManualStopStmt);
+			plugindb_bind_int(palettePlugin,selectManualStopStmt,1,inst->dbId);
+			int i = 0;
+			while(plugindb_step(palettePlugin,selectManualStopStmt) == SQLITE_ROW){
+				instData->outDataArr[i].samplePos = plugindb_column_double(palettePlugin,selectManualStopStmt,2);
+				++i;
+			}
+		}
 	}
 	else{
 		return -1;
 	}
+	
+	return 0;
 }
 
 
@@ -552,5 +586,25 @@ int paletteSamplerDBInit(struct LSD_ScenePlugin const * plugin){
     
     return 0;
 	
+}
+
+int deletePaletteInst(int instId){
+	plugindb_reset(palettePlugin,deleteNodeSettingStmt);
+	plugindb_bind_int(palettePlugin,deleteNodeSettingStmt,1,instId);
+	plugindb_step(palettePlugin,deleteNodeSettingStmt);
+	
+	plugindb_reset(palettePlugin,deleteSelectInStmt);
+	plugindb_bind_int(palettePlugin,deleteSelectInStmt,1,instId);
+	plugindb_step(palettePlugin,deleteSelectInStmt);
+	
+	plugindb_reset(palettePlugin,deleteSampleStopInStmt);
+	plugindb_bind_int(palettePlugin,deleteSampleStopInStmt,1,instId);
+	plugindb_step(palettePlugin,deleteSampleStopInStmt);
+	
+	plugindb_reset(palettePlugin,deleteManualStopStmt);
+	plugindb_bind_int(palettePlugin,deleteManualStopStmt,1,instId);
+	plugindb_step(palettePlugin,deleteManualStopStmt);
+	
+	return 0;
 }
 
