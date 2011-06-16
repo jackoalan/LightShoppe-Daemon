@@ -89,6 +89,7 @@
 
 #include "db.h"
 #include "PaletteSampler.h"
+#include "Gradient.h"
 
 // Main plugin object
 static struct LSD_ScenePlugin const * palettePlugin;
@@ -109,10 +110,19 @@ static struct LSD_SceneNodeClass* paletteSamplerClass;
 // Plug funcs
 
 void paletteRgbBuffer(struct LSD_SceneNodeOutput const * output){
-	
+	paletteGradientOut(output->parentNode, output->dbId);
 }
 
 void* paletteRgbPtr(struct LSD_SceneNodeOutput const * output){
+	struct PaletteSamplerInstData* instData = (struct PaletteSamplerInstData*)output->parentNode->data;
+	
+	int i;
+	for(i=0;i<instData->numOuts;++i){
+		if(instData->outDataArr[i].outId == output->dbId){
+			return (void*)&(instData->outDataArr[i].outVal);
+		}
+	}
+	
     return NULL;
 }
 
@@ -136,13 +146,7 @@ int paletteSamplerRestore(struct LSD_SceneNodeInst const * inst, void* instData)
 }
 
 void paletteSamplerClean(struct LSD_SceneNodeInst const * inst, void* instData){
-    struct PaletteSamplerInstData* castData = (struct PaletteSamplerInstData*)instData;
-    
-    if(castData->numOuts)
-        free(castData->outDataArr);
-    
-    if(castData->swatchCount)
-        free(castData->swatchArr);
+    cleanPaletteInst(inst);
 }
 
 void paletteSamplerDelete(struct LSD_SceneNodeInst const * inst, void* instData){
@@ -289,8 +293,12 @@ void paletteRPCHandler(cJSON* in, cJSON* out){
         cJSON* pos = cJSON_GetObjectItem(in,"pos");
         if(!pos || pos->type != cJSON_Number)
             return;
+		
+		cJSON* outId = cJSON_GetObjectItem(in,"outId");
+		if(!outId || outId->type != cJSON_Number)
+			return;
         
-		paletteDBManualSampleStopPos(nodeId->valueint, pos->valuedouble);
+		paletteDBManualSampleStopPos(nodeId->valueint, outId->valueint, pos->valuedouble);
 	}	
 	else if(strcasecmp(paletteMethod->valuestring,"setRepeatMode") == 0){
         cJSON* mode = cJSON_GetObjectItem(in,"mode");
@@ -320,6 +328,7 @@ int palettePluginInit(struct LSD_ScenePlugin const * plugin){
 }
 
 void palettePluginClean(struct LSD_ScenePlugin const * plugin){}
+
 
 
 // Standard plugin shite

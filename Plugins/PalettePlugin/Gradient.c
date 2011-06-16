@@ -18,3 +18,106 @@
  **    @author Jack Andersen <jackoalan@gmail.com>
  */
 
+#include "PaletteSampler.h"
+#include "db.h"
+#include "../../Node.h"
+
+int paletteGradientClamp(struct RGB_TYPE* target, int swatchCount, 
+						 struct RGB_TYPE* swatchArr, double samplePos){
+	// No swatches will output black
+	if(swatchCount <= 0){
+		target->r = 0.0;
+		target->g = 0.0;
+		target->b = 0.0;
+		return 0;
+	}
+	
+	// If only one swatch present, output its colour
+	if(swatchCount == 1){
+		target->r = swatchArr[0].r;
+		target->g = swatchArr[0].g;
+		target->b = swatchArr[0].b;
+		return 0;
+	}
+	
+	// If position is <= 0 output first swatch
+	if(samplePos <= 0.0){
+		target->r = swatchArr[0].r;
+		target->g = swatchArr[0].g;
+		target->b = swatchArr[0].b;
+		return 0;
+	}
+	
+	// If position is >= 1 output last swatch
+	if(samplePos >= 1.0){
+		target->r = swatchArr[swatchCount-1].r;
+		target->g = swatchArr[swatchCount-1].g;
+		target->b = swatchArr[swatchCount-1].b;
+		return 0;
+	}
+	
+	// Determine which two swatches the position is in between
+	double interval = 1.0 / (double)(swatchCount - 1);
+	
+	double swaA = 0.0;
+	double swaB = 0.0;
+	double innerPos = 0.0;
+	
+	int i;
+	for(i=1;i<swatchCount;++i){
+		swaA = swaB;
+		swaB = interval*i;
+		if(swaB >= samplePos){
+			// i is the latter swatch, scale coordinates to focus on area between swatches
+			innerPos = (samplePos - swaA) / interval;
+			
+			// Crossfade between swatch i-1 and i using innerPos as blend factor
+			target->r = (swatchArr[i-1].r * (1.0 - innerPos)) + (swatchArr[i].r * innerPos);
+			target->g = (swatchArr[i-1].g * (1.0 - innerPos)) + (swatchArr[i].g * innerPos);
+			target->b = (swatchArr[i-1].b * (1.0 - innerPos)) + (swatchArr[i].b * innerPos);
+			
+			return 0;
+		}
+	}
+	
+	return 0;
+}
+
+int paletteGradientOut(struct LSD_SceneNodeInst const * inst, int outId){
+	int i;
+	
+	struct PaletteSamplerInstData* instData = (struct PaletteSamplerInstData*)inst->data;
+	
+	// Get palette from input if parametric palette selection is active
+	if(instData->selMode == PARAM && instData->selIn){ 
+		// Check to see if curPaletteId is current
+		int* selInInt = (int*)node_bufferOutput(instData->selIn->connection);
+		if(selInInt){
+			if(*selInInt != instData->curPaletteId){
+				// Instruct DB to load another palette
+				paletteDBLoadSwatchData(inst, *selInInt);
+			}
+		}
+	}
+	
+	// Get sampler positions from inputs if parametric sampling is active
+	if(instData->sampleMode == PARAM){
+		for(i=0;i<instData->numOuts;++i){
+			double* samplePos = (double*)node_bufferOutput(instData->sampleStopInArr[i]->connection);
+			if(samplePos)
+				instData->outDataArr[i].samplePos = *samplePos;
+			else
+				instData->outDataArr[i].samplePos = 0.0;
+		}
+	}
+	
+	// Find result colour by clamping each out
+	for(i=0;i<instData->numOuts;++i){
+		paletteGradientClamp(&(instData->outDataArr[i].outVal),instData->swatchCount,
+							 instData->swatchArr,instData->outDataArr[i].samplePos);
+	}
+	
+	
+	
+	return 0;
+}

@@ -54,4 +54,5 @@ struct PaletteSamplerInstData {
 	struct PaletteSamplerOutputData* outDataArr;
 };
 
+
 #endif // PALETTE_SAMPLER_H

@@ -26,6 +26,15 @@
 #include "db.h"
 #include "PaletteSampler.h"
 #include "../../NodeInstAPI.h"
+#include "../../CorePlugin.h"
+
+// Forward Decls
+int paletteDBRemakeSamplers(int nodeId, int numOuts, struct LSD_SceneNodeInst const * inst);
+
+// type ids
+static int rgbTypeId;
+static int floatTypeId;
+static int intTypeId;
 
 // Main plugin object
 static struct LSD_ScenePlugin const * palettePlugin;
@@ -197,6 +206,17 @@ int paletteDBSetSelMode(int nodeId, enum SourceModeEnum mode){
 	if(plugindb_step(palettePlugin,updateNodeSettingSelModeStmt) == SQLITE_DONE)
 		return 0;
 	return -1;
+	
+	// Get node
+	struct PaletteSamplerInstData* instData = NULL;
+	struct LSD_SceneNodeInst const * inst = plugin_getInstById(palettePlugin,nodeId,(void**)&instData);
+	
+	// Remake samplers
+	paletteDBRemakeSamplers(nodeId,instData->numOuts,inst);
+	
+	// Reload inst
+	cleanPaletteInst(inst);
+	restorePaletteInst(inst);
 }
 
 int paletteDBInsertPalette(const char* name){
@@ -309,21 +329,185 @@ int paletteDBReorderSwatches(int paletteId, cJSON* swatchIdArr){
 	return 0;
 }
 
+int paletteDBLoadSwatchData(struct LSD_SceneNodeInst const * inst, int paletteId){
+	if(!inst)
+		return -1;
+	
+	struct PaletteSamplerInstData* instData = (struct PaletteSamplerInstData*)inst->data;
+	
+	// Free swatch arr
+	free(instData->swatchArr);
+	
+	// Count number of swatches in palette
+	plugindb_reset(palettePlugin,selectSwatchStmt);
+	plugindb_bind_int(palettePlugin,selectSwatchStmt,1,paletteId);
+	int swatchCount = 0;
+	while(plugindb_step(palettePlugin,selectSwatchStmt) == SQLITE_ROW){
+		++swatchCount;
+	}
+	
+	instData->swatchCount = swatchCount;
+	
+	// malloc the number of swatches
+	struct RGB_TYPE* swatchArr = malloc(sizeof(struct RGB_TYPE)*swatchCount);
+	if(!swatchArr)
+		return -1;
+	
+	instData->swatchArr = swatchArr;
+	
+	// Copy the colour data into the swatch array
+	plugindb_reset(palettePlugin,selectSwatchStmt);
+	plugindb_bind_int(palettePlugin,selectSwatchStmt,1,paletteId);
+	int i = 0;
+	while(plugindb_step(palettePlugin,selectSwatchStmt) == SQLITE_ROW && i<swatchCount){
+		instData->swatchArr[i].r = plugindb_column_double(palettePlugin,selectSwatchStmt,1);
+		instData->swatchArr[i].g = plugindb_column_double(palettePlugin,selectSwatchStmt,2);
+		instData->swatchArr[i].b = plugindb_column_double(palettePlugin,selectSwatchStmt,3);
+		++i;
+	}
+	
+	instData->curPaletteId = paletteId;
+	
+	return 0;
+}
+
 int paletteDBActivatePalette(int nodeId, int paletteId){
 	plugindb_reset(palettePlugin,updateNodeSettingManualPaletteStmt);
 	plugindb_bind_int(palettePlugin,updateNodeSettingManualPaletteStmt,1,nodeId);
 	plugindb_bind_int(palettePlugin,updateNodeSettingManualPaletteStmt,2,paletteId);
-	if(plugindb_step(palettePlugin,updateNodeSettingManualPaletteStmt) == SQLITE_DONE)
+	if(plugindb_step(palettePlugin,updateNodeSettingManualPaletteStmt) == SQLITE_DONE){
+		
+		// get inst
+		struct LSD_SceneNodeInst const * inst = plugin_getInstById(palettePlugin,nodeId,NULL);
+		
+		// Load Swatch Data
+		paletteDBLoadSwatchData(inst,paletteId);
+		
 		return 0;
+	}
 	return -1;
 }
 
+int paletteDBRemakeSamplers(int nodeId, int numOuts, struct LSD_SceneNodeInst const * inst){
+	
+	
+    // Delete manual samplers
+	plugindb_reset(palettePlugin,deleteManualStopStmt);
+	plugindb_bind_int(palettePlugin,deleteManualStopStmt,1,nodeId);
+	plugindb_step(palettePlugin,deleteManualStopStmt);
+	
+	// Delete param sampler inputs
+	plugindb_reset(palettePlugin,selectSampleStopInStmt);
+	plugindb_bind_int(palettePlugin,selectSampleStopInStmt,1,nodeId);
+	while(plugindb_step(palettePlugin,selectSampleStopInStmt) == SQLITE_ROW){
+		int inId = plugindb_column_int(palettePlugin,selectSampleStopInStmt,0);
+		plugininst_removeInstInput(inst, inId);
+	}
+	
+	// Delete param sampler input DB records
+	plugindb_reset(palettePlugin,deleteSampleStopInStmt);
+	plugindb_bind_int(palettePlugin,deleteSampleStopInStmt,1,nodeId);
+	plugindb_step(palettePlugin,deleteSampleStopInStmt);
+	
+	// Determine sampler mode
+	plugindb_reset(palettePlugin,selectNodeSettingStmt);
+	plugindb_bind_int(palettePlugin,selectNodeSettingStmt,1,nodeId);
+	if(plugindb_step(palettePlugin,selectNodeSettingStmt) == SQLITE_ROW){
+		int sampleMode = plugindb_column_int(palettePlugin,selectNodeSettingStmt,3);
+		
+		// if manual (0), layout samplers evenly and register in DB
+		if(sampleMode == 0){
+			double interval = 1.0 / (double)(numOuts - 1);
+			double curPos = 0.0;
+			
+			int i;
+			for(i=0;i<numOuts;++i){
+				plugindb_reset(palettePlugin,insertManualStopStmt);
+				plugindb_bind_int(palettePlugin,insertManualStopStmt,1,nodeId);
+				plugindb_bind_int(palettePlugin,insertManualStopStmt,2,i);
+				plugindb_bind_double(palettePlugin,insertManualStopStmt,3,curPos);
+				plugindb_step(palettePlugin,insertManualStopStmt);
+				curPos += interval;
+			}
+		}
+		
+		// if param (1), create that many sampler inputs and register in DB
+		else if(sampleMode == 1){
+			int i;
+			for(i=0;i<numOuts;++i){
+				int inId;
+				plugininst_addInstInput(inst,floatTypeId,"Sample Position",&inId);
+				
+				plugindb_reset(palettePlugin,insertSampleStopInStmt);
+				plugindb_bind_int(palettePlugin,insertSampleStopInStmt,1,nodeId);
+				plugindb_bind_int(palettePlugin,insertSampleStopInStmt,2,inId);
+				plugindb_step(palettePlugin,insertSampleStopInStmt);
+			}
+		}
+		
+		
+	}
+	else
+		return -1;
+	
+	return 0;
+}
+
 int paletteDBSetNumOut(int nodeId, int numOuts){
+    
+    
+    // Update num out
 	plugindb_reset(palettePlugin,updateNodeSettingNumOutsStmt);
 	plugindb_bind_int(palettePlugin,updateNodeSettingNumOutsStmt,1,nodeId);
 	plugindb_bind_int(palettePlugin,updateNodeSettingNumOutsStmt,2,numOuts);
-	if(plugindb_step(palettePlugin,updateNodeSettingNumOutsStmt) == SQLITE_DONE)
+	if(plugindb_step(palettePlugin,updateNodeSettingNumOutsStmt) == SQLITE_DONE){
+        
+        
+        // Get the node structure
+        struct PaletteSamplerInstData* instData = NULL;
+        struct LSD_SceneNodeInst const * inst = plugin_getInstById(palettePlugin,nodeId,(void**)&instData);
+
+        
+        // Select each output from database and request its removal
+        plugindb_reset(palettePlugin,selectRGBOutStmt);
+        plugindb_bind_int(palettePlugin,selectRGBOutStmt,1,nodeId);
+        while(plugindb_step(palettePlugin,selectRGBOutStmt) == SQLITE_ROW){
+            int outId = plugindb_column_int(palettePlugin,selectRGBOutStmt,0);
+            plugininst_removeInstOutput(inst, outId);
+        }
+        
+        // Dump the output database
+        plugindb_reset(palettePlugin,deleteRGBOutStmt);
+        plugindb_bind_int(palettePlugin,deleteRGBOutStmt,1,nodeId);
+        plugindb_step(palettePlugin,deleteRGBOutStmt);
+        
+        
+        // Create new outputs
+        int i;
+        for(i=0;i<numOuts;++i){
+            int outId;
+            plugininst_addInstOutput(inst,rgbTypeId,"RGB Out",0,0,&outId);
+            
+            // Record output
+            plugindb_reset(palettePlugin,insertRGBOutStmt);
+            plugindb_bind_int(palettePlugin,insertRGBOutStmt,1,outId);
+            plugindb_bind_int(palettePlugin,insertRGBOutStmt,2,nodeId);
+            plugindb_bind_int(palettePlugin,insertRGBOutStmt,3,i);
+            plugindb_step(palettePlugin,insertRGBOutStmt);
+            
+        }
+        
+        // Remake sampler stop data
+        paletteDBRemakeSamplers(nodeId,numOuts,inst);
+		
+		
+		// Reload inst
+		cleanPaletteInst(inst);
+		restorePaletteInst(inst);
+
+        
 		return 0;
+    }
 	return -1;
 }
 
@@ -331,17 +515,44 @@ int paletteDBSampleMode(int nodeId, enum SourceModeEnum mode){
 	plugindb_reset(palettePlugin,updateNodeSettingSampleModeStmt);
 	plugindb_bind_int(palettePlugin,updateNodeSettingSampleModeStmt,1,nodeId);
 	plugindb_bind_int(palettePlugin,updateNodeSettingSampleModeStmt,2,mode);
-	if(plugindb_step(palettePlugin,updateNodeSettingSampleModeStmt) == SQLITE_DONE)
+	if(plugindb_step(palettePlugin,updateNodeSettingSampleModeStmt) == SQLITE_DONE){
+		
+		// Get inst
+		struct PaletteSamplerInstData* instData = NULL;
+        struct LSD_SceneNodeInst const * inst = plugin_getInstById(palettePlugin,nodeId,(void**)&instData);
+		
+		// Remake samplers
+		paletteDBRemakeSamplers(nodeId, instData->numOuts, inst);
+		
+		// Reload node inst
+		cleanPaletteInst(inst);
+		restorePaletteInst(inst);
+		
 		return 0;
+	}
 	return -1;
 }
 
-int paletteDBManualSampleStopPos(int stopId, double pos){
+int paletteDBManualSampleStopPos(int nodeId, int stopId, double pos){
 	plugindb_reset(palettePlugin,updateManualStopPosStmt);
 	plugindb_bind_int(palettePlugin,updateManualStopPosStmt,1,stopId);
 	plugindb_bind_double(palettePlugin,updateManualStopPosStmt,2,pos);
-	if(plugindb_step(palettePlugin,updateManualStopPosStmt) == SQLITE_DONE)
+	if(plugindb_step(palettePlugin,updateManualStopPosStmt) == SQLITE_DONE){
+		
+		// Find the associated stop struct and set its position there
+		struct PaletteSamplerInstData* instData = NULL;
+        plugin_getInstById(palettePlugin,nodeId,(void**)&instData);
+		
+		int i;
+		for(i=0;i<instData->numOuts;++i){
+			if(instData->outDataArr[i].outId == stopId){
+				instData->outDataArr[i].samplePos = pos;
+				break;
+			}
+		}
+		
 		return 0;
+	}
 	return -1;
 }
 
@@ -349,8 +560,17 @@ int paletteDBRepeatMode(int nodeId, enum RepeatMode mode){
 	plugindb_reset(palettePlugin,updateNodeSettingRepeatModeStmt);
 	plugindb_bind_int(palettePlugin,updateNodeSettingRepeatModeStmt,1,nodeId);
 	plugindb_bind_int(palettePlugin,updateNodeSettingRepeatModeStmt,2,mode);
-	if(plugindb_step(palettePlugin,updateNodeSettingRepeatModeStmt) == SQLITE_DONE)
+	if(plugindb_step(palettePlugin,updateNodeSettingRepeatModeStmt) == SQLITE_DONE){
+		
+		// Get inst
+		struct PaletteSamplerInstData* instData = NULL;
+        plugin_getInstById(palettePlugin,nodeId,(void**)&instData);
+		
+		// Set Mode in struct
+		instData->paramSampleRepeatMode = mode;
+		
 		return 0;
+	}
 	return -1;
 }
 
@@ -480,6 +700,20 @@ int restorePaletteInst(struct LSD_SceneNodeInst const * inst){
 }
 
 
+int cleanPaletteInst(struct LSD_SceneNodeInst const * inst){
+	if(!inst)
+		return -1;
+	
+	struct PaletteSamplerInstData* castData = (struct PaletteSamplerInstData*)inst->data;
+
+	free(castData->outDataArr);
+	free(castData->swatchArr);
+	free(castData->sampleStopInArr);
+	
+	return 0;
+}
+
+
 // Tracks individual instance's parameters
 static const char NODE_SETTING[] = "NodeSetting";
 static const char NODE_SETTING_COLS[] =
@@ -523,7 +757,9 @@ static const char MANUAL_STOP_COLS[] =
 int paletteSamplerDBInit(struct LSD_ScenePlugin const * plugin){
 	palettePlugin = plugin;
     
-    
+	rgbTypeId = core_getRGBTypeID();
+	intTypeId = core_getIntegerTypeID();
+	floatTypeId = core_getFloatTypeID();
 	
 	plugininit_createTable(palettePlugin, NODE_SETTING, NODE_SETTING_COLS);
 	plugindb_prepSelect(palettePlugin, &selectNodeSettingStmt, NODE_SETTING, 
