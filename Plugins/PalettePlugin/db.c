@@ -110,6 +110,8 @@ int paletteDBGetSampler(cJSON* target, int nodeId){
 	if(!target || target->type != cJSON_Object)
 		return -1;
 	
+	int sampleMode = 0;
+	
 	// settings
 	cJSON* settingObj = cJSON_CreateObject();
 	
@@ -122,8 +124,8 @@ int paletteDBGetSampler(cJSON* target, int nodeId){
 								plugindb_column_int(palettePlugin,selectNodeSettingStmt,1));
 		cJSON_AddNumberToObject(settingObj,"numOuts",
 								plugindb_column_int(palettePlugin,selectNodeSettingStmt,2));
-		cJSON_AddNumberToObject(settingObj,"sampleMode",
-								plugindb_column_int(palettePlugin,selectNodeSettingStmt,3));
+		sampleMode = plugindb_column_int(palettePlugin,selectNodeSettingStmt,3);
+		cJSON_AddNumberToObject(settingObj,"sampleMode",sampleMode);
 		cJSON_AddNumberToObject(settingObj,"paramSampleRepeatMode",
 								plugindb_column_int(palettePlugin,selectNodeSettingStmt,4));
 	}
@@ -183,15 +185,18 @@ int paletteDBGetSampler(cJSON* target, int nodeId){
 	// Sampler stops
 	cJSON* stopArr = cJSON_CreateArray();
 	
-	for(i=0; i<instData->numOuts; ++i){
-		cJSON* stopObj = cJSON_CreateObject();
-		struct PaletteSamplerOutputData* outData = &(instData->outDataArr[i]);
-		
-		cJSON_AddNumberToObject(stopObj,"stopId",outData->outId);
-		cJSON_AddNumberToObject(stopObj,"stopIdx",outData->outIdx);
-		cJSON_AddNumberToObject(stopObj,"pos",outData->samplePos);
-		
-		cJSON_AddItemToArray(stopArr,stopObj);
+	if(sampleMode == 0){
+	
+		for(i=0; i<instData->numOuts; ++i){
+			cJSON* stopObj = cJSON_CreateObject();
+			struct PaletteSamplerOutputData* outData = &(instData->outDataArr[i]);
+			
+			cJSON_AddNumberToObject(stopObj,"stopId",outData->outId);
+			cJSON_AddNumberToObject(stopObj,"stopIdx",outData->outIdx);
+			cJSON_AddNumberToObject(stopObj,"pos",outData->samplePos);
+			
+			cJSON_AddItemToArray(stopArr,stopObj);
+		}
 	}
 	
 	cJSON_AddItemToObject(target,"sampleStops",stopArr);
@@ -367,7 +372,7 @@ int paletteDBLoadSwatchData(struct LSD_SceneNodeInst const * inst, int paletteId
 	}
 	
 	instData->curPaletteId = paletteId;
-	
+		
 	return 0;
 }
 
@@ -616,7 +621,7 @@ int restorePaletteInst(struct LSD_SceneNodeInst const * inst){
 		plugindb_bind_int(palettePlugin,selectRGBOutStmt,1,inst->dbId);
 		while(plugindb_step(palettePlugin,selectRGBOutStmt) == SQLITE_ROW && i < instData->numOuts){
 			instData->outDataArr[i].outId = plugindb_column_int(palettePlugin,selectRGBOutStmt,0);
-			instData->outDataArr[i].outIdx = plugindb_column_int(palettePlugin,selectRGBOutStmt,2);
+			instData->outDataArr[i].outIdx = plugindb_column_int(palettePlugin,selectRGBOutStmt,1);
 			++i;
 		}
 		
@@ -653,6 +658,8 @@ int restorePaletteInst(struct LSD_SceneNodeInst const * inst){
             
         }
         else if(instData->selMode == PARAM){
+			instData->swatchArr = NULL;
+			
             // Remove curPalette Reference and wait for buffering
             instData->curPaletteId = -1;
 			
@@ -683,6 +690,8 @@ int restorePaletteInst(struct LSD_SceneNodeInst const * inst){
 			}
 		}
 		else if(instData->sampleMode == MANUAL){
+			instData->sampleStopInArr = NULL;
+			
 			plugindb_reset(palettePlugin,selectManualStopStmt);
 			plugindb_bind_int(palettePlugin,selectManualStopStmt,1,inst->dbId);
 			int i = 0;
@@ -693,6 +702,7 @@ int restorePaletteInst(struct LSD_SceneNodeInst const * inst){
 		}
 	}
 	else{
+		fprintf(stderr,"Node record doesn't exist in DB\n");
 		return -1;
 	}
 	

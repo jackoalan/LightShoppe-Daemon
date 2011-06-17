@@ -18,9 +18,13 @@
  **    @author Jack Andersen <jackoalan@gmail.com>
  */
 
+#include <math.h>
+
 #include "PaletteSampler.h"
 #include "db.h"
 #include "../../Node.h"
+
+
 
 int paletteGradientClamp(struct RGB_TYPE* target, int swatchCount, 
 						 struct RGB_TYPE* swatchArr, double samplePos){
@@ -83,6 +87,104 @@ int paletteGradientClamp(struct RGB_TYPE* target, int swatchCount,
 	return 0;
 }
 
+int paletteGradientBlackout(struct RGB_TYPE* target, int swatchCount, 
+							struct RGB_TYPE* swatchArr, double samplePos){
+	
+	// No swatches; black
+	if(swatchCount <= 0){
+		target->r = 0.0;
+		target->g = 0.0;
+		target->b = 0.0;
+		return 0;
+	}
+	
+	// Determine size of overhang
+	double interval = 1.0 / (double)(swatchCount - 1);
+	
+	// Account for low limit
+	if(samplePos <= -interval){
+		target->r = 0.0;
+		target->g = 0.0;
+		target->b = 0.0;
+		return 0;
+	}
+	
+	// Account for high limit
+	if(samplePos >= (1.0 + interval)){
+		target->r = 0.0;
+		target->g = 0.0;
+		target->b = 0.0;
+		return 0;
+	}
+	
+	// Account for normal range
+	if(samplePos >= 0.0 && samplePos <= 1.0){
+		paletteGradientClamp(target,swatchCount,swatchArr,samplePos);
+		return 0;
+	}
+	
+	// Account for lower black interval
+	if(samplePos < 0.0){
+		double level = (samplePos / interval) + 1.0;
+		// Take first swatch multiplied by level
+		target->r = swatchArr[0].r * level;
+		target->g = swatchArr[0].g * level;
+		target->b = swatchArr[0].b * level;
+		return 0;
+	}
+	
+	// Account for upper black interval
+	if(samplePos > 1.0){
+		double level = ((samplePos - 1.0) / interval);
+		// Take last swatch multiplied by level
+		target->r = swatchArr[swatchCount-1].r * level;
+		target->g = swatchArr[swatchCount-1].g * level;
+		target->b = swatchArr[swatchCount-1].b * level;
+		return 0;
+	}
+	
+	return 0;
+	
+}
+
+int paletteGradientLoop(struct RGB_TYPE* target, int swatchCount, 
+						struct RGB_TYPE* swatchArr, double samplePos){
+	
+	// No swatches; black
+	if(swatchCount <= 0){
+		target->r = 0.0;
+		target->g = 0.0;
+		target->b = 0.0;
+		return 0;
+	}
+	
+	// Determine size of overhang
+	double interval = 1.0 / (double)(swatchCount - 1);
+	
+	// Determine size of loop cycle
+	double loopCycle = 1.0 + interval;
+	
+	// Determine position within loop cycle
+	double cyclePos = (samplePos / loopCycle);
+	cyclePos -= floor(cyclePos);
+	cyclePos *= loopCycle;
+	
+	if(cyclePos > 0.0){
+		double xFac = (cyclePos - 1.0) / interval;
+		// X-fade between last and first swatch using xFac
+		target->r = (swatchArr[swatchCount-1].r * (1.0 - xFac)) + (swatchArr[0].r * xFac);
+		target->g = (swatchArr[swatchCount-1].g * (1.0 - xFac)) + (swatchArr[0].g * xFac);
+		target->b = (swatchArr[swatchCount-1].b * (1.0 - xFac)) + (swatchArr[0].b * xFac);
+		return 0;
+	}
+	else{
+		paletteGradientClamp(target,swatchCount,swatchArr,cyclePos);
+		return 0;
+	}
+	
+	return 0;
+}
+
 int paletteGradientOut(struct LSD_SceneNodeInst const * inst, int outId){
 	int i;
 	
@@ -113,8 +215,18 @@ int paletteGradientOut(struct LSD_SceneNodeInst const * inst, int outId){
 	
 	// Find result colour by clamping each out
 	for(i=0;i<instData->numOuts;++i){
-		paletteGradientClamp(&(instData->outDataArr[i].outVal),instData->swatchCount,
+		if(instData->sampleMode == MANUAL || instData->paramSampleRepeatMode == CLAMP){
+			paletteGradientClamp(&(instData->outDataArr[i].outVal),instData->swatchCount,
 							 instData->swatchArr,instData->outDataArr[i].samplePos);
+		}
+		else if(instData->paramSampleRepeatMode == AUTO_LOOP){
+			paletteGradientLoop(&(instData->outDataArr[i].outVal),instData->swatchCount,
+								instData->swatchArr,instData->outDataArr[i].samplePos);
+		}
+		else if(instData->paramSampleRepeatMode == AUTO_BLACKOUT){
+			paletteGradientBlackout(&(instData->outDataArr[i].outVal),instData->swatchCount,
+									instData->swatchArr,instData->outDataArr[i].samplePos);
+		}
 	}
 	
 	

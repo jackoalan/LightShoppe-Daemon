@@ -57,6 +57,9 @@ void node_incFrameCount(){
 
 // Buffer wrapper func (eliminates redundant bufferings)
 void* node_bufferOutput(struct LSD_SceneNodeOutput* output){
+	if(!output)
+		return NULL;
+	
     if(output->lastBufferedFrame != curFrame){
         output->bufferFunc(output);
         output->lastBufferedFrame = curFrame;

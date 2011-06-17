@@ -2597,8 +2597,8 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
 	
 	int srcPS;
 	int destPS;
-    int srcClass;
-    int destClass;
+    int srcClass = -1;
+    int destClass = -1;
 	
 	// holder of wire ID for after insertion
 	int wireId;

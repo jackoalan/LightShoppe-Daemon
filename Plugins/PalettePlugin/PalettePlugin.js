@@ -1,6 +1,7 @@
 
 // Gradient generator
 function GenerateGradientStrip(colourArr){
+	
 	var strip = $(document.createElement('div'));
 	
 	var grad = document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -18,8 +19,8 @@ function GenerateGradientStrip(colourArr){
 	
 	if(colourArr.length <= 1){
 		if(colourArr.length == 1)
-			rect.setAttribute('style','fill:rgba('+(255*colourArr[0].r)+','+(255*colourArr[0].g)+','+
-							  (255*colourArr[0].b)+',1);');
+			rect.setAttribute('style','fill:rgba('+parseInt(255*colourArr[0].r)+','+parseInt(255*colourArr[0].g)+','+
+							  parseInt(255*colourArr[0].b)+',1);');
 		else
 			rect.setAttribute('style','fill:rgba(0,0,0,1);');
 	}
@@ -35,8 +36,8 @@ function GenerateGradientStrip(colourArr){
 		
 		for(var i in colourArr){
 			var stop = document.createElementNS('http://www.w3.org/2000/svg','stop');
-			stop.setAttribute('stop-color','rgba('+(255*colourArr[i].r)+','+(255*colourArr[i].g)+','+
-							  (255*colourArr[i].b)+',1)');
+			stop.setAttribute('stop-color','rgba('+parseInt(255*colourArr[i].r)+','+parseInt(255*colourArr[i].g)+','+
+							  parseInt(255*colourArr[i].b)+',1)');
 			stop.setAttribute('offset',curOffset+'%');
 			linGrad.appendChild(stop);
 			curOffset += interval;
@@ -50,10 +51,40 @@ function GenerateGradientStrip(colourArr){
 
 
 // Gradient object with sample stops
-function GradientSamplerStrip(colourArr,sampleStopArr,server){
+function GradientSamplerStrip(colourArr,sampleStopArr,server,nodeId){
 	
+	var strip = $(document.createElement('div'));
+	strip.width(465);
 	
+	var gradStrip = GenerateGradientStrip(colourArr);
+	gradStrip.height(25);
+	gradStrip.width(449);
+	gradStrip.css('position','relative').css('left','8px');
+	strip.append(gradStrip);
 	
+	var sliderStrip = $(document.createElement('div'));
+	sliderStrip.width(465);
+	sliderStrip.css('position','relative').css('clear','both');
+	strip.append(sliderStrip);
+	
+	for(var i in sampleStopArr){
+		var stop = $(document.createElement('div'));
+		stop.addClass('PaletteMarker');
+		stop.data({stopId:sampleStopArr[i].stopId,server:server,nodeId:nodeId});
+		stop.append(sampleStopArr[i].stopIdx+1);
+		stop.draggable({axis:'x',containment:'parent'});
+		stop.css('left',parseInt(sampleStopArr[i].pos*415)+'px');
+		sliderStrip.append(stop);
+		stop.bind('drag',stop,handleSamplerDrag);
+	}
+	
+	return strip;
+}
+
+function handleSamplerDrag(event,ui){
+	var stopData = event.data.data();
+	var pos = event.data.position().left / 449;
+	stopData.server.customRPC(stopData.nodeId,{paletteMethod:"setSamplePos",outId:stopData.stopId,pos:pos});
 }
 
 var thePaletteDBEditor = null;
@@ -72,16 +103,21 @@ function PaletteDBEditor(paletteArr,server,parent){
     // Add/remove palette buttons
     this.palAddButton = $(document.createElement('button')).button({icons:{primary:'ui-icon-circle-plus'}});
     this.palRemoveButton = $(document.createElement('button')).button({icons:{primary:'ui-icon-circle-minus'}});
+	this.palActivateButton = $(document.createElement('button')).button({label:'Use Palette'});
+	this.palActivateButton.css('width','8em').css('height','2.2em').css('padding','0').css('font-size','0.5em');
+	this.palActivateButton.css('top','0.3em').css('left','0.3em');
     this.palEditButton = $(document.createElement('button')).button({icons:{primary:'ui-icon-pencil'}});
     this.palEditButton.css('right','0px').css('position','absolute');
     var palManipDiv = $(document.createElement('div'));
     palManipDiv.addClass('listManipButtons').css('height','1px');
     palManipDiv.append(this.palAddButton);
     palManipDiv.append(this.palRemoveButton);
+	palManipDiv.append(this.palActivateButton);
     palManipDiv.append(this.palEditButton);
 	
 	this.palAddButton.click(this,this.palAddClick);
 	this.palRemoveButton.click(this,this.palRemoveClick);
+	this.palActivateButton.click(this,this.palActivateClick);
 	this.palEditButton.click(this,this.palEditClick);
 
     
@@ -142,6 +178,7 @@ PaletteDBEditor.prototype = {
 		
 		if(selSize == 0){
 			event.data.palRemoveButton.button('disable');
+			event.data.palActivateButton.button('disable');
 			event.data.palEditButton.button('disable');
 			event.data.swatchUl.selectable('disable');
 			event.data.swatchUl.empty();
@@ -151,6 +188,7 @@ PaletteDBEditor.prototype = {
 		}
 		else if(selSize > 1){
 			event.data.palRemoveButton.button('enable');
+			event.data.palActivateButton.button('disable');
 			event.data.palEditButton.button('disable');
 			event.data.swatchUl.selectable('disable');
 			event.data.swatchUl.empty();
@@ -160,6 +198,7 @@ PaletteDBEditor.prototype = {
 		}
 		else{
 			event.data.palRemoveButton.button('enable');
+			event.data.palActivateButton.button('enable');
 			event.data.palEditButton.button('enable');
 			event.data.swatchUl.selectable('enable');			
 			event.data.swaAddButton.button('disable');
@@ -223,6 +262,14 @@ PaletteDBEditor.prototype = {
 		selected.each(function(){thePaletteDBEditor.server.customRPC(thePaletteDBEditor.parent.nodeId,{paletteMethod:"deletePalette",paletteId:$(this).data().paletteId});$(this).remove();});
 
         event.data.procPalSel({data:event.data});
+	},
+	
+	palActivateClick:function(event){
+		thePaletteDBEditor = event.data;
+		var selectedpal = $('.ui-selected',event.data.paletteUl);
+		var palitem = selectedpal.first();
+		var obj = {paletteMethod:"activatePalette",paletteId:palitem.data().paletteId};
+		event.data.server.customRPC(event.data.parent.nodeId,obj,thePaletteDBEditor.updateFromServer);
 	},
 	
 	palEditClick:function(event){
@@ -315,8 +362,8 @@ function PaletteSamplerEditor(nodeId,server){
 	this.numOuts = null;
 	
 	this.dialog = $(document.createElement('div'));
-	this.dialog.dialog({title:"Palette Sampler",width:500,height:550,modal:true,resizable:false});
-	this.dialog.bind('dialogclose',this.dialog,function(event){event.data.remove();});
+	this.dialog.dialog({title:"Palette Sampler",width:500,height:610,modal:true,resizable:false});
+	this.dialog.bind('dialogclose',this.dialog,function(event){event.data.remove();lsdApp.reloadCurView();});
 	
 	var numOutsButton = $(document.createElement('button'));
 	numOutsButton.button({label:'# outs'});
@@ -338,28 +385,28 @@ function PaletteSamplerEditor(nodeId,server){
 	manualSelCheckDiv.append(this.manualSelCheck);
 	manualSelCheckDiv.append('<h3>Manual Palette Selection</h3>');
 	
-	//var gradStrip = GenerateGradientStrip([{r:1,g:1,b:0},{r:0,g:1,b:0},{r:0,g:0,b:1}]);
-	//gradStrip.height(25);
-	
-	//this.dialog.append(new PaletteDBEditor(null,server));
-	//this.dialog.append(gradStrip);
-	
 	this.editorcontent = $(document.createElement('div'));
 	this.dialog.append(this.editorcontent);
 	
 	var manualSampCheckDiv = $(document.createElement('div')).addClass('PaletteEditor');
-	manualSampCheckDiv.css('clear','left');
+	manualSampCheckDiv.css('clear','both');
 	this.dialog.append(manualSampCheckDiv);
 	
 	this.manualSampCheck = $(document.createElement('input'));
 	this.manualSampCheck.attr('type','checkbox');
 	this.manualSampCheck.css('float','left').css('margin-top','0.9em').css('margin-right','0.5em');
+	this.manualSampCheck.css('position','relative').css('z-index','10');
 	this.manualSampCheck.change(this,this.setSampMode);
 	manualSampCheckDiv.append(this.manualSampCheck);
 	manualSampCheckDiv.append('<h3>Manual Sample Mode</h3>');
+	
+	
+	this.samplerStrip = $(document.createElement('div')).css('position','relative').css('top','0.8em');
+	this.dialog.append(this.samplerStrip);
+	
 
 	var paramSampModeDiv = $(document.createElement('div')).addClass('PaletteEditor');
-	paramSampModeDiv.css('clear','left').css('position','relative').css('top','0.6em');
+	paramSampModeDiv.css('clear','left').css('position','relative').css('top','3em');
 	this.paramSampMode = $(document.createElement('select'));
 	this.paramSampMode.css('margin-top','0.7em').css('margin-left','0.8em');
 	this.paramSampMode.append('<option value="clamp">Clamp</option>');
@@ -368,6 +415,8 @@ function PaletteSamplerEditor(nodeId,server){
 	paramSampModeDiv.append('<h3>Parameter Extrapolation Mode:</h3>');
 	paramSampModeDiv.append(this.paramSampMode);
 	this.dialog.append(paramSampModeDiv);
+	
+	this.paramSampMode.change(this,this.setRepeatMode);
 
 	
 	this.updateFromServer();
@@ -377,6 +426,11 @@ PaletteSamplerEditor.prototype = {
 	updateFromServer:function(){
 		thePaletteSamplerEditor = this;
 		this.server.customRPC(this.nodeId,{paletteMethod:"getSampler"},this.handleServerResp);
+	},
+	
+	updateFromServerWrap:function(){
+		thePaletteSamplerEditor.server.customRPC(thePaletteSamplerEditor.nodeId,{paletteMethod:"getSampler"},
+									   thePaletteSamplerEditor.handleServerResp);
 	},
 	
 	handleServerResp:function(data){
@@ -395,17 +449,70 @@ PaletteSamplerEditor.prototype = {
 		}
 		else if(data.settings.sampleMode == 1){
 			pse.manualSampCheck.attr('checked',false);
+			pse.paramSampMode.attr('disabled',false);
 		}
 		
 		pse.numOuts = data.settings.numOuts;
 		
 		pse.editorcontent.empty();
 		pse.editorcontent.append(new PaletteDBEditor(data.palettes,pse.server,pse));
+		
+		pse.samplerStrip.empty();
+		pse.samplerStrip.append(GradientSamplerStrip(data.curPalette,data.sampleStops,pse.server,pse.nodeId));
+		
+		if(data.settings.paramSampleRepeatMode == 0){
+			pse.paramSampMode.val('clamp');
+		}
+		else if(data.settings.paramSampleRepeatMode == 1){
+			pse.paramSampMode.val('loop');
+		}
+		else if(data.settings.paramSampleRepeatMode == 2){
+			pse.paramSampMode.val('black');
+		}
 	},
 	
 	setNumOuts:function(event){
 		thePaletteSamplerEditor = event.data;
 		new NumOutEntry(event.data.nodeId,event.data.server,event.data.numOuts);
+	},
+	
+	setSelMode:function(event){
+		thePaletteSamplerEditor = event.data;
+		
+		if(event.data.manualSelCheck.attr('checked')){
+			event.data.server.customRPC(event.data.nodeId,{paletteMethod:"setSelMode",mode:0},
+										event.data.updateFromServerWrap);
+		}
+		else{
+			event.data.server.customRPC(event.data.nodeId,{paletteMethod:"setSelMode",mode:1},
+										event.data.updateFromServerWrap);
+		}
+	},
+	
+	setSampMode:function(event){
+		thePaletteSamplerEditor = event.data;
+		
+		if(event.data.manualSampCheck.attr('checked')){
+			event.data.server.customRPC(event.data.nodeId,{paletteMethod:"setSampleMode",mode:0},
+										event.data.updateFromServerWrap);
+		}
+		else{
+			event.data.server.customRPC(event.data.nodeId,{paletteMethod:"setSampleMode",mode:1},
+										event.data.updateFromServerWrap);
+		}
+	},
+	
+	setRepeatMode:function(event){
+		var mode = event.data.paramSampMode.val();
+		if(mode == 'clamp'){
+			event.data.server.customRPC(event.data.nodeId,{paletteMethod:"setRepeatMode",mode:0});
+		}
+		else if(mode == 'loop'){
+			event.data.server.customRPC(event.data.nodeId,{paletteMethod:"setRepeatMode",mode:1});
+		}
+		else if(mode == 'black'){
+			event.data.server.customRPC(event.data.nodeId,{paletteMethod:"setRepeatMode",mode:2});
+		}
 	}
 };
 
