@@ -64,7 +64,7 @@ void destruct_ScenePlugin(void* plugin);
 struct LSD_ScenePluginHEAD {
     int(*initFunc)(struct LSD_ScenePlugin const * plugin);
     void(*cleanupFunc)(struct LSD_ScenePlugin const * plugin);
-    void(*handler)(cJSON* in, cJSON* out);
+    void(*rpcFunc)(cJSON* in, cJSON* out);
 };
 
 

@@ -2289,7 +2289,7 @@ int lsddb_pluginHeadLoader(ghType phGet, int enable, const char* parentDirectory
         
         // Copy plugin destructor to plugin array for future use
         scenePlugin->cleanupFunc = ph->cleanupFunc;
-        scenePlugin->handleRPC = ph->handler;
+        scenePlugin->handleRPC = ph->rpcFunc;
         
         // Copy dlObj to be able to close SO
         scenePlugin->dlObj = dlObj;
