@@ -29,20 +29,20 @@
 int plugininst_addInstInput(struct LSD_SceneNodeInst const * inst,
                             int typeId,
                             const char* name,
-							int* inIdBind);
+                            int* inIdBind);
 
 int plugininst_addInstOutput(struct LSD_SceneNodeInst const * inst,
                              int typeId,
                              const char* name,
                              int bfFuncIdx,
                              int bpFuncIdx,
-							 int* outIdBind);
+                             int* outIdBind);
 
 int plugininst_removeInstInput(struct LSD_SceneNodeInst const * inst, int inId);
 
 int plugininst_removeInstOutput(struct LSD_SceneNodeInst const * inst, int outId);
 
 int plugininst_getInputStruct(struct LSD_SceneNodeInst const * inst, 
-							  struct LSD_SceneNodeInput const ** inBind, int inId);
+                              struct LSD_SceneNodeInput const ** inBind, int inId);
 
 #endif // NODEINSTAPI_H

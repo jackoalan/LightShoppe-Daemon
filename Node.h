@@ -67,14 +67,14 @@ void* node_bufferOutput(struct LSD_SceneNodeOutput* output);
 
 struct LSD_SceneNodeClass {
     int dbId;
-	struct LSD_ScenePlugin const * plugin;
+    struct LSD_ScenePlugin const * plugin;
     int(*nodeMakeFunc)(struct LSD_SceneNodeInst const *, void* instData);
-	int(*nodeRestoreFunc)(struct LSD_SceneNodeInst const *, void* instData);
+    int(*nodeRestoreFunc)(struct LSD_SceneNodeInst const *, void* instData);
     void(*nodeCleanFunc)(struct LSD_SceneNodeInst const *, void* instData);
-	void(*nodeDeleteFunc)(struct LSD_SceneNodeInst const *, void* instData);
-	size_t instDataSize;
-	bfFunc* bfFuncTbl;
-	bpFunc* bpFuncTbl;
+    void(*nodeDeleteFunc)(struct LSD_SceneNodeInst const *, void* instData);
+    size_t instDataSize;
+    bfFunc* bfFuncTbl;
+    bpFunc* bpFuncTbl;
 };
 
 struct LSD_SceneNodeInst {

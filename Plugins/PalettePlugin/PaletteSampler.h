@@ -24,34 +24,34 @@
 #include "../../CorePlugin.h"
 
 struct PaletteSamplerOutputData {
-	int outId;
-	int outIdx;
-	double samplePos;
-	struct RGB_TYPE outVal;
+    int outId;
+    int outIdx;
+    double samplePos;
+    struct RGB_TYPE outVal;
 };
 
 enum SourceModeEnum {
-	MANUAL = 0, // Takes data from user
-	PARAM = 1 // Takes data from node input
+    MANUAL = 0, // Takes data from user
+    PARAM = 1 // Takes data from node input
 };
 
 enum RepeatMode { // Determines how gradient extrapolations behave
-	CLAMP = 0, // Static colour (default)
-	AUTO_LOOP = 1, // Seamless loop around (start's stop added to end)
-	AUTO_BLACKOUT = 2 // Black stops added to ends
+    CLAMP = 0, // Static colour (default)
+    AUTO_LOOP = 1, // Seamless loop around (start's stop added to end)
+    AUTO_BLACKOUT = 2 // Black stops added to ends
 };
 
 struct PaletteSamplerInstData {
-	enum SourceModeEnum selMode;
-	int curPaletteId;
-	int swatchCount;
-	struct RGB_TYPE* swatchArr;
-	int numOuts;
-	enum SourceModeEnum sampleMode;
-	enum RepeatMode paramSampleRepeatMode;
-	struct LSD_SceneNodeInput const * selIn;
-	struct LSD_SceneNodeInput const ** sampleStopInArr;
-	struct PaletteSamplerOutputData* outDataArr;
+    enum SourceModeEnum selMode;
+    int curPaletteId;
+    int swatchCount;
+    struct RGB_TYPE* swatchArr;
+    int numOuts;
+    enum SourceModeEnum sampleMode;
+    enum RepeatMode paramSampleRepeatMode;
+    struct LSD_SceneNodeInput const * selIn;
+    struct LSD_SceneNodeInput const ** sampleStopInArr;
+    struct PaletteSamplerOutputData* outDataArr;
 };
 
 

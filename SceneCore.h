@@ -49,33 +49,33 @@
 #include <event.h>
 
 struct LSD_Univ{
-	int olaUnivId;
-	int maxIdx;
-	uint8_t* buffer;
+    int olaUnivId;
+    int maxIdx;
+    uint8_t* buffer;
 };
 
 void destruct_Univ(void* univ);
 
 struct LSD_Addr {
-	int dbId;
-	struct LSD_Univ* univ;
-	int addr;
-	int b16;
+    int dbId;
+    struct LSD_Univ* univ;
+    int addr;
+    int b16;
 };
 
 struct LSD_Channel {
-	int dbId;
-	int single;
-	struct LSD_Addr rAddr;
-	struct LSD_Addr gAddr;
-	struct LSD_Addr bAddr;
-	struct LSD_SceneNodeOutput* output;
+    int dbId;
+    int single;
+    struct LSD_Addr rAddr;
+    struct LSD_Addr gAddr;
+    struct LSD_Addr bAddr;
+    struct LSD_SceneNodeOutput* output;
 };
 
 
 struct LSD_Partition{
-	int dbId;
-	struct LSD_SceneNodeInst* facade;
+    int dbId;
+    struct LSD_SceneNodeInst* facade;
     size_t numChans;
     struct LSD_Channel* chans;
 };

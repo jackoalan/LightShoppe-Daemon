@@ -109,7 +109,7 @@ int lsddb_removePartition(int partId);
 int lsddb_updatePartitionName(int partId, const char* name);
 
 int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, const char* name,
-					   const char* desc, int classIdx);
+                       const char* desc, int classIdx);
 
 int lsddb_addDataType(int* ptrToBind, int pluginId, const char* name,
                       const char* desc);
@@ -142,8 +142,8 @@ int lsddb_addNodeInstOutput(struct LSD_SceneNodeInst const * node,
                             const char* name,
                             struct LSD_SceneNodeOutput** ptrToBind,
                             int* idBinding,
-							int bfFuncIdx,
-							int bpFuncIdx);
+                            int bfFuncIdx,
+                            int bpFuncIdx);
 
 int lsddb_removeNodeInstInput(int inputId);
 
@@ -167,7 +167,7 @@ int lsddb_disablePlugin(int pluginId);
 int lsddb_enablePlugin(int pluginId);
 
 int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
-						   const char* parentDirectoryName, const char* pluginSha, void* dlObj);
+                           const char* parentDirectoryName, const char* pluginSha, void* dlObj);
 
 int lsddb_resolvePluginFromNodeId(struct LSD_ScenePlugin** pluginBind, int nodeId);
 
@@ -250,39 +250,39 @@ int lsddbapi_stmtReset(struct LSD_ScenePlugin const * plugin, unsigned int stmtI
 int lsddbapi_stmtStep(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, int* result);
 
 int lsddbapi_stmtBindDouble(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-							unsigned int sqlIdx, double data, int* result);
+                            unsigned int sqlIdx, double data, int* result);
 
 int lsddbapi_stmtBindInt(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						 unsigned int sqlIdx, int data, int* result);
+                         unsigned int sqlIdx, int data, int* result);
 
 int lsddbapi_stmtBindInt64(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						   unsigned int sqlIdx, sqlite3_int64 data, int* result);
+                           unsigned int sqlIdx, sqlite3_int64 data, int* result);
 
 int lsddbapi_stmtBindNull(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						  unsigned int sqlIdx, int* result);
+                          unsigned int sqlIdx, int* result);
 
 int lsddbapi_stmtBindText(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						  unsigned int sqlIdx, const char* data, int length, 
-						  void(*destructor)(void*), int* result);
+                          unsigned int sqlIdx, const char* data, int length, 
+                          void(*destructor)(void*), int* result);
 
 int lsddbapi_stmtBindText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						    unsigned int sqlIdx, const void* data, int length, 
-						    void(*destructor)(void*), int* result);
+                            unsigned int sqlIdx, const void* data, int length, 
+                            void(*destructor)(void*), int* result);
 
 int lsddbapi_stmtColDouble(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						   unsigned int colIdx, double* result);
+                           unsigned int colIdx, double* result);
 
 int lsddbapi_stmtColInt(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						unsigned int colIdx, int* result);
+                        unsigned int colIdx, int* result);
 
 int lsddbapi_stmtColInt64(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						  unsigned int colIdx, sqlite3_int64* result);
+                          unsigned int colIdx, sqlite3_int64* result);
 
 int lsddbapi_stmtColText(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						 unsigned int colIdx, const unsigned char** result);
+                         unsigned int colIdx, const unsigned char** result);
 
 int lsddbapi_stmtColText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						   unsigned int colIdx, const void** result);
+                           unsigned int colIdx, const void** result);
 
 int lsddbapi_getLastInsertRowId();
 

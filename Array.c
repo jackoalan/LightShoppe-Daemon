@@ -33,16 +33,16 @@
 // Private function to run destructor on entire unit using head data
 void destructAll(struct LSD_ArrayUnit* unit){
 
-	
+    
     if(unit){
         if(!unit->parent->destructor)
             return;
-		
+        
         
         int i;
         for(i=0;i<unit->parent->mul;++i){
 
-			
+            
             if(unit->unitIdx>=unit->parent->numUnits-1){ // Final Unit, destruct with caution
                 if(i>unit->parent->maxIdx%unit->parent->mul)
                     break;
@@ -64,7 +64,7 @@ int recursiveClear(struct LSD_ArrayUnit* unit){
     
     if(unit->nextUnit){
         result = recursiveClear(unit->nextUnit);
-		destructAll(unit);
+        destructAll(unit);
         free(unit->nextUnit);
         unit->nextUnit = NULL;
         free(unit->buffer);
@@ -72,7 +72,7 @@ int recursiveClear(struct LSD_ArrayUnit* unit){
         return result;
     }
     else{
-		destructAll(unit);
+        destructAll(unit);
         free(unit->buffer);
         unit->buffer = NULL;
         return 0;
@@ -101,7 +101,7 @@ int recursiveResolve(struct LSD_ArrayUnit* curUnit, size_t targetUnitNum,
 }
 
 int makeArray(struct LSD_ArrayHead* target, size_t arrMul, size_t elemSize, short elemDel,
-			  void(*destructor)(void* elem)){
+              void(*destructor)(void* elem)){
     if(!target){ // Idiotproofication
         fprintf(stderr,"No target pointer provided in makeArray()\n");
         return -1;
@@ -116,10 +116,10 @@ int makeArray(struct LSD_ArrayHead* target, size_t arrMul, size_t elemSize, shor
         fprintf(stderr,"Invalid array multiple declaired in makeArray()\n");
         return -1;
     }
-	
-	if(destructor){
-		target->destructor = destructor;
-	}
+    
+    if(destructor){
+        target->destructor = destructor;
+    }
     
     if(elemDel)
         target->delStat = DEL_ALLOWED;
@@ -228,17 +228,17 @@ int pickIdx(struct LSD_ArrayHead* array, void** targetPtrBind, size_t idx){
 }
 
 int zeroIdx(struct LSD_ArrayHead* array, size_t idx){
-	int unitnum;
+    int unitnum;
     int elemidx;
     unitnum = idx / array->mul;
     elemidx = idx % array->mul;
-	
+    
     struct LSD_ArrayUnit* targetUnit;
     if(recursiveResolve(array->firstUnit, unitnum, &targetUnit) == 0){
-		memset(targetUnit->buffer + array->elemSize*elemidx, 0, array->elemSize);
+        memset(targetUnit->buffer + array->elemSize*elemidx, 0, array->elemSize);
         return 0;
     }
-	fprintf(stderr,"Unable to zero memory for delIdx()\n");
+    fprintf(stderr,"Unable to zero memory for delIdx()\n");
     return -1;
 }
 
@@ -262,16 +262,16 @@ int delIdx(struct LSD_ArrayHead* array, size_t idx){
         fprintf(stderr,"Delete is explicitly not allowed on this array\n");
         return -1;
     }
-	
-	// Run destructor for index
-	void* destructTarget;
-	if(pickIdx(array,&destructTarget,idx) == 0){
-		if(array->destructor)
-			array->destructor(destructTarget);
-	}
-	
-	// Zero out this memory region
-	zeroIdx(array,idx);
+    
+    // Run destructor for index
+    void* destructTarget;
+    if(pickIdx(array,&destructTarget,idx) == 0){
+        if(array->destructor)
+            array->destructor(destructTarget);
+    }
+    
+    // Zero out this memory region
+    zeroIdx(array,idx);
     
     if(array->delStat == DEL_ALLOWED){
         int arrId;

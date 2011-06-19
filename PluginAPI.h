@@ -41,7 +41,7 @@ struct LSD_ScenePlugin {
     int dbId;
     void(*cleanupFunc)(struct LSD_ScenePlugin const * plugin);
     void(*handleRPC)(cJSON* in, cJSON* out);
-	void* dlObj;
+    void* dlObj;
 };
 
 void destruct_ScenePlugin(void* plugin);
@@ -64,7 +64,7 @@ void destruct_ScenePlugin(void* plugin);
 struct LSD_ScenePluginHEAD {
     int(*initFunc)(struct LSD_ScenePlugin const * plugin);
     void(*cleanupFunc)(struct LSD_ScenePlugin const * plugin);
-	void(*handler)(cJSON* in, cJSON* out);
+    void(*handler)(cJSON* in, cJSON* out);
 };
 
 
@@ -74,13 +74,13 @@ struct LSD_ScenePluginHEAD {
 int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
                                  struct LSD_SceneNodeClass** ptrToBind,
                                  int(*nodeMakeFunc)(struct LSD_SceneNodeInst const *, void* instData),
-								 int(*nodeRestoreFunc)(struct LSD_SceneNodeInst const *, void* instData),
+                                 int(*nodeRestoreFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  void(*nodeCleanFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  void(*nodeDeleteFunc)(struct LSD_SceneNodeInst const *, void* instData),
                                  size_t nodeDataSize,
                                  const char* name, const char* desc,
-								 int classIdx,
-								 bfFunc* bfFuncTbl, bpFunc* bpFuncTbl);
+                                 int classIdx,
+                                 bfFunc* bfFuncTbl, bpFunc* bpFuncTbl);
 
 int plugininit_registerDataType(struct LSD_ScenePlugin const * key,
                                 int* ptrToBind,
@@ -93,14 +93,14 @@ struct LSD_SceneNodeInst const * plugin_getInstById(struct LSD_ScenePlugin const
 // Initialiser's database api
 
 int plugininit_createTable(struct LSD_ScenePlugin const * key,
-						   const char* name,
-						   const char* coldef);
+                           const char* name,
+                           const char* coldef);
 
 int plugininit_createIndex(struct LSD_ScenePlugin const * key,
-						   const char* idxName,
-						   const char* tblName,
-						   const char* coldef);
-								 
+                           const char* idxName,
+                           const char* tblName,
+                           const char* coldef);
+                                 
 
 
 

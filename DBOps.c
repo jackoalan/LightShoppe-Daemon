@@ -43,160 +43,160 @@ int lsddb_rewireNodes();
 static sqlite3* memdb;
 
 void destruct_SceneDBStmt(void* dbStmt){
-	if(dbStmt){
-		struct LSD_SceneDBStmt* castStmt = dbStmt;
-		if(castStmt->stmt)
-			sqlite3_finalize(castStmt->stmt);
-	}
+    if(dbStmt){
+        struct LSD_SceneDBStmt* castStmt = dbStmt;
+        if(castStmt->stmt)
+            sqlite3_finalize(castStmt->stmt);
+    }
 }
 
 int lsddb_emptyDB(){
-	int rc;
-	sqlite3* memory;
-	rc = sqlite3_open(":memory:", &memory);
-	if(rc == SQLITE_OK){
-		memdb = memory;
-		if(lsddb_initDB()<0){
-			fprintf(stderr,"There was a problem initing DB\n");
-			return -1;
-		}
-		if(lsddb_prepStmts()<0){
-			fprintf(stderr,"There was a problem preparing DB statements while opening DB\n");
-			return -1;
-		}
-		return 0;
-	}
-	fprintf(stderr, "Unable to open empty DB\n");
-	return -1;
+    int rc;
+    sqlite3* memory;
+    rc = sqlite3_open(":memory:", &memory);
+    if(rc == SQLITE_OK){
+        memdb = memory;
+        if(lsddb_initDB()<0){
+            fprintf(stderr,"There was a problem initing DB\n");
+            return -1;
+        }
+        if(lsddb_prepStmts()<0){
+            fprintf(stderr,"There was a problem preparing DB statements while opening DB\n");
+            return -1;
+        }
+        return 0;
+    }
+    fprintf(stderr, "Unable to open empty DB\n");
+    return -1;
 }
 
 int lsddb_openDB(const char* path){
-	int rc;
-	
-	if(path){
-		sqlite3* file;
-		sqlite3* memory;
-		rc = sqlite3_open(path, &file);
-		
-		if(rc == SQLITE_OK){
-			rc = sqlite3_open(":memory:", &memory);
-			if(rc == SQLITE_OK){
-			
-				// All good on both fronts, start copy
-				sqlite3_backup* db_opener;
-				db_opener = sqlite3_backup_init(memory,"main",file,"main");
-				sqlite3_backup_step(db_opener,-1);
-				sqlite3_backup_finish(db_opener);
-								
-				// Done with file
-				sqlite3_close(file);
-				memdb = memory;
-				if(lsddb_initDB()<0){
-					fprintf(stderr,"There was a problem initing DB at open\n");
-					return -1;
-				}
-				if(lsddb_prepStmts()<0){
-					fprintf(stderr,"There was a problem preparing DB statements while opening DB\n");
-					return -1;
-				}
-				return 0;
-				
-			}
-			else{ // No Memory DB
-				fprintf(stderr, "Error while opening memory DB: %s\n",sqlite3_errmsg(memory));
-				sqlite3_close(file);
-				return -1;
-			}
+    int rc;
+    
+    if(path){
+        sqlite3* file;
+        sqlite3* memory;
+        rc = sqlite3_open(path, &file);
+        
+        if(rc == SQLITE_OK){
+            rc = sqlite3_open(":memory:", &memory);
+            if(rc == SQLITE_OK){
+            
+                // All good on both fronts, start copy
+                sqlite3_backup* db_opener;
+                db_opener = sqlite3_backup_init(memory,"main",file,"main");
+                sqlite3_backup_step(db_opener,-1);
+                sqlite3_backup_finish(db_opener);
+                                
+                // Done with file
+                sqlite3_close(file);
+                memdb = memory;
+                if(lsddb_initDB()<0){
+                    fprintf(stderr,"There was a problem initing DB at open\n");
+                    return -1;
+                }
+                if(lsddb_prepStmts()<0){
+                    fprintf(stderr,"There was a problem preparing DB statements while opening DB\n");
+                    return -1;
+                }
+                return 0;
+                
+            }
+            else{ // No Memory DB
+                fprintf(stderr, "Error while opening memory DB: %s\n",sqlite3_errmsg(memory));
+                sqlite3_close(file);
+                return -1;
+            }
 
-		}
-		else{ // No File DB
-			fprintf(stderr,"Error while opening file DB: %s\n",sqlite3_errmsg(file));
-			sqlite3_close(file);
-			return -1;
-		}
-		
-	}
-	else{ // Path NULL
-		fprintf(stderr,"Error while opening DB: Path not specified\n");
-		return -1;
-	}
-	
-	return -2; // Should not be reached
+        }
+        else{ // No File DB
+            fprintf(stderr,"Error while opening file DB: %s\n",sqlite3_errmsg(file));
+            sqlite3_close(file);
+            return -1;
+        }
+        
+    }
+    else{ // Path NULL
+        fprintf(stderr,"Error while opening DB: Path not specified\n");
+        return -1;
+    }
+    
+    return -2; // Should not be reached
 }
 
 int lsddb_saveDB(const char* origPath){
-	int rc;
-	sqlite3* file;
-	
-	if(origPath && memdb){
-		rc = sqlite3_open(origPath, &file);
-	
-		if(rc == SQLITE_OK){ // File OK
-			sqlite3_backup* dbsaver;
-			dbsaver = sqlite3_backup_init(file,"main",memdb,"main");
-			sqlite3_backup_step(dbsaver,-1);
-			sqlite3_backup_finish(dbsaver);
-			
-			sqlite3_close(file);
-			return 0;
-		}
-		else{
-			fprintf(stderr,"Error while opening file DB for saving:\n%s\n",sqlite3_errmsg(file));
-			sqlite3_close(file);
-			return -1;
-		}
-	}
-	else{ // Path NULL
-		fprintf(stderr,"Error while saving DB: No path AND memdb specified.\n");
-		return -1;
-	}
-	
-	return -2;
+    int rc;
+    sqlite3* file;
+    
+    if(origPath && memdb){
+        rc = sqlite3_open(origPath, &file);
+    
+        if(rc == SQLITE_OK){ // File OK
+            sqlite3_backup* dbsaver;
+            dbsaver = sqlite3_backup_init(file,"main",memdb,"main");
+            sqlite3_backup_step(dbsaver,-1);
+            sqlite3_backup_finish(dbsaver);
+            
+            sqlite3_close(file);
+            return 0;
+        }
+        else{
+            fprintf(stderr,"Error while opening file DB for saving:\n%s\n",sqlite3_errmsg(file));
+            sqlite3_close(file);
+            return -1;
+        }
+    }
+    else{ // Path NULL
+        fprintf(stderr,"Error while saving DB: No path AND memdb specified.\n");
+        return -1;
+    }
+    
+    return -2;
 }
 
 int lsddb_autoSaveDB(const char* origPath){
-	int rc;
-	sqlite3* file;
-	char newpath[256];
-	
-	int pathlen = strlen(origPath);
-	if(pathlen>250){
-		fprintf(stderr,"Error while autosaving DB, pathname too long.\n");
-		return -1;
-	}
-	strcat(newpath,origPath);
-	strcat(newpath,".auto");
-	
-	
-	if(origPath && memdb){
-		rc = sqlite3_open(newpath, &file);
-		
-		if(rc == SQLITE_OK){ // File OK
-			sqlite3_backup* dbsaver;
-			dbsaver = sqlite3_backup_init(file,"main",memdb,"main");
-			sqlite3_backup_step(dbsaver,-1);
-			sqlite3_backup_finish(dbsaver);
-			
-			sqlite3_close(file);
-			return 0;
-		}
-		else{
-			fprintf(stderr,"Error while opening file DB for saving:\n%s\n",sqlite3_errmsg(file));
-			sqlite3_close(file);
-			return -1;
-		}
-	}
-	else{ // Path NULL
-		fprintf(stderr,"Error while saving DB: No path AND memdb specified.\n");
-		return -1;
-	}
-	
-	return -2;
+    int rc;
+    sqlite3* file;
+    char newpath[256];
+    
+    int pathlen = strlen(origPath);
+    if(pathlen>250){
+        fprintf(stderr,"Error while autosaving DB, pathname too long.\n");
+        return -1;
+    }
+    strcat(newpath,origPath);
+    strcat(newpath,".auto");
+    
+    
+    if(origPath && memdb){
+        rc = sqlite3_open(newpath, &file);
+        
+        if(rc == SQLITE_OK){ // File OK
+            sqlite3_backup* dbsaver;
+            dbsaver = sqlite3_backup_init(file,"main",memdb,"main");
+            sqlite3_backup_step(dbsaver,-1);
+            sqlite3_backup_finish(dbsaver);
+            
+            sqlite3_close(file);
+            return 0;
+        }
+        else{
+            fprintf(stderr,"Error while opening file DB for saving:\n%s\n",sqlite3_errmsg(file));
+            sqlite3_close(file);
+            return -1;
+        }
+    }
+    else{ // Path NULL
+        fprintf(stderr,"Error while saving DB: No path AND memdb specified.\n");
+        return -1;
+    }
+    
+    return -2;
 }
 
 int lsddb_closeDB(){
-	lsddb_finishStmts();
-	return sqlite3_close(memdb);
+    lsddb_finishStmts();
+    return sqlite3_close(memdb);
 }
 
 static const char INIT_QUERIES[] = 
@@ -336,17 +336,17 @@ static const char INIT_QUERIES[] =
 
 
 int lsddb_initDB(){
-	//printf("%s\n", INIT_QUERIES);
-	
-	char* errMsg = NULL;
-	int rc;
-	rc = sqlite3_exec(memdb, INIT_QUERIES, NULL, NULL, &errMsg);
-	
-	if(errMsg){
-		fprintf(stderr, "Error during DB init:\n%s\n", errMsg);
-		sqlite3_free(errMsg);
-	}
-	return rc;
+    //printf("%s\n", INIT_QUERIES);
+    
+    char* errMsg = NULL;
+    int rc;
+    rc = sqlite3_exec(memdb, INIT_QUERIES, NULL, NULL, &errMsg);
+    
+    if(errMsg){
+        fprintf(stderr, "Error during DB init:\n%s\n", errMsg);
+        sqlite3_free(errMsg);
+    }
+    return rc;
 }
 
 
@@ -379,19 +379,19 @@ static const char RESET_DB[] =
 "UPDATE OlaAddress SET olaUnivArrIdx=-1;\n";
 
 int lsddb_resetDB(){
-	//printf("%s\n", INIT_QUERIES);
-	
-	
-	char* errMsg = NULL;
-	int rc;
-	rc = sqlite3_exec(memdb, RESET_DB, NULL, NULL, &errMsg);
-	
-	if(errMsg){
-		fprintf(stderr, "Error during DB reset:\n%s\n", errMsg);
-		sqlite3_free(errMsg);
-	}
-	return rc;
-	
+    //printf("%s\n", INIT_QUERIES);
+    
+    
+    char* errMsg = NULL;
+    int rc;
+    rc = sqlite3_exec(memdb, RESET_DB, NULL, NULL, &errMsg);
+    
+    if(errMsg){
+        fprintf(stderr, "Error during DB reset:\n%s\n", errMsg);
+        sqlite3_free(errMsg);
+    }
+    return rc;
+    
 }
 
 
@@ -400,25 +400,25 @@ static const char CREATE_PATCH_SPACE[] =
 static sqlite3_stmt* CREATE_PATCH_SPACE_S;
 
 int lsddb_createPatchSpace(const char* name, int* idBinding, int parentPatchSpace){
-	
-	
-	sqlite3_reset(CREATE_PATCH_SPACE_S);
-	if(name)
-		sqlite3_bind_text(CREATE_PATCH_SPACE_S,1,name,-1,NULL);
-	sqlite3_bind_int(CREATE_PATCH_SPACE_S,2,parentPatchSpace);
-	if(sqlite3_step(CREATE_PATCH_SPACE_S)!=SQLITE_DONE){
-		fprintf(stderr,"There was an error executing initial DB insertion for createPatchSpace()\n");
-		return -1;
-	}
-	
-	int patchSpaceId = sqlite3_last_insert_rowid(memdb);
-	
-	
-	if(idBinding)
-		*idBinding = patchSpaceId;
-	
-	
-	return 0;
+    
+    
+    sqlite3_reset(CREATE_PATCH_SPACE_S);
+    if(name)
+        sqlite3_bind_text(CREATE_PATCH_SPACE_S,1,name,-1,NULL);
+    sqlite3_bind_int(CREATE_PATCH_SPACE_S,2,parentPatchSpace);
+    if(sqlite3_step(CREATE_PATCH_SPACE_S)!=SQLITE_DONE){
+        fprintf(stderr,"There was an error executing initial DB insertion for createPatchSpace()\n");
+        return -1;
+    }
+    
+    int patchSpaceId = sqlite3_last_insert_rowid(memdb);
+    
+    
+    if(idBinding)
+        *idBinding = patchSpaceId;
+    
+    
+    return 0;
 }
 
 static const char REMOVE_PATCH_SPACE[] =
@@ -442,48 +442,48 @@ static const char REMOVE_PATCH_SPACE_OUTS[] =
 static sqlite3_stmt* REMOVE_PATCH_SPACE_OUTS_S;
 
 int lsddb_removePatchSpace(int psid){
-	// remove nodes
-	sqlite3_reset(REMOVE_PATCH_SPACE_NODES_S);
-	sqlite3_bind_int(REMOVE_PATCH_SPACE_NODES_S,1,psid);
-	while(sqlite3_step(REMOVE_PATCH_SPACE_NODES_S)==SQLITE_ROW){
-		int nodeId = sqlite3_column_int(REMOVE_PATCH_SPACE_NODES_S,0);
-		lsddb_removeNodeInst(nodeId);
-	}
-	
-	// remove children patch spaces
-	sqlite3_reset(REMOVE_PATCH_SPACE_FACADES_S);
-	sqlite3_bind_int(REMOVE_PATCH_SPACE_FACADES_S,1,psid);
-	while(sqlite3_step(REMOVE_PATCH_SPACE_FACADES_S) == SQLITE_ROW){
-		int cpsId = sqlite3_column_int(REMOVE_PATCH_SPACE_FACADES_S,0);
-		lsddb_removePatchSpace(cpsId);
-	}
-	
-	// remove ins
-	sqlite3_reset(REMOVE_PATCH_SPACE_INS_S);
-	sqlite3_bind_int(REMOVE_PATCH_SPACE_INS_S,1,psid);
-	while(sqlite3_step(REMOVE_PATCH_SPACE_INS_S)==SQLITE_ROW){
-		int inId = sqlite3_column_int(REMOVE_PATCH_SPACE_INS_S,0);
+    // remove nodes
+    sqlite3_reset(REMOVE_PATCH_SPACE_NODES_S);
+    sqlite3_bind_int(REMOVE_PATCH_SPACE_NODES_S,1,psid);
+    while(sqlite3_step(REMOVE_PATCH_SPACE_NODES_S)==SQLITE_ROW){
+        int nodeId = sqlite3_column_int(REMOVE_PATCH_SPACE_NODES_S,0);
+        lsddb_removeNodeInst(nodeId);
+    }
+    
+    // remove children patch spaces
+    sqlite3_reset(REMOVE_PATCH_SPACE_FACADES_S);
+    sqlite3_bind_int(REMOVE_PATCH_SPACE_FACADES_S,1,psid);
+    while(sqlite3_step(REMOVE_PATCH_SPACE_FACADES_S) == SQLITE_ROW){
+        int cpsId = sqlite3_column_int(REMOVE_PATCH_SPACE_FACADES_S,0);
+        lsddb_removePatchSpace(cpsId);
+    }
+    
+    // remove ins
+    sqlite3_reset(REMOVE_PATCH_SPACE_INS_S);
+    sqlite3_bind_int(REMOVE_PATCH_SPACE_INS_S,1,psid);
+    while(sqlite3_step(REMOVE_PATCH_SPACE_INS_S)==SQLITE_ROW){
+        int inId = sqlite3_column_int(REMOVE_PATCH_SPACE_INS_S,0);
         lsddb_removePatchSpaceIn(inId);
-	}
-	
-	// remove outs
-	sqlite3_reset(REMOVE_PATCH_SPACE_OUTS_S);
-	sqlite3_bind_int(REMOVE_PATCH_SPACE_OUTS_S,1,psid);
-	while(sqlite3_step(REMOVE_PATCH_SPACE_OUTS_S)==SQLITE_ROW){
-		int outId = sqlite3_column_int(REMOVE_PATCH_SPACE_OUTS_S,0);
+    }
+    
+    // remove outs
+    sqlite3_reset(REMOVE_PATCH_SPACE_OUTS_S);
+    sqlite3_bind_int(REMOVE_PATCH_SPACE_OUTS_S,1,psid);
+    while(sqlite3_step(REMOVE_PATCH_SPACE_OUTS_S)==SQLITE_ROW){
+        int outId = sqlite3_column_int(REMOVE_PATCH_SPACE_OUTS_S,0);
         lsddb_removePatchSpaceOut(outId);
-	}
-	
-	// Actually delete patch space
-	sqlite3_reset(REMOVE_PATCH_SPACE_S);
-	sqlite3_bind_int(REMOVE_PATCH_SPACE_S,1,psid);
-	if(sqlite3_step(REMOVE_PATCH_SPACE_S)!=SQLITE_DONE){
-		fprintf(stderr,"Error while removing patch space from DB\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-		return -1;
-	}
-	
-	return 0;
+    }
+    
+    // Actually delete patch space
+    sqlite3_reset(REMOVE_PATCH_SPACE_S);
+    sqlite3_bind_int(REMOVE_PATCH_SPACE_S,1,psid);
+    if(sqlite3_step(REMOVE_PATCH_SPACE_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error while removing patch space from DB\n");
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        return -1;
+    }
+    
+    return 0;
 }
 
 
@@ -542,21 +542,21 @@ static const char CREATE_PATCH_SPACE_IN[] =
 "INSERT INTO SceneNodeInstInput (instId,typeId,facadeBool,name,arrIdx) VALUES (?1,-1,1,?2,-1)";
 static sqlite3_stmt* CREATE_PATCH_SPACE_IN_S;
 int lsddb_createPatchSpaceIn(int patchSpaceId, const char* name, int* idBinding){
-	sqlite3_reset(CREATE_PATCH_SPACE_IN_S);
-	
-	sqlite3_bind_int(CREATE_PATCH_SPACE_IN_S,1,patchSpaceId);
-	sqlite3_bind_text(CREATE_PATCH_SPACE_IN_S,2,name,-1,NULL);
-	
-	if(sqlite3_step(CREATE_PATCH_SPACE_IN_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to insert Patch Space Input in createPatchSpaceIn()\n");
-		return -1;
-	}
-	
-	if(idBinding){
-		*idBinding = sqlite3_last_insert_rowid(memdb);
-	}
-	
-	return 0;
+    sqlite3_reset(CREATE_PATCH_SPACE_IN_S);
+    
+    sqlite3_bind_int(CREATE_PATCH_SPACE_IN_S,1,patchSpaceId);
+    sqlite3_bind_text(CREATE_PATCH_SPACE_IN_S,2,name,-1,NULL);
+    
+    if(sqlite3_step(CREATE_PATCH_SPACE_IN_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to insert Patch Space Input in createPatchSpaceIn()\n");
+        return -1;
+    }
+    
+    if(idBinding){
+        *idBinding = sqlite3_last_insert_rowid(memdb);
+    }
+    
+    return 0;
 }
 
 
@@ -565,23 +565,23 @@ static const char CREATE_PATCH_SPACE_OUT[] =
 static sqlite3_stmt* CREATE_PATCH_SPACE_OUT_S;
 
 int lsddb_createPatchSpaceOut(int patchSpaceId, const char* name, int* idBinding){
-	sqlite3_reset(CREATE_PATCH_SPACE_OUT_S);
-	
-	sqlite3_bind_int(CREATE_PATCH_SPACE_OUT_S,1,patchSpaceId);
-	sqlite3_bind_text(CREATE_PATCH_SPACE_OUT_S,2,name,-1,NULL);
-	
-	if(sqlite3_step(CREATE_PATCH_SPACE_OUT_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to insert Patch Space Output in createPatchSpaceOut()\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-		
-		return -1;
-	}
-	
-	if(idBinding){
-		*idBinding = sqlite3_last_insert_rowid(memdb);
-	}
-	
-	return 0;
+    sqlite3_reset(CREATE_PATCH_SPACE_OUT_S);
+    
+    sqlite3_bind_int(CREATE_PATCH_SPACE_OUT_S,1,patchSpaceId);
+    sqlite3_bind_text(CREATE_PATCH_SPACE_OUT_S,2,name,-1,NULL);
+    
+    if(sqlite3_step(CREATE_PATCH_SPACE_OUT_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to insert Patch Space Output in createPatchSpaceOut()\n");
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        
+        return -1;
+    }
+    
+    if(idBinding){
+        *idBinding = sqlite3_last_insert_rowid(memdb);
+    }
+    
+    return 0;
 }
 
 static const char REMOVE_PATCH_SPACE_OUT[] =
@@ -658,61 +658,61 @@ static const char CREATE_PARTITION[] =
 static sqlite3_stmt* CREATE_PARTITION_S;
 
 int lsddb_createPartition(const char* name, int* idBinding){
-	
-	if(!name){
-		fprintf(stderr,"Name must not be NULL in createPartition()\n");
-		return -1;
-	}
-	if(strlen(name)>200){
-		fprintf(stderr,"Name is too long in createPartition()\n");
-		return -1;
-	}
-	/* This no longer happens because the partition state is only constructed once
-	   at startup. It's left here as reference of what will happen iteratively once
-	   for every partition present in the database at start time
-	 
-	size_t partArrIdx;
-	struct LSD_Partition* partArrPtr;
-	if(insertElem(getArr_lsdPartitionArr(),&partArrIdx,(void**)&partArrPtr)<0){
-		fprintf(stderr,"Unable to insert Partition into array in createPartition()\n");
-		return -1;
-	}*/
-	
-	
-	// Create Partition's PatchSpace
-	//char psName[256];
-	//memset(psName,0,256);
-	//strcat(psName,name);
-	//strcat(psName,"_patch_space");
-	int psId;
-	if(lsddb_createPatchSpace(name,&psId,0)<0){
-		fprintf(stderr,"createPatchSpace failed in createPartition()\n");
-		return -1;
-	}
-	
-	
-	
-	// Create partition
-	sqlite3_reset(CREATE_PARTITION_S);
-	sqlite3_bind_text(CREATE_PARTITION_S,1,name,-1,NULL);
-	sqlite3_bind_int(CREATE_PARTITION_S,2,psId);
-	
-	if(sqlite3_step(CREATE_PARTITION_S)!=SQLITE_DONE){
-		fprintf(stderr,"Error inserting partition into DB in createPartition()\n");
-		return -1;
-	}
-	
-	int partId;
-	partId = sqlite3_last_insert_rowid(memdb);
-	
-	
+    
+    if(!name){
+        fprintf(stderr,"Name must not be NULL in createPartition()\n");
+        return -1;
+    }
+    if(strlen(name)>200){
+        fprintf(stderr,"Name is too long in createPartition()\n");
+        return -1;
+    }
+    /* This no longer happens because the partition state is only constructed once
+       at startup. It's left here as reference of what will happen iteratively once
+       for every partition present in the database at start time
+     
+    size_t partArrIdx;
+    struct LSD_Partition* partArrPtr;
+    if(insertElem(getArr_lsdPartitionArr(),&partArrIdx,(void**)&partArrPtr)<0){
+        fprintf(stderr,"Unable to insert Partition into array in createPartition()\n");
+        return -1;
+    }*/
+    
+    
+    // Create Partition's PatchSpace
+    //char psName[256];
+    //memset(psName,0,256);
+    //strcat(psName,name);
+    //strcat(psName,"_patch_space");
+    int psId;
+    if(lsddb_createPatchSpace(name,&psId,0)<0){
+        fprintf(stderr,"createPatchSpace failed in createPartition()\n");
+        return -1;
+    }
+    
+    
+    
+    // Create partition
+    sqlite3_reset(CREATE_PARTITION_S);
+    sqlite3_bind_text(CREATE_PARTITION_S,1,name,-1,NULL);
+    sqlite3_bind_int(CREATE_PARTITION_S,2,psId);
+    
+    if(sqlite3_step(CREATE_PARTITION_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error inserting partition into DB in createPartition()\n");
+        return -1;
+    }
+    
+    int partId;
+    partId = sqlite3_last_insert_rowid(memdb);
+    
+    
 
 
-	
-	if(idBinding)
-		*idBinding = partId;
-	
-	return 0;
+    
+    if(idBinding)
+        *idBinding = partId;
+    
+    return 0;
 }
 
 static const char SET_PARTITION_IMAGE[] = 
@@ -720,21 +720,21 @@ static const char SET_PARTITION_IMAGE[] =
 static sqlite3_stmt* SET_PARTITION_IMAGE_S;
 
 int lsddb_updatePartitionImage(int partId, const char* imageUrl){
-	if(!imageUrl){
-		return -1;
-	}
-	
-	sqlite3_reset(SET_PARTITION_IMAGE_S);
-	sqlite3_bind_int(SET_PARTITION_IMAGE_S,1,partId);
-	sqlite3_bind_text(SET_PARTITION_IMAGE_S,2,imageUrl,-1,NULL);
-	
-	if(sqlite3_step(SET_PARTITION_IMAGE_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to set image in setPartitionImage()\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-		return -1;
-	}
-	
-	return 0;
+    if(!imageUrl){
+        return -1;
+    }
+    
+    sqlite3_reset(SET_PARTITION_IMAGE_S);
+    sqlite3_bind_int(SET_PARTITION_IMAGE_S,1,partId);
+    sqlite3_bind_text(SET_PARTITION_IMAGE_S,2,imageUrl,-1,NULL);
+    
+    if(sqlite3_step(SET_PARTITION_IMAGE_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to set image in setPartitionImage()\n");
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        return -1;
+    }
+    
+    return 0;
 }
 
 
@@ -751,22 +751,22 @@ static const char REMOVE_PARTITON_GET_CHANNELS[] =
 static sqlite3_stmt* REMOVE_PARTITON_GET_CHANNELS_S;
 
 int lsddb_removePartition(int partId){
-	// Remove partition's patchSpace
-	sqlite3_reset(GET_PARTITON_PATCHSPACE_S);
-	sqlite3_bind_int(GET_PARTITON_PATCHSPACE_S,1,partId);
-	
-	int psId;
-	if(sqlite3_step(GET_PARTITON_PATCHSPACE_S)==SQLITE_ROW){
-		psId = sqlite3_column_int(GET_PARTITON_PATCHSPACE_S,0);
-	}
-	else{
-		fprintf(stderr,"Requested partition to be removed does not exist\n");
-		return -1;
-	}
-	
-	if(lsddb_removePatchSpace(psId)<0){
-		fprintf(stderr,"There was a problem while removing partition's patchSpace in removePartition()\n");
-	}
+    // Remove partition's patchSpace
+    sqlite3_reset(GET_PARTITON_PATCHSPACE_S);
+    sqlite3_bind_int(GET_PARTITON_PATCHSPACE_S,1,partId);
+    
+    int psId;
+    if(sqlite3_step(GET_PARTITON_PATCHSPACE_S)==SQLITE_ROW){
+        psId = sqlite3_column_int(GET_PARTITON_PATCHSPACE_S,0);
+    }
+    else{
+        fprintf(stderr,"Requested partition to be removed does not exist\n");
+        return -1;
+    }
+    
+    if(lsddb_removePatchSpace(psId)<0){
+        fprintf(stderr,"There was a problem while removing partition's patchSpace in removePartition()\n");
+    }
     
     // Remove partition's channels
     sqlite3_reset(REMOVE_PARTITON_GET_CHANNELS_S);
@@ -775,18 +775,18 @@ int lsddb_removePartition(int partId){
         int chanId = sqlite3_column_int(REMOVE_PARTITON_GET_CHANNELS_S,0);
         lsddb_deletePatchChannel(chanId);
     }
-	
-	// remove partition record
-	sqlite3_reset(REMOVE_PARTITON_S);
-	sqlite3_bind_int(REMOVE_PARTITON_S,1,partId);
-	
-	if(sqlite3_step(REMOVE_PARTITON_S)!=SQLITE_DONE){
-		fprintf(stderr,"Problem while removing partition from DB in removePartition()\n");
+    
+    // remove partition record
+    sqlite3_reset(REMOVE_PARTITON_S);
+    sqlite3_bind_int(REMOVE_PARTITON_S,1,partId);
+    
+    if(sqlite3_step(REMOVE_PARTITON_S)!=SQLITE_DONE){
+        fprintf(stderr,"Problem while removing partition from DB in removePartition()\n");
         fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-		return -1;
-	}
-	
-	return 0;
+        return -1;
+    }
+    
+    return 0;
 }
 
 
@@ -799,38 +799,38 @@ static const char UPDATE_PARTITON_PS_NAME[] =
 static sqlite3_stmt* UPDATE_PARTITON_PS_NAME_S;
 
 int lsddb_updatePartitionName(int partId, const char* name){
-	if(!name)
-		return -1;
-	
-	sqlite3_reset(UPDATE_PARTITON_NAME_S);
-	sqlite3_bind_int(UPDATE_PARTITON_NAME_S,1,partId);
-	sqlite3_bind_text(UPDATE_PARTITON_NAME_S,2,name,-1,NULL);
-	
-	if(sqlite3_step(UPDATE_PARTITON_NAME_S)!=SQLITE_DONE){
-		fprintf(stderr,"Ubable to Update Name in updatePartitionName()\n");
-		return -1;
-	}
-	
-	// Update Partition's patch space name as well
-	int psId;
-	sqlite3_reset(GET_PARTITON_PATCHSPACE_S);
-	sqlite3_bind_int(GET_PARTITON_PATCHSPACE_S,1,partId);
-	if(sqlite3_step(GET_PARTITON_PATCHSPACE_S)==SQLITE_ROW){
-		psId = sqlite3_column_int(GET_PARTITON_PATCHSPACE_S,0);
-	}
-	else{
-		fprintf(stderr,"Unable to get psId in updatePartitionName()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(UPDATE_PARTITON_PS_NAME_S);
-	sqlite3_bind_int(UPDATE_PARTITON_PS_NAME_S,1,psId);
-	sqlite3_bind_text(UPDATE_PARTITON_PS_NAME_S,2,name,-1,NULL);
-	if(sqlite3_step(UPDATE_PARTITON_PS_NAME_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to update patchSpace's name in updatePartitionName()\n");
-	}
-	
-	return 0;
+    if(!name)
+        return -1;
+    
+    sqlite3_reset(UPDATE_PARTITON_NAME_S);
+    sqlite3_bind_int(UPDATE_PARTITON_NAME_S,1,partId);
+    sqlite3_bind_text(UPDATE_PARTITON_NAME_S,2,name,-1,NULL);
+    
+    if(sqlite3_step(UPDATE_PARTITON_NAME_S)!=SQLITE_DONE){
+        fprintf(stderr,"Ubable to Update Name in updatePartitionName()\n");
+        return -1;
+    }
+    
+    // Update Partition's patch space name as well
+    int psId;
+    sqlite3_reset(GET_PARTITON_PATCHSPACE_S);
+    sqlite3_bind_int(GET_PARTITON_PATCHSPACE_S,1,partId);
+    if(sqlite3_step(GET_PARTITON_PATCHSPACE_S)==SQLITE_ROW){
+        psId = sqlite3_column_int(GET_PARTITON_PATCHSPACE_S,0);
+    }
+    else{
+        fprintf(stderr,"Unable to get psId in updatePartitionName()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(UPDATE_PARTITON_PS_NAME_S);
+    sqlite3_bind_int(UPDATE_PARTITON_PS_NAME_S,1,psId);
+    sqlite3_bind_text(UPDATE_PARTITON_PS_NAME_S,2,name,-1,NULL);
+    if(sqlite3_step(UPDATE_PARTITON_PS_NAME_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to update patchSpace's name in updatePartitionName()\n");
+    }
+    
+    return 0;
 }
 
 
@@ -857,100 +857,100 @@ static const char ADD_NODE_CLASS_UPDIDX[] =
 static sqlite3_stmt* ADD_NODE_CLASS_UPDIDX_S;
 
 int lsddb_addNodeClass(struct LSD_SceneNodeClass** ptrToBind, int pluginId, const char* name,
-					   const char* desc, int classIdx){
-	if(!name){
-		fprintf(stderr,"Name not provided in addNodeClass()\n");
-		return -1;
-	}
-	if(!ptrToBind){
-		fprintf(stderr,"Binding ptr not provided in addNodeClass(), unable to do anything useful\n");
-		return -1;
-	}
-	
-	// Check to see if class already registered and in array if so
-	sqlite3_reset(ADD_NODE_CLASS_CHECK_S);
-	
-	sqlite3_bind_int(ADD_NODE_CLASS_CHECK_S,1,pluginId);
-	sqlite3_bind_text(ADD_NODE_CLASS_CHECK_S,2,name,-1,NULL);
-	
-	int classId;
-	if(sqlite3_step(ADD_NODE_CLASS_CHECK_S)==SQLITE_ROW){ // IN DB; check array idx
-		int arrIdx = sqlite3_column_int(ADD_NODE_CLASS_CHECK_S,0);
-		classId = sqlite3_column_int(ADD_NODE_CLASS_CHECK_S,1);
-		if(arrIdx >= 0){ // Already structed; pick and bind
-			struct LSD_SceneNodeClass* classBind;
-			if(pickIdx(getArr_lsdNodeClassArr(),(void**)&classBind,arrIdx)<0){
-				fprintf(stderr,"Unable to resolve array entry %d in addNodeClass()\n",arrIdx);
-				return -1;
-			}
-			if(classBind->dbId!=classId){
-				fprintf(stderr,"Picked class failed sanity check in addNodeClass()\n");
-				return -1;
-			}
-			*ptrToBind = classBind;
-			return 0;
-		}
-		
-		// Struct record instead
-		printf("Structing existing Class\n");
-	}
-	else{ // NOT in DB; insert it and clear plugs
-		sqlite3_reset(ADD_NODE_CLASS_INSERT_S);
-		
-		sqlite3_bind_int(ADD_NODE_CLASS_INSERT_S,1,pluginId);
-		sqlite3_bind_text(ADD_NODE_CLASS_INSERT_S,2,name,-1,NULL);
-		sqlite3_bind_text(ADD_NODE_CLASS_INSERT_S,3,desc,-1,NULL);
-		sqlite3_bind_int(ADD_NODE_CLASS_INSERT_S,4,classIdx);
-		
-		if(sqlite3_step(ADD_NODE_CLASS_INSERT_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to insert new class entry into DB in addNodeClass()\n");
-			fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-			return -1;
-		}
-		classId = sqlite3_last_insert_rowid(memdb);
-		
-		// Clear Plugs
-		/*
-		sqlite3_reset(ADD_NODE_CLASS_DELIN_S);
-		sqlite3_bind_int(ADD_NODE_CLASS_DELIN_S,1,classId);
-		if(sqlite3_step(ADD_NODE_CLASS_DELIN_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to delete inputs of replaced class in addNodeClass()\n");
-			//return -1;
-		}
-		
-		sqlite3_reset(ADD_NODE_CLASS_DELOUT_S);
-		sqlite3_bind_int(ADD_NODE_CLASS_DELOUT_S,1,classId);
-		if(sqlite3_step(ADD_NODE_CLASS_DELOUT_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to delete outputs of replaced class in addNodeClass()\n");
-			//return -1;
-		}*/
+                       const char* desc, int classIdx){
+    if(!name){
+        fprintf(stderr,"Name not provided in addNodeClass()\n");
+        return -1;
+    }
+    if(!ptrToBind){
+        fprintf(stderr,"Binding ptr not provided in addNodeClass(), unable to do anything useful\n");
+        return -1;
+    }
+    
+    // Check to see if class already registered and in array if so
+    sqlite3_reset(ADD_NODE_CLASS_CHECK_S);
+    
+    sqlite3_bind_int(ADD_NODE_CLASS_CHECK_S,1,pluginId);
+    sqlite3_bind_text(ADD_NODE_CLASS_CHECK_S,2,name,-1,NULL);
+    
+    int classId;
+    if(sqlite3_step(ADD_NODE_CLASS_CHECK_S)==SQLITE_ROW){ // IN DB; check array idx
+        int arrIdx = sqlite3_column_int(ADD_NODE_CLASS_CHECK_S,0);
+        classId = sqlite3_column_int(ADD_NODE_CLASS_CHECK_S,1);
+        if(arrIdx >= 0){ // Already structed; pick and bind
+            struct LSD_SceneNodeClass* classBind;
+            if(pickIdx(getArr_lsdNodeClassArr(),(void**)&classBind,arrIdx)<0){
+                fprintf(stderr,"Unable to resolve array entry %d in addNodeClass()\n",arrIdx);
+                return -1;
+            }
+            if(classBind->dbId!=classId){
+                fprintf(stderr,"Picked class failed sanity check in addNodeClass()\n");
+                return -1;
+            }
+            *ptrToBind = classBind;
+            return 0;
+        }
+        
+        // Struct record instead
+        printf("Structing existing Class\n");
+    }
+    else{ // NOT in DB; insert it and clear plugs
+        sqlite3_reset(ADD_NODE_CLASS_INSERT_S);
+        
+        sqlite3_bind_int(ADD_NODE_CLASS_INSERT_S,1,pluginId);
+        sqlite3_bind_text(ADD_NODE_CLASS_INSERT_S,2,name,-1,NULL);
+        sqlite3_bind_text(ADD_NODE_CLASS_INSERT_S,3,desc,-1,NULL);
+        sqlite3_bind_int(ADD_NODE_CLASS_INSERT_S,4,classIdx);
+        
+        if(sqlite3_step(ADD_NODE_CLASS_INSERT_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to insert new class entry into DB in addNodeClass()\n");
+            fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+            return -1;
+        }
+        classId = sqlite3_last_insert_rowid(memdb);
+        
+        // Clear Plugs
+        /*
+        sqlite3_reset(ADD_NODE_CLASS_DELIN_S);
+        sqlite3_bind_int(ADD_NODE_CLASS_DELIN_S,1,classId);
+        if(sqlite3_step(ADD_NODE_CLASS_DELIN_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to delete inputs of replaced class in addNodeClass()\n");
+            //return -1;
+        }
+        
+        sqlite3_reset(ADD_NODE_CLASS_DELOUT_S);
+        sqlite3_bind_int(ADD_NODE_CLASS_DELOUT_S,1,classId);
+        if(sqlite3_step(ADD_NODE_CLASS_DELOUT_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to delete outputs of replaced class in addNodeClass()\n");
+            //return -1;
+        }*/
 
-	}
-	
-	// Struct class here
-	size_t insertedIdx;
-	struct LSD_SceneNodeClass* insertedClass;
-	if(insertElem(getArr_lsdNodeClassArr(),&insertedIdx,(void**)&insertedClass)<0){
-		fprintf(stderr,"Unable to insert class into array in addNodeClass()\n");
-		return -1;
-	}
-	
-	insertedClass->dbId = classId;
-	
-	
-	// Update arrIdx
-	sqlite3_reset(ADD_NODE_CLASS_UPDIDX_S);
-	
-	sqlite3_bind_int(ADD_NODE_CLASS_UPDIDX_S,1,classId);
-	sqlite3_bind_int(ADD_NODE_CLASS_UPDIDX_S,2,insertedIdx);
-	
-	if(sqlite3_step(ADD_NODE_CLASS_UPDIDX_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to update arrIdx in addNodeClass()\n");
-		return -1;
-	}
-	
-	*ptrToBind = insertedClass;
-	return 0;
+    }
+    
+    // Struct class here
+    size_t insertedIdx;
+    struct LSD_SceneNodeClass* insertedClass;
+    if(insertElem(getArr_lsdNodeClassArr(),&insertedIdx,(void**)&insertedClass)<0){
+        fprintf(stderr,"Unable to insert class into array in addNodeClass()\n");
+        return -1;
+    }
+    
+    insertedClass->dbId = classId;
+    
+    
+    // Update arrIdx
+    sqlite3_reset(ADD_NODE_CLASS_UPDIDX_S);
+    
+    sqlite3_bind_int(ADD_NODE_CLASS_UPDIDX_S,1,classId);
+    sqlite3_bind_int(ADD_NODE_CLASS_UPDIDX_S,2,insertedIdx);
+    
+    if(sqlite3_step(ADD_NODE_CLASS_UPDIDX_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to update arrIdx in addNodeClass()\n");
+        return -1;
+    }
+    
+    *ptrToBind = insertedClass;
+    return 0;
 }
 
 static const char ADD_DATA_TYPE_CHECK[] = 
@@ -962,44 +962,44 @@ static const char ADD_DATA_TYPE_INSERT[] =
 static sqlite3_stmt* ADD_DATA_TYPE_INSERT_S;
 
 int lsddb_addDataType(int* ptrToBind, int pluginId, const char* name,
-					  const char* desc){
-	if(!name){
-		fprintf(stderr,"Name not provided in addDataType()\n");
-		return -1;
-	}
-	if(!ptrToBind){
-		fprintf(stderr,"Binding ptr not provided in addDataType(), unable to do anything useful\n");
-		return -1;
-	}
-	
-	// Check to see if type already registered in DB and array if so
-	sqlite3_reset(ADD_DATA_TYPE_CHECK_S);
-	
-	sqlite3_bind_int(ADD_DATA_TYPE_CHECK_S,1,pluginId);
-	sqlite3_bind_text(ADD_DATA_TYPE_CHECK_S,2,name,-1,NULL);
-	
-	int typeId;
-	if(sqlite3_step(ADD_DATA_TYPE_CHECK_S)==SQLITE_ROW){ // in db; check array idx
-		typeId = sqlite3_column_int(ADD_DATA_TYPE_CHECK_S,0);
-	}
-	else{ // Not in DB; insert it
-		sqlite3_reset(ADD_DATA_TYPE_INSERT_S);
-		
-		sqlite3_bind_int(ADD_DATA_TYPE_INSERT_S,1,pluginId);
-		sqlite3_bind_text(ADD_DATA_TYPE_INSERT_S,2,name,-1,NULL);
-		sqlite3_bind_text(ADD_DATA_TYPE_INSERT_S,3,desc,-1,NULL);
-		
-		if(sqlite3_step(ADD_DATA_TYPE_INSERT_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to insert new class entry into DB in addDataType()\n");
-			fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-			return -1;
-		}
-		typeId = sqlite3_last_insert_rowid(memdb);
-	}
-	
-	
-	*ptrToBind = typeId;
-	return 0;
+                      const char* desc){
+    if(!name){
+        fprintf(stderr,"Name not provided in addDataType()\n");
+        return -1;
+    }
+    if(!ptrToBind){
+        fprintf(stderr,"Binding ptr not provided in addDataType(), unable to do anything useful\n");
+        return -1;
+    }
+    
+    // Check to see if type already registered in DB and array if so
+    sqlite3_reset(ADD_DATA_TYPE_CHECK_S);
+    
+    sqlite3_bind_int(ADD_DATA_TYPE_CHECK_S,1,pluginId);
+    sqlite3_bind_text(ADD_DATA_TYPE_CHECK_S,2,name,-1,NULL);
+    
+    int typeId;
+    if(sqlite3_step(ADD_DATA_TYPE_CHECK_S)==SQLITE_ROW){ // in db; check array idx
+        typeId = sqlite3_column_int(ADD_DATA_TYPE_CHECK_S,0);
+    }
+    else{ // Not in DB; insert it
+        sqlite3_reset(ADD_DATA_TYPE_INSERT_S);
+        
+        sqlite3_bind_int(ADD_DATA_TYPE_INSERT_S,1,pluginId);
+        sqlite3_bind_text(ADD_DATA_TYPE_INSERT_S,2,name,-1,NULL);
+        sqlite3_bind_text(ADD_DATA_TYPE_INSERT_S,3,desc,-1,NULL);
+        
+        if(sqlite3_step(ADD_DATA_TYPE_INSERT_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to insert new class entry into DB in addDataType()\n");
+            fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+            return -1;
+        }
+        typeId = sqlite3_last_insert_rowid(memdb);
+    }
+    
+    
+    *ptrToBind = typeId;
+    return 0;
 }
 
 
@@ -1014,53 +1014,53 @@ static const char STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX[] =
 static sqlite3_stmt* STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S;
 
 int lsddb_structNodeInstOutputArr(struct LSD_SceneNodeInst* nodeInst){
-	if(!nodeInst){
-		fprintf(stderr,"nodeInst may not be null in structNodeInstOutputArr()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(STRUCT_NODE_INST_OUTPUT_ARR_S);
-	sqlite3_bind_int(STRUCT_NODE_INST_OUTPUT_ARR_S,1,nodeInst->dbId);
-	
-	int errcode;
-	while((errcode=sqlite3_step(STRUCT_NODE_INST_OUTPUT_ARR_S))==SQLITE_ROW){
-		int outId = sqlite3_column_int(STRUCT_NODE_INST_OUTPUT_ARR_S,0);
-		int typeId = sqlite3_column_int(STRUCT_NODE_INST_OUTPUT_ARR_S,1);
-		int bfFuncIdx = sqlite3_column_int(STRUCT_NODE_INST_OUTPUT_ARR_S,2);
-		int bpFuncIdx = sqlite3_column_int(STRUCT_NODE_INST_OUTPUT_ARR_S,3);
-		
-		size_t outArrIdx;
-		struct LSD_SceneNodeOutput* nodeOut;
-		if(insertElem(getArr_lsdNodeOutputArr(),&outArrIdx,(void**)&nodeOut)<0){
-			fprintf(stderr,"Unable to insert inst output into array in structNodeInstOutputArr()\n");
-			return -1;
-		}
-		
-		nodeOut->dbId = outId;
-		nodeOut->typeId = typeId;
-		nodeOut->parentNode = nodeInst;
-		
-		// Ensure function pointers are back in place
-		nodeOut->bufferFunc = nodeInst->nodeClass->bfFuncTbl[bfFuncIdx];
-		nodeOut->bufferPtr = nodeInst->nodeClass->bpFuncTbl[bpFuncIdx];
-		//printf("Set Node's output pointer func to %d\n",bpFuncIdx);
-		//nodeOut->bufferPtr(nodeOut);
-		
-		// Update Output ArrIdx
-		sqlite3_reset(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S);
-		sqlite3_bind_int(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S,1,outArrIdx);
-		sqlite3_bind_int(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S,2,outId);
-		
-		if(sqlite3_step(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to update node output's array index in structNodeInstOutputArr()\n");
-			return -1;
-		}
-	}
-	if(errcode!=SQLITE_DONE){
-		fprintf(stderr,"structNodeInstOutputArr did not loop cleanly\n");
-		return -1;
-	}
-	return 0;
+    if(!nodeInst){
+        fprintf(stderr,"nodeInst may not be null in structNodeInstOutputArr()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(STRUCT_NODE_INST_OUTPUT_ARR_S);
+    sqlite3_bind_int(STRUCT_NODE_INST_OUTPUT_ARR_S,1,nodeInst->dbId);
+    
+    int errcode;
+    while((errcode=sqlite3_step(STRUCT_NODE_INST_OUTPUT_ARR_S))==SQLITE_ROW){
+        int outId = sqlite3_column_int(STRUCT_NODE_INST_OUTPUT_ARR_S,0);
+        int typeId = sqlite3_column_int(STRUCT_NODE_INST_OUTPUT_ARR_S,1);
+        int bfFuncIdx = sqlite3_column_int(STRUCT_NODE_INST_OUTPUT_ARR_S,2);
+        int bpFuncIdx = sqlite3_column_int(STRUCT_NODE_INST_OUTPUT_ARR_S,3);
+        
+        size_t outArrIdx;
+        struct LSD_SceneNodeOutput* nodeOut;
+        if(insertElem(getArr_lsdNodeOutputArr(),&outArrIdx,(void**)&nodeOut)<0){
+            fprintf(stderr,"Unable to insert inst output into array in structNodeInstOutputArr()\n");
+            return -1;
+        }
+        
+        nodeOut->dbId = outId;
+        nodeOut->typeId = typeId;
+        nodeOut->parentNode = nodeInst;
+        
+        // Ensure function pointers are back in place
+        nodeOut->bufferFunc = nodeInst->nodeClass->bfFuncTbl[bfFuncIdx];
+        nodeOut->bufferPtr = nodeInst->nodeClass->bpFuncTbl[bpFuncIdx];
+        //printf("Set Node's output pointer func to %d\n",bpFuncIdx);
+        //nodeOut->bufferPtr(nodeOut);
+        
+        // Update Output ArrIdx
+        sqlite3_reset(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S);
+        sqlite3_bind_int(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S,1,outArrIdx);
+        sqlite3_bind_int(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S,2,outId);
+        
+        if(sqlite3_step(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to update node output's array index in structNodeInstOutputArr()\n");
+            return -1;
+        }
+    }
+    if(errcode!=SQLITE_DONE){
+        fprintf(stderr,"structNodeInstOutputArr did not loop cleanly\n");
+        return -1;
+    }
+    return 0;
 }
 
 // INPUT Constructor: To be ran while node insts are being inserted
@@ -1074,45 +1074,45 @@ static const char STRUCT_NODE_INST_INPUT_ARR_UPDIDX[] =
 static sqlite3_stmt* STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S;
 
 int lsddb_structNodeInstInputArr(struct LSD_SceneNodeInst* nodeInst){
-	if(!nodeInst){
-		fprintf(stderr,"nodeInst may not be null in structNodeInstInputArr()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(STRUCT_NODE_INST_INPUT_ARR_S);
-	sqlite3_bind_int(STRUCT_NODE_INST_INPUT_ARR_S,1,nodeInst->dbId);
-	
-	int errcode;
-	while((errcode=sqlite3_step(STRUCT_NODE_INST_INPUT_ARR_S))==SQLITE_ROW){
-		int inId = sqlite3_column_int(STRUCT_NODE_INST_INPUT_ARR_S,0);
-		int typeId = sqlite3_column_int(STRUCT_NODE_INST_INPUT_ARR_S,1);
-		
-		size_t inArrIdx;
-		struct LSD_SceneNodeInput* nodeIn;
-		if(insertElem(getArr_lsdNodeInputArr(),&inArrIdx,(void**)&nodeIn)<0){
-			fprintf(stderr,"Unable to insert inst output in array in structNodeInstInputArr()\n");
-			return -1;
-		}
-		
-		nodeIn->dbId = inId;
-		nodeIn->typeId = typeId;
-		nodeIn->parentNode = nodeInst;
-		
-		// update Input arrIdx
-		sqlite3_reset(STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S);
-		sqlite3_bind_int(STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S,1,inArrIdx);
-		sqlite3_bind_int(STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S,2,inId);
-		
-		if(sqlite3_step(STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to update node input's array index in structNodeInstInputArr()\n");
-			return -1;
-		}
-	}
-	if(errcode!=SQLITE_DONE){
-		fprintf(stderr,"structNodeInstInputArr did not loop cleanly\n");
-		return -1;
-	}
-	return 0;
+    if(!nodeInst){
+        fprintf(stderr,"nodeInst may not be null in structNodeInstInputArr()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(STRUCT_NODE_INST_INPUT_ARR_S);
+    sqlite3_bind_int(STRUCT_NODE_INST_INPUT_ARR_S,1,nodeInst->dbId);
+    
+    int errcode;
+    while((errcode=sqlite3_step(STRUCT_NODE_INST_INPUT_ARR_S))==SQLITE_ROW){
+        int inId = sqlite3_column_int(STRUCT_NODE_INST_INPUT_ARR_S,0);
+        int typeId = sqlite3_column_int(STRUCT_NODE_INST_INPUT_ARR_S,1);
+        
+        size_t inArrIdx;
+        struct LSD_SceneNodeInput* nodeIn;
+        if(insertElem(getArr_lsdNodeInputArr(),&inArrIdx,(void**)&nodeIn)<0){
+            fprintf(stderr,"Unable to insert inst output in array in structNodeInstInputArr()\n");
+            return -1;
+        }
+        
+        nodeIn->dbId = inId;
+        nodeIn->typeId = typeId;
+        nodeIn->parentNode = nodeInst;
+        
+        // update Input arrIdx
+        sqlite3_reset(STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S);
+        sqlite3_bind_int(STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S,1,inArrIdx);
+        sqlite3_bind_int(STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S,2,inId);
+        
+        if(sqlite3_step(STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to update node input's array index in structNodeInstInputArr()\n");
+            return -1;
+        }
+    }
+    if(errcode!=SQLITE_DONE){
+        fprintf(stderr,"structNodeInstInputArr did not loop cleanly\n");
+        return -1;
+    }
+    return 0;
 }
 
 // For a given patchSpace, this function iteratively constructs each
@@ -1184,73 +1184,73 @@ static sqlite3_stmt* STRUCT_NODE_INST_ARR_S;
 static sqlite3_stmt* STRUCT_NODE_INST_ARR_UPDIDX_S;
 
 int lsddb_structNodeInstArr(int patchSpaceId){
-	sqlite3_reset(STRUCT_NODE_INST_ARR_S);
-	sqlite3_bind_int(STRUCT_NODE_INST_ARR_S,1,patchSpaceId);
-	
-	int errcode;
-	while((errcode = sqlite3_step(STRUCT_NODE_INST_ARR_S))==SQLITE_ROW){
-		int instId = sqlite3_column_int(STRUCT_NODE_INST_ARR_S,0);
-		int classId = sqlite3_column_int(STRUCT_NODE_INST_ARR_S,1);
+    sqlite3_reset(STRUCT_NODE_INST_ARR_S);
+    sqlite3_bind_int(STRUCT_NODE_INST_ARR_S,1,patchSpaceId);
+    
+    int errcode;
+    while((errcode = sqlite3_step(STRUCT_NODE_INST_ARR_S))==SQLITE_ROW){
+        int instId = sqlite3_column_int(STRUCT_NODE_INST_ARR_S,0);
+        int classId = sqlite3_column_int(STRUCT_NODE_INST_ARR_S,1);
         
         int nodeEnabled = lsddb_checkClassEnabled(classId);
         
-		if(instId != 0 && nodeEnabled){
-			size_t targetIdx;
-			struct LSD_SceneNodeInst* nodeInst;
-			if(insertElem(getArr_lsdNodeInstArr(),&targetIdx,(void**)&nodeInst)<0){
-				fprintf(stderr,"Unable to insert array element in structNodeInstArr()\n");
-				return -1;
-			}
-			//printf("Structed Node Inst from patchSpace %d\n",patchSpaceId);
-			
-			nodeInst->dbId = instId;
-			
-			// Reconnect node's class
-			if(lsddb_resolveClassFromId(&(nodeInst->nodeClass),classId)<0){
-				fprintf(stderr,"Unable to resolve node's class while restructing\n");
-			}
+        if(instId != 0 && nodeEnabled){
+            size_t targetIdx;
+            struct LSD_SceneNodeInst* nodeInst;
+            if(insertElem(getArr_lsdNodeInstArr(),&targetIdx,(void**)&nodeInst)<0){
+                fprintf(stderr,"Unable to insert array element in structNodeInstArr()\n");
+                return -1;
+            }
+            //printf("Structed Node Inst from patchSpace %d\n",patchSpaceId);
+            
+            nodeInst->dbId = instId;
+            
+            // Reconnect node's class
+            if(lsddb_resolveClassFromId(&(nodeInst->nodeClass),classId)<0){
+                fprintf(stderr,"Unable to resolve node's class while restructing\n");
+            }
 
-			
-			
-			sqlite3_reset(STRUCT_NODE_INST_ARR_UPDIDX_S);
-			sqlite3_bind_int(STRUCT_NODE_INST_ARR_UPDIDX_S,1,targetIdx);
-			sqlite3_bind_int(STRUCT_NODE_INST_ARR_UPDIDX_S,2,instId);
-			
-			if(sqlite3_step(STRUCT_NODE_INST_ARR_UPDIDX_S)!=SQLITE_DONE){
-				fprintf(stderr,"Error while updating node inst arr idx in structNodeInstArr()\n");
-				return -1;
-			}
-			
-			// Struct this instance's inputs and outputs
-			if(lsddb_structNodeInstInputArr(nodeInst)<0){
-				fprintf(stderr,"Unable to struct node's inputs in structNodeInstArr()\n");
-				return -1;
-			}
-			if(lsddb_structNodeInstOutputArr(nodeInst)<0){
-				fprintf(stderr,"Unable to struct node's outputs in structNodeInstArr()\n");
-				return -1;
-			}
-			
-			// Allocate inst's memory
-			if(nodeInst->nodeClass->instDataSize>0){
-				nodeInst->data = malloc(nodeInst->nodeClass->instDataSize);
-				
-				if(!nodeInst->data){
-					fprintf(stderr,"Unable to allocate memory for node inst data in structNodeInstArr()\n");
-					return -1;
-				}
-			}
-			
-			// Run restore func
-			if(nodeInst->nodeClass->nodeRestoreFunc)
-				nodeInst->nodeClass->nodeRestoreFunc(nodeInst,nodeInst->data);
-		}
-	}
-	if(errcode!=SQLITE_DONE){
-		fprintf(stderr,"structNodeInstArr() did not loop cleanly\n");
-		return -1;
-	}
-	return 0;
+            
+            
+            sqlite3_reset(STRUCT_NODE_INST_ARR_UPDIDX_S);
+            sqlite3_bind_int(STRUCT_NODE_INST_ARR_UPDIDX_S,1,targetIdx);
+            sqlite3_bind_int(STRUCT_NODE_INST_ARR_UPDIDX_S,2,instId);
+            
+            if(sqlite3_step(STRUCT_NODE_INST_ARR_UPDIDX_S)!=SQLITE_DONE){
+                fprintf(stderr,"Error while updating node inst arr idx in structNodeInstArr()\n");
+                return -1;
+            }
+            
+            // Struct this instance's inputs and outputs
+            if(lsddb_structNodeInstInputArr(nodeInst)<0){
+                fprintf(stderr,"Unable to struct node's inputs in structNodeInstArr()\n");
+                return -1;
+            }
+            if(lsddb_structNodeInstOutputArr(nodeInst)<0){
+                fprintf(stderr,"Unable to struct node's outputs in structNodeInstArr()\n");
+                return -1;
+            }
+            
+            // Allocate inst's memory
+            if(nodeInst->nodeClass->instDataSize>0){
+                nodeInst->data = malloc(nodeInst->nodeClass->instDataSize);
+                
+                if(!nodeInst->data){
+                    fprintf(stderr,"Unable to allocate memory for node inst data in structNodeInstArr()\n");
+                    return -1;
+                }
+            }
+            
+            // Run restore func
+            if(nodeInst->nodeClass->nodeRestoreFunc)
+                nodeInst->nodeClass->nodeRestoreFunc(nodeInst,nodeInst->data);
+        }
+    }
+    if(errcode!=SQLITE_DONE){
+        fprintf(stderr,"structNodeInstArr() did not loop cleanly\n");
+        return -1;
+    }
+    return 0;
 }
 
 
@@ -1268,57 +1268,57 @@ static const char STRUCT_UNIV_ARR_MAXIDX[] =
 static sqlite3_stmt* STRUCT_UNIV_ARR_MAXIDX_S;
 
 int lsddb_structUnivArr(){
-	sqlite3_reset(STRUCT_UNIV_ARR_S);
-	int errcode;
-	while((errcode = sqlite3_step(STRUCT_UNIV_ARR_S))==SQLITE_ROW){
-		int univId;
-		univId = sqlite3_column_int(STRUCT_UNIV_ARR_S,0);
-		
-		size_t univArrIdx;
-		struct LSD_Univ* univPtr;
-		if(insertElem(getArr_lsdUnivArr(),&univArrIdx,(void**)&univPtr)<0){
-			fprintf(stderr,"Unable to allocate array space in structUnivArr()\n");
-			return -1;
-		}
-		
-		sqlite3_reset(STRUCT_UNIV_ARR_UPDIDX_S);
-		sqlite3_bind_int(STRUCT_UNIV_ARR_UPDIDX_S,1,univArrIdx);
-		sqlite3_bind_int(STRUCT_UNIV_ARR_UPDIDX_S,2,univId);
-		
-		if(sqlite3_step(STRUCT_UNIV_ARR_UPDIDX_S)!=SQLITE_DONE){
-			fprintf(stderr,"structUnivArr() was unable to update an instance's arrayIdx\n");
-			return -1;
-		}
-		
-		sqlite3_reset(STRUCT_UNIV_ARR_MAXIDX_S);
-		sqlite3_bind_int(STRUCT_UNIV_ARR_MAXIDX_S,1,univId);
-		
-		int maxIdx;
-		if(sqlite3_step(STRUCT_UNIV_ARR_MAXIDX_S)==SQLITE_ROW){
-			maxIdx = sqlite3_column_int(STRUCT_UNIV_ARR_MAXIDX_S,0);
-		}
-		else {
-			maxIdx = -1;
-		}
+    sqlite3_reset(STRUCT_UNIV_ARR_S);
+    int errcode;
+    while((errcode = sqlite3_step(STRUCT_UNIV_ARR_S))==SQLITE_ROW){
+        int univId;
+        univId = sqlite3_column_int(STRUCT_UNIV_ARR_S,0);
+        
+        size_t univArrIdx;
+        struct LSD_Univ* univPtr;
+        if(insertElem(getArr_lsdUnivArr(),&univArrIdx,(void**)&univPtr)<0){
+            fprintf(stderr,"Unable to allocate array space in structUnivArr()\n");
+            return -1;
+        }
+        
+        sqlite3_reset(STRUCT_UNIV_ARR_UPDIDX_S);
+        sqlite3_bind_int(STRUCT_UNIV_ARR_UPDIDX_S,1,univArrIdx);
+        sqlite3_bind_int(STRUCT_UNIV_ARR_UPDIDX_S,2,univId);
+        
+        if(sqlite3_step(STRUCT_UNIV_ARR_UPDIDX_S)!=SQLITE_DONE){
+            fprintf(stderr,"structUnivArr() was unable to update an instance's arrayIdx\n");
+            return -1;
+        }
+        
+        sqlite3_reset(STRUCT_UNIV_ARR_MAXIDX_S);
+        sqlite3_bind_int(STRUCT_UNIV_ARR_MAXIDX_S,1,univId);
+        
+        int maxIdx;
+        if(sqlite3_step(STRUCT_UNIV_ARR_MAXIDX_S)==SQLITE_ROW){
+            maxIdx = sqlite3_column_int(STRUCT_UNIV_ARR_MAXIDX_S,0);
+        }
+        else {
+            maxIdx = -1;
+        }
 
 
-		univPtr->olaUnivId = univId;
-		univPtr->maxIdx = maxIdx;
-		if(maxIdx>=0){
-			uint8_t* univBuf = malloc(sizeof(uint8_t)*(maxIdx+2)); // Add 2 to accomodate 16 bit mode
-			if(univBuf)
-				univPtr->buffer = univBuf;
-			else{
-				fprintf(stderr,"Unable to allocate memory for DMX buffer\n");
-				return -1;
-			}
-		}
-	}
-	if(errcode != SQLITE_DONE){
-		fprintf(stderr,"structUnivArr() did not loop cleanly\n");
-		return -1;
-	}
-	return 0;
+        univPtr->olaUnivId = univId;
+        univPtr->maxIdx = maxIdx;
+        if(maxIdx>=0){
+            uint8_t* univBuf = malloc(sizeof(uint8_t)*(maxIdx+2)); // Add 2 to accomodate 16 bit mode
+            if(univBuf)
+                univPtr->buffer = univBuf;
+            else{
+                fprintf(stderr,"Unable to allocate memory for DMX buffer\n");
+                return -1;
+            }
+        }
+    }
+    if(errcode != SQLITE_DONE){
+        fprintf(stderr,"structUnivArr() did not loop cleanly\n");
+        return -1;
+    }
+    return 0;
 }
 
 // Private function for constructing address on behalf of channels constructor
@@ -1327,40 +1327,40 @@ static const char STRUCT_CHANNEL_ARR_ADDR[] =
 static sqlite3_stmt* STRUCT_CHANNEL_ARR_ADDR_S;
 
 int lsddb_structChannelArrAddr(struct LSD_Addr* addr,int addrId){
-	if(!addr){
-		fprintf(stderr,"addr is NULL in structChannelArrAddr()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(STRUCT_CHANNEL_ARR_ADDR_S);
-	sqlite3_bind_int(STRUCT_CHANNEL_ARR_ADDR_S,1,addrId);
-	
-	if(sqlite3_step(STRUCT_CHANNEL_ARR_ADDR_S)==SQLITE_ROW){
-		int addrId = sqlite3_column_int(STRUCT_CHANNEL_ARR_ADDR_S,0);
-		int univIdx = sqlite3_column_int(STRUCT_CHANNEL_ARR_ADDR_S,1);
-		int lightAddr = sqlite3_column_int(STRUCT_CHANNEL_ARR_ADDR_S,2);
-		int b16 = sqlite3_column_int(STRUCT_CHANNEL_ARR_ADDR_S,3);
+    if(!addr){
+        fprintf(stderr,"addr is NULL in structChannelArrAddr()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(STRUCT_CHANNEL_ARR_ADDR_S);
+    sqlite3_bind_int(STRUCT_CHANNEL_ARR_ADDR_S,1,addrId);
+    
+    if(sqlite3_step(STRUCT_CHANNEL_ARR_ADDR_S)==SQLITE_ROW){
+        int addrId = sqlite3_column_int(STRUCT_CHANNEL_ARR_ADDR_S,0);
+        int univIdx = sqlite3_column_int(STRUCT_CHANNEL_ARR_ADDR_S,1);
+        int lightAddr = sqlite3_column_int(STRUCT_CHANNEL_ARR_ADDR_S,2);
+        int b16 = sqlite3_column_int(STRUCT_CHANNEL_ARR_ADDR_S,3);
 
-		struct LSD_Univ* univPtr;
-		if(pickIdx(getArr_lsdUnivArr(),(void**)&univPtr,univIdx)<0){
-			fprintf(stderr,"There was a problem while picking universe in structChannelArr()\n");
-			return -1;
-		}
-		
-		if(lightAddr>univPtr->maxIdx){
-			fprintf(stderr,"Light address is outside bounds of its universe structure\n");
-			return -1;
-		}
-		
-		addr->dbId = addrId;
-		addr->univ = univPtr;
-		addr->addr = lightAddr;
-		addr->b16 = b16;
-		
-		return 0;
-	}
-	fprintf(stderr,"Unable to find DB record for requested address in structChannelArrAddr\n");
-	return -1;
+        struct LSD_Univ* univPtr;
+        if(pickIdx(getArr_lsdUnivArr(),(void**)&univPtr,univIdx)<0){
+            fprintf(stderr,"There was a problem while picking universe in structChannelArr()\n");
+            return -1;
+        }
+        
+        if(lightAddr>univPtr->maxIdx){
+            fprintf(stderr,"Light address is outside bounds of its universe structure\n");
+            return -1;
+        }
+        
+        addr->dbId = addrId;
+        addr->univ = univPtr;
+        addr->addr = lightAddr;
+        addr->b16 = b16;
+        
+        return 0;
+    }
+    fprintf(stderr,"Unable to find DB record for requested address in structChannelArrAddr\n");
+    return -1;
 }
 
 // Private function for constructing channels on bahalf of partitions constructor
@@ -1373,71 +1373,71 @@ static const char STRUCT_CHANNEL_ARR_UPDIDX[] =
 static sqlite3_stmt* STRUCT_CHANNEL_ARR_UPDIDX_S;
 
 int lsddb_structChannelArr(){
-	sqlite3_reset(STRUCT_CHANNEL_ARR_S);
-	int errcode;
-	while((errcode = sqlite3_step(STRUCT_CHANNEL_ARR_S))==SQLITE_ROW){
-		int chanId = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,0);
-		int chanSingle = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,1);
-		int chanRa = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,2);
-		int chanGa = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,3);
-		int chanBa = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,4);
-		int facadeOutId = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,5);
-		
-		size_t channelIdx;
-		struct LSD_Channel* chanBind;
-		if(insertElem(getArr_lsdChannelArr(),&channelIdx,(void**)&chanBind)<0){
-			fprintf(stderr,"Unable to insert channel into array in structChannelArr()\n");
-			return -1;
-		}
-		
-		chanBind->dbId = chanId;
-		
-		if(chanSingle){
-			chanBind->single = 1;
-			if(lsddb_structChannelArrAddr(&(chanBind->rAddr),chanRa)<0){
-				fprintf(stderr,"Unable to struct single addr in structChannelArr()\n");
-				return -1;
-			}
-		}
-		else {
-			chanBind->single = 0;
-			if(lsddb_structChannelArrAddr(&(chanBind->rAddr),chanRa)<0){
-				fprintf(stderr,"Unable to struct red addr in structChannelArr()\n");
-				return -1;
-			}
-			if(lsddb_structChannelArrAddr(&(chanBind->gAddr),chanGa)<0){
-				fprintf(stderr,"Unable to struct green addr in structChannelArr()\n");
-				return -1;
-			}
-			if(lsddb_structChannelArrAddr(&(chanBind->bAddr),chanBa)<0){
-				fprintf(stderr,"Unable to struct blue addr in structChannelArr()\n");
-				return -1;
-			}
-		}
+    sqlite3_reset(STRUCT_CHANNEL_ARR_S);
+    int errcode;
+    while((errcode = sqlite3_step(STRUCT_CHANNEL_ARR_S))==SQLITE_ROW){
+        int chanId = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,0);
+        int chanSingle = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,1);
+        int chanRa = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,2);
+        int chanGa = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,3);
+        int chanBa = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,4);
+        int facadeOutId = sqlite3_column_int(STRUCT_CHANNEL_ARR_S,5);
+        
+        size_t channelIdx;
+        struct LSD_Channel* chanBind;
+        if(insertElem(getArr_lsdChannelArr(),&channelIdx,(void**)&chanBind)<0){
+            fprintf(stderr,"Unable to insert channel into array in structChannelArr()\n");
+            return -1;
+        }
+        
+        chanBind->dbId = chanId;
+        
+        if(chanSingle){
+            chanBind->single = 1;
+            if(lsddb_structChannelArrAddr(&(chanBind->rAddr),chanRa)<0){
+                fprintf(stderr,"Unable to struct single addr in structChannelArr()\n");
+                return -1;
+            }
+        }
+        else {
+            chanBind->single = 0;
+            if(lsddb_structChannelArrAddr(&(chanBind->rAddr),chanRa)<0){
+                fprintf(stderr,"Unable to struct red addr in structChannelArr()\n");
+                return -1;
+            }
+            if(lsddb_structChannelArrAddr(&(chanBind->gAddr),chanGa)<0){
+                fprintf(stderr,"Unable to struct green addr in structChannelArr()\n");
+                return -1;
+            }
+            if(lsddb_structChannelArrAddr(&(chanBind->bAddr),chanBa)<0){
+                fprintf(stderr,"Unable to struct blue addr in structChannelArr()\n");
+                return -1;
+            }
+        }
 
-		
-		// Resolve and set channel object's aliased output (if exists)
-		chanBind->output = NULL;
-		lsddb_traceOutput(&(chanBind->output), facadeOutId, NULL, NULL);
-		if(chanBind->output)
-			printf("structChannelArr() output id %d\n",chanBind->output->dbId);
+        
+        // Resolve and set channel object's aliased output (if exists)
+        chanBind->output = NULL;
+        lsddb_traceOutput(&(chanBind->output), facadeOutId, NULL, NULL);
+        if(chanBind->output)
+            printf("structChannelArr() output id %d\n",chanBind->output->dbId);
 
-		
-		// Update Channel's ArrIdx
-		sqlite3_reset(STRUCT_CHANNEL_ARR_UPDIDX_S);
-		sqlite3_bind_int(STRUCT_CHANNEL_ARR_UPDIDX_S,1,chanId);
-		sqlite3_bind_int(STRUCT_CHANNEL_ARR_UPDIDX_S,2,channelIdx);
-		if(sqlite3_step(STRUCT_CHANNEL_ARR_UPDIDX_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to update channel's arrIdx in structChannelArr()\n");
-			return -1;
-		}
+        
+        // Update Channel's ArrIdx
+        sqlite3_reset(STRUCT_CHANNEL_ARR_UPDIDX_S);
+        sqlite3_bind_int(STRUCT_CHANNEL_ARR_UPDIDX_S,1,chanId);
+        sqlite3_bind_int(STRUCT_CHANNEL_ARR_UPDIDX_S,2,channelIdx);
+        if(sqlite3_step(STRUCT_CHANNEL_ARR_UPDIDX_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to update channel's arrIdx in structChannelArr()\n");
+            return -1;
+        }
 
-	}
-	if(errcode!=SQLITE_DONE){
-		fprintf(stderr,"structChannelArr() did not loop cleanly\n");
-		return -1;
-	}
-	return 0;
+    }
+    if(errcode!=SQLITE_DONE){
+        fprintf(stderr,"structChannelArr() did not loop cleanly\n");
+        return -1;
+    }
+    return 0;
 }
 
 
@@ -1464,68 +1464,68 @@ static sqlite3_stmt* STRUCT_PARTITION_ARR_UPDIDX_S;
 
 int lsddb_structPartitionArr(){
 
-	// First insert partition facade nodes
-	if(lsddb_structNodeInstArr(0)<0){
-		fprintf(stderr,"Unable to struct partition facade nodes in structPartitionArr()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(STRUCT_PARTITION_ARR_S);
+    // First insert partition facade nodes
+    if(lsddb_structNodeInstArr(0)<0){
+        fprintf(stderr,"Unable to struct partition facade nodes in structPartitionArr()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(STRUCT_PARTITION_ARR_S);
 
-	int errcode;
-	while((errcode = sqlite3_step(STRUCT_PARTITION_ARR_S))==SQLITE_ROW){
-		// Collect partition's data from DB
-		int partId = sqlite3_column_int(STRUCT_PARTITION_ARR_S,0);
-		//const unsigned char* partName = sqlite3_column_text(STRUCT_PARTITION_ARR_S,1);
-		int patchSpaceId = sqlite3_column_int(STRUCT_PARTITION_ARR_S,1);
-		
-		// Insert corresponding partition structure
-		size_t partArrIdx;
-		struct LSD_Partition* partArrPtr;
-		if(insertElem(getArr_lsdPartitionArr(),&partArrIdx,(void**)&partArrPtr)<0){
-			fprintf(stderr,"Unable to insert Partition into array in createPartition()\n");
-			return -1;
-		}
-		
-		// Construct nodes in the partition's contained patchSpace
-		if(lsddb_structNodeInstArr(patchSpaceId)<0){
-			fprintf(stderr,"Unable to insert nodes contained within partition's patch space in structPartitionArr()\n");
-			return -1;
-		}
-		
-		// Construct nodes within facades in the partition's patchSpace
-		sqlite3_reset(REMOVE_PATCH_SPACE_FACADES_S);
-		sqlite3_bind_int(REMOVE_PATCH_SPACE_FACADES_S,1,patchSpaceId);
-		while(sqlite3_step(REMOVE_PATCH_SPACE_FACADES_S)==SQLITE_ROW){
-			int cpsId = sqlite3_column_int(REMOVE_PATCH_SPACE_FACADES_S,0);
-			lsddb_structNodeInstArr(cpsId);
-		}
-		
-		
-		// Update arr idx
-		sqlite3_reset(STRUCT_PARTITION_ARR_UPDIDX_S);
-		sqlite3_bind_int(STRUCT_PARTITION_ARR_UPDIDX_S,1,partArrIdx);
-		sqlite3_bind_int(STRUCT_PARTITION_ARR_UPDIDX_S,2,partId);
-		
-		if(sqlite3_step(STRUCT_PARTITION_ARR_UPDIDX_S)!=SQLITE_DONE){
-			fprintf(stderr,"There was a problem updating the partition "
-					"arr idx in structPartitionArr()\n");
-			return -1;
-		}
-		
-		// Make appropriate links
-		partArrPtr->dbId = partId;
-		//partArrPtr->facade = partFacade;
-	}
-	if(errcode!=SQLITE_DONE){
-		fprintf(stderr,"structPartitionArr() did not loop cleanly\n");
-		return -1;
-	}
+    int errcode;
+    while((errcode = sqlite3_step(STRUCT_PARTITION_ARR_S))==SQLITE_ROW){
+        // Collect partition's data from DB
+        int partId = sqlite3_column_int(STRUCT_PARTITION_ARR_S,0);
+        //const unsigned char* partName = sqlite3_column_text(STRUCT_PARTITION_ARR_S,1);
+        int patchSpaceId = sqlite3_column_int(STRUCT_PARTITION_ARR_S,1);
+        
+        // Insert corresponding partition structure
+        size_t partArrIdx;
+        struct LSD_Partition* partArrPtr;
+        if(insertElem(getArr_lsdPartitionArr(),&partArrIdx,(void**)&partArrPtr)<0){
+            fprintf(stderr,"Unable to insert Partition into array in createPartition()\n");
+            return -1;
+        }
+        
+        // Construct nodes in the partition's contained patchSpace
+        if(lsddb_structNodeInstArr(patchSpaceId)<0){
+            fprintf(stderr,"Unable to insert nodes contained within partition's patch space in structPartitionArr()\n");
+            return -1;
+        }
+        
+        // Construct nodes within facades in the partition's patchSpace
+        sqlite3_reset(REMOVE_PATCH_SPACE_FACADES_S);
+        sqlite3_bind_int(REMOVE_PATCH_SPACE_FACADES_S,1,patchSpaceId);
+        while(sqlite3_step(REMOVE_PATCH_SPACE_FACADES_S)==SQLITE_ROW){
+            int cpsId = sqlite3_column_int(REMOVE_PATCH_SPACE_FACADES_S,0);
+            lsddb_structNodeInstArr(cpsId);
+        }
+        
+        
+        // Update arr idx
+        sqlite3_reset(STRUCT_PARTITION_ARR_UPDIDX_S);
+        sqlite3_bind_int(STRUCT_PARTITION_ARR_UPDIDX_S,1,partArrIdx);
+        sqlite3_bind_int(STRUCT_PARTITION_ARR_UPDIDX_S,2,partId);
+        
+        if(sqlite3_step(STRUCT_PARTITION_ARR_UPDIDX_S)!=SQLITE_DONE){
+            fprintf(stderr,"There was a problem updating the partition "
+                    "arr idx in structPartitionArr()\n");
+            return -1;
+        }
+        
+        // Make appropriate links
+        partArrPtr->dbId = partId;
+        //partArrPtr->facade = partFacade;
+    }
+    if(errcode!=SQLITE_DONE){
+        fprintf(stderr,"structPartitionArr() did not loop cleanly\n");
+        return -1;
+    }
     
     // Iterate to reestablish wire connections
     lsddb_rewireNodes();
     
-	return 0;
+    return 0;
 }
 
 static const char ADD_NODE_INST_INPUT_INSERT[] =
@@ -1537,58 +1537,58 @@ static const char ADD_NODE_INST_INPUT_UPDIDX[] =
 static sqlite3_stmt* ADD_NODE_INST_INPUT_UPDIDX_S;
 
 int lsddb_addNodeInstInput(struct LSD_SceneNodeInst const * node,
-						   int typeId,
-						   const char* name,
-						   struct LSD_SceneNodeInput** ptrToBind,
-						   int* idBinding){
-	if(!name){
-		fprintf(stderr,"Improper arguments passed to addNodeInstInput()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(ADD_NODE_INST_INPUT_INSERT_S);
-	sqlite3_bind_int(ADD_NODE_INST_INPUT_INSERT_S,1,node->dbId);
-	sqlite3_bind_int(ADD_NODE_INST_INPUT_INSERT_S,2,typeId);
-	sqlite3_bind_text(ADD_NODE_INST_INPUT_INSERT_S,3,name,-1,NULL);
-	
-	if(sqlite3_step(ADD_NODE_INST_INPUT_INSERT_S)!=SQLITE_DONE){
-		fprintf(stderr,"Error while inserting input into DB\n");
-		return -1;
-	}
-	
-	int inputId = sqlite3_last_insert_rowid(memdb);
-	
-	// Insert into array
-	size_t arrIdx;
-	struct LSD_SceneNodeInput* input;
-	if(insertElem(getArr_lsdNodeInputArr(),&arrIdx,(void**)&input)<0){
-		fprintf(stderr,"Unable to insert input into array in addNodeInstInput()\n");
-		return -1;
-	}
-	
-	// Set arrIdx in DB
-	sqlite3_reset(ADD_NODE_INST_INPUT_UPDIDX_S);
-	sqlite3_bind_int(ADD_NODE_INST_INPUT_UPDIDX_S,1,inputId);
-	sqlite3_bind_int(ADD_NODE_INST_INPUT_UPDIDX_S,2,arrIdx);
-	
-	if(sqlite3_step(ADD_NODE_INST_INPUT_UPDIDX_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to update arrIdx in addNodeInstInput()\n");
-		return -1;
-	}
-	
-	// Populate input object
-	input->dbId = inputId;
-	input->typeId = typeId;
-	input->parentNode = node;
-	input->connection = NULL;
-	
-	if(ptrToBind)
-		*ptrToBind = input;
-	if(idBinding)
-		*idBinding = inputId;
-	
-	return 0;
-	
+                           int typeId,
+                           const char* name,
+                           struct LSD_SceneNodeInput** ptrToBind,
+                           int* idBinding){
+    if(!name){
+        fprintf(stderr,"Improper arguments passed to addNodeInstInput()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(ADD_NODE_INST_INPUT_INSERT_S);
+    sqlite3_bind_int(ADD_NODE_INST_INPUT_INSERT_S,1,node->dbId);
+    sqlite3_bind_int(ADD_NODE_INST_INPUT_INSERT_S,2,typeId);
+    sqlite3_bind_text(ADD_NODE_INST_INPUT_INSERT_S,3,name,-1,NULL);
+    
+    if(sqlite3_step(ADD_NODE_INST_INPUT_INSERT_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error while inserting input into DB\n");
+        return -1;
+    }
+    
+    int inputId = sqlite3_last_insert_rowid(memdb);
+    
+    // Insert into array
+    size_t arrIdx;
+    struct LSD_SceneNodeInput* input;
+    if(insertElem(getArr_lsdNodeInputArr(),&arrIdx,(void**)&input)<0){
+        fprintf(stderr,"Unable to insert input into array in addNodeInstInput()\n");
+        return -1;
+    }
+    
+    // Set arrIdx in DB
+    sqlite3_reset(ADD_NODE_INST_INPUT_UPDIDX_S);
+    sqlite3_bind_int(ADD_NODE_INST_INPUT_UPDIDX_S,1,inputId);
+    sqlite3_bind_int(ADD_NODE_INST_INPUT_UPDIDX_S,2,arrIdx);
+    
+    if(sqlite3_step(ADD_NODE_INST_INPUT_UPDIDX_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to update arrIdx in addNodeInstInput()\n");
+        return -1;
+    }
+    
+    // Populate input object
+    input->dbId = inputId;
+    input->typeId = typeId;
+    input->parentNode = node;
+    input->connection = NULL;
+    
+    if(ptrToBind)
+        *ptrToBind = input;
+    if(idBinding)
+        *idBinding = inputId;
+    
+    return 0;
+    
 }
 
 static const char ADD_NODE_INST_OUTPUT_INSERT[] =
@@ -1600,61 +1600,61 @@ static const char ADD_NODE_INST_OUTPUT_UPDIDX[] =
 static sqlite3_stmt* ADD_NODE_INST_OUTPUT_UPDIDX_S;
 
 int lsddb_addNodeInstOutput(struct LSD_SceneNodeInst const * node,
-							int typeId,
-							const char* name,
-							struct LSD_SceneNodeOutput** ptrToBind,
-							int* idBinding,
-							int bfFuncIdx,
-							int bpFuncIdx){
-	if(!name){
-		fprintf(stderr,"Improper arguments passed to addNodeInstOutput()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(ADD_NODE_INST_OUTPUT_INSERT_S);
-	sqlite3_bind_int(ADD_NODE_INST_OUTPUT_INSERT_S,1,node->dbId);
-	sqlite3_bind_int(ADD_NODE_INST_OUTPUT_INSERT_S,2,typeId);
-	sqlite3_bind_text(ADD_NODE_INST_OUTPUT_INSERT_S,3,name,-1,NULL);
-	sqlite3_bind_int(ADD_NODE_INST_OUTPUT_INSERT_S,4,bfFuncIdx);
-	sqlite3_bind_int(ADD_NODE_INST_OUTPUT_INSERT_S,5,bpFuncIdx);
+                            int typeId,
+                            const char* name,
+                            struct LSD_SceneNodeOutput** ptrToBind,
+                            int* idBinding,
+                            int bfFuncIdx,
+                            int bpFuncIdx){
+    if(!name){
+        fprintf(stderr,"Improper arguments passed to addNodeInstOutput()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(ADD_NODE_INST_OUTPUT_INSERT_S);
+    sqlite3_bind_int(ADD_NODE_INST_OUTPUT_INSERT_S,1,node->dbId);
+    sqlite3_bind_int(ADD_NODE_INST_OUTPUT_INSERT_S,2,typeId);
+    sqlite3_bind_text(ADD_NODE_INST_OUTPUT_INSERT_S,3,name,-1,NULL);
+    sqlite3_bind_int(ADD_NODE_INST_OUTPUT_INSERT_S,4,bfFuncIdx);
+    sqlite3_bind_int(ADD_NODE_INST_OUTPUT_INSERT_S,5,bpFuncIdx);
 
-	
-	if(sqlite3_step(ADD_NODE_INST_OUTPUT_INSERT_S)!=SQLITE_DONE){
-		fprintf(stderr,"Error while inserting output into DB\n");
-		return -1;
-	}
-	
-	int outputId = sqlite3_last_insert_rowid(memdb);
-	
-	// Insert into array
-	size_t arrIdx;
-	struct LSD_SceneNodeOutput* output;
-	if(insertElem(getArr_lsdNodeOutputArr(),&arrIdx,(void**)&output)<0){
-		fprintf(stderr,"Unable to insert output into array in addNodeInstOutput()\n");
-		return -1;
-	}
-	
-	// Set arrIdx in DB
-	sqlite3_reset(ADD_NODE_INST_OUTPUT_UPDIDX_S);
-	sqlite3_bind_int(ADD_NODE_INST_OUTPUT_UPDIDX_S,1,outputId);
-	sqlite3_bind_int(ADD_NODE_INST_OUTPUT_UPDIDX_S,2,arrIdx);
-	
-	if(sqlite3_step(ADD_NODE_INST_OUTPUT_UPDIDX_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to update arrIdx in addNodeInstOutput()\n");
-		return -1;
-	}
-	
-	// Populate output object
-	output->dbId = outputId;
-	output->typeId = typeId;
-	output->parentNode = node;
-	
-	if(ptrToBind)
-		*ptrToBind = output;
-	if(idBinding)
-		*idBinding = outputId;
-	
-	return 0;
+    
+    if(sqlite3_step(ADD_NODE_INST_OUTPUT_INSERT_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error while inserting output into DB\n");
+        return -1;
+    }
+    
+    int outputId = sqlite3_last_insert_rowid(memdb);
+    
+    // Insert into array
+    size_t arrIdx;
+    struct LSD_SceneNodeOutput* output;
+    if(insertElem(getArr_lsdNodeOutputArr(),&arrIdx,(void**)&output)<0){
+        fprintf(stderr,"Unable to insert output into array in addNodeInstOutput()\n");
+        return -1;
+    }
+    
+    // Set arrIdx in DB
+    sqlite3_reset(ADD_NODE_INST_OUTPUT_UPDIDX_S);
+    sqlite3_bind_int(ADD_NODE_INST_OUTPUT_UPDIDX_S,1,outputId);
+    sqlite3_bind_int(ADD_NODE_INST_OUTPUT_UPDIDX_S,2,arrIdx);
+    
+    if(sqlite3_step(ADD_NODE_INST_OUTPUT_UPDIDX_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to update arrIdx in addNodeInstOutput()\n");
+        return -1;
+    }
+    
+    // Populate output object
+    output->dbId = outputId;
+    output->typeId = typeId;
+    output->parentNode = node;
+    
+    if(ptrToBind)
+        *ptrToBind = output;
+    if(idBinding)
+        *idBinding = outputId;
+    
+    return 0;
 }
 
 static const char REMOVE_NODE_INST_INPUT_ARRIDX[] =
@@ -1670,45 +1670,45 @@ static const char REMOVE_NODE_INST_INPUT_GET_WIRES[] =
 static sqlite3_stmt* REMOVE_NODE_INST_INPUT_GET_WIRES_S;
 
 int lsddb_removeNodeInstInput(int inputId){
-	// call unwireNodes on wire connected to input
-	sqlite3_reset(REMOVE_NODE_INST_INPUT_GET_WIRES_S);
-	sqlite3_bind_int(REMOVE_NODE_INST_INPUT_GET_WIRES_S,1,inputId);
-	
-	while(sqlite3_step(REMOVE_NODE_INST_INPUT_GET_WIRES_S)==SQLITE_ROW){
-		int wireId = sqlite3_column_int(REMOVE_NODE_INST_INPUT_GET_WIRES_S,0);
-		lsddb_unwireNodes(wireId);
-	}
-	
-	// Remove input from array
-	sqlite3_reset(REMOVE_NODE_INST_INPUT_ARRIDX_S);
-	sqlite3_bind_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,1,inputId);
-	
-	int arrIdx;
-	if(sqlite3_step(REMOVE_NODE_INST_INPUT_ARRIDX_S)==SQLITE_ROW){
-		arrIdx = sqlite3_column_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,0);
-	}
-	else{
-		fprintf(stderr,"Unable to resolve array index in removeNodeInstInput()\n");
-		return -1;
-	}
-	
-	if(arrIdx>=0){
-		if(delIdx(getArr_lsdNodeInputArr(),arrIdx)<0){
-			fprintf(stderr,"Unable to remove input from array in removeNodeInstInput()\n");
-			return -1;
-		}
-	}
-	
-	// remove record from DB
-	sqlite3_reset(REMOVE_NODE_INST_INPUT_S);
-	sqlite3_bind_int(REMOVE_NODE_INST_INPUT_S,1,inputId);
-	
-	if(sqlite3_step(REMOVE_NODE_INST_INPUT_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to remove input from DB\n");
-		return -1;
-	}
-	
-	return 0;
+    // call unwireNodes on wire connected to input
+    sqlite3_reset(REMOVE_NODE_INST_INPUT_GET_WIRES_S);
+    sqlite3_bind_int(REMOVE_NODE_INST_INPUT_GET_WIRES_S,1,inputId);
+    
+    while(sqlite3_step(REMOVE_NODE_INST_INPUT_GET_WIRES_S)==SQLITE_ROW){
+        int wireId = sqlite3_column_int(REMOVE_NODE_INST_INPUT_GET_WIRES_S,0);
+        lsddb_unwireNodes(wireId);
+    }
+    
+    // Remove input from array
+    sqlite3_reset(REMOVE_NODE_INST_INPUT_ARRIDX_S);
+    sqlite3_bind_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,1,inputId);
+    
+    int arrIdx;
+    if(sqlite3_step(REMOVE_NODE_INST_INPUT_ARRIDX_S)==SQLITE_ROW){
+        arrIdx = sqlite3_column_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,0);
+    }
+    else{
+        fprintf(stderr,"Unable to resolve array index in removeNodeInstInput()\n");
+        return -1;
+    }
+    
+    if(arrIdx>=0){
+        if(delIdx(getArr_lsdNodeInputArr(),arrIdx)<0){
+            fprintf(stderr,"Unable to remove input from array in removeNodeInstInput()\n");
+            return -1;
+        }
+    }
+    
+    // remove record from DB
+    sqlite3_reset(REMOVE_NODE_INST_INPUT_S);
+    sqlite3_bind_int(REMOVE_NODE_INST_INPUT_S,1,inputId);
+    
+    if(sqlite3_step(REMOVE_NODE_INST_INPUT_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to remove input from DB\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 static const char REMOVE_NODE_INST_OUTPUT_ARRIDX[] =
@@ -1724,45 +1724,45 @@ static const char REMOVE_NODE_INST_OUTPUT_GET_WIRES[] =
 static sqlite3_stmt* REMOVE_NODE_INST_OUTPUT_GET_WIRES_S;
 
 int lsddb_removeNodeInstOutput(int outputId){
-	// call unwireNodes on wire connected to output
-	sqlite3_reset(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S);
-	sqlite3_bind_int(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S,1,outputId);
-	
-	while(sqlite3_step(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S)==SQLITE_ROW){
-		int wireId = sqlite3_column_int(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S,0);
-		lsddb_unwireNodes(wireId);
-	}
-	
-	// Remove output from array
-	sqlite3_reset(REMOVE_NODE_INST_OUTPUT_ARRIDX_S);
-	sqlite3_bind_int(REMOVE_NODE_INST_OUTPUT_ARRIDX_S,1,outputId);
-	
-	int arrIdx;
-	if(sqlite3_step(REMOVE_NODE_INST_OUTPUT_ARRIDX_S)==SQLITE_ROW){
-		arrIdx = sqlite3_column_int(REMOVE_NODE_INST_OUTPUT_ARRIDX_S,0);
-	}
-	else{
-		fprintf(stderr,"Unable to resolve array index in removeNodeInstOutput()\n");
-		return -1;
-	}
-	
-	if(arrIdx>=0){
-		if(delIdx(getArr_lsdNodeOutputArr(),arrIdx)<0){
-			fprintf(stderr,"Unable to remove output from array in removeNodeInstOutput()\n");
-			return -1;
-		}
-	}
-	
-	// remove record from DB
-	sqlite3_reset(REMOVE_NODE_INST_OUTPUT_S);
-	sqlite3_bind_int(REMOVE_NODE_INST_OUTPUT_S,1,outputId);
-	
-	if(sqlite3_step(REMOVE_NODE_INST_OUTPUT_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to remove output from DB\n");
-		return -1;
-	}
-	
-	return 0;
+    // call unwireNodes on wire connected to output
+    sqlite3_reset(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S);
+    sqlite3_bind_int(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S,1,outputId);
+    
+    while(sqlite3_step(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S)==SQLITE_ROW){
+        int wireId = sqlite3_column_int(REMOVE_NODE_INST_OUTPUT_GET_WIRES_S,0);
+        lsddb_unwireNodes(wireId);
+    }
+    
+    // Remove output from array
+    sqlite3_reset(REMOVE_NODE_INST_OUTPUT_ARRIDX_S);
+    sqlite3_bind_int(REMOVE_NODE_INST_OUTPUT_ARRIDX_S,1,outputId);
+    
+    int arrIdx;
+    if(sqlite3_step(REMOVE_NODE_INST_OUTPUT_ARRIDX_S)==SQLITE_ROW){
+        arrIdx = sqlite3_column_int(REMOVE_NODE_INST_OUTPUT_ARRIDX_S,0);
+    }
+    else{
+        fprintf(stderr,"Unable to resolve array index in removeNodeInstOutput()\n");
+        return -1;
+    }
+    
+    if(arrIdx>=0){
+        if(delIdx(getArr_lsdNodeOutputArr(),arrIdx)<0){
+            fprintf(stderr,"Unable to remove output from array in removeNodeInstOutput()\n");
+            return -1;
+        }
+    }
+    
+    // remove record from DB
+    sqlite3_reset(REMOVE_NODE_INST_OUTPUT_S);
+    sqlite3_bind_int(REMOVE_NODE_INST_OUTPUT_S,1,outputId);
+    
+    if(sqlite3_step(REMOVE_NODE_INST_OUTPUT_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to remove output from DB\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 /**
@@ -1779,26 +1779,26 @@ static const char GET_NODE_CLASS_NAME[] =
 static sqlite3_stmt* GET_NODE_CLASS_NAME_S;
 
 int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
-					  int* idBinding, struct LSD_SceneNodeInst** ptrToBind){
-	if(!nc || nc->dbId==0){
-		fprintf(stderr,"Invalid NodeClass used in addNodeInst()\n");
-		if(!nc)
-			fprintf(stderr,"NULL NodeClass\n");
-		return -1;
-	}
-	
-	sqlite3_reset(ADD_NODE_INST_S);
-	
-	size_t targetIdx;
-	struct LSD_SceneNodeInst* targetPtr;
-	if(insertElem(getArr_lsdNodeInstArr(),&targetIdx,(void**)&targetPtr)<0){
-		fprintf(stderr,"Unable to insert node instance into array in addNodeInst()\n");
-		return -1;
-	}
-		
-	sqlite3_bind_int(ADD_NODE_INST_S,1,targetIdx);
-	sqlite3_bind_int(ADD_NODE_INST_S,2,nc->dbId);
-	sqlite3_bind_int(ADD_NODE_INST_S,3,patchSpaceId);
+                      int* idBinding, struct LSD_SceneNodeInst** ptrToBind){
+    if(!nc || nc->dbId==0){
+        fprintf(stderr,"Invalid NodeClass used in addNodeInst()\n");
+        if(!nc)
+            fprintf(stderr,"NULL NodeClass\n");
+        return -1;
+    }
+    
+    sqlite3_reset(ADD_NODE_INST_S);
+    
+    size_t targetIdx;
+    struct LSD_SceneNodeInst* targetPtr;
+    if(insertElem(getArr_lsdNodeInstArr(),&targetIdx,(void**)&targetPtr)<0){
+        fprintf(stderr,"Unable to insert node instance into array in addNodeInst()\n");
+        return -1;
+    }
+        
+    sqlite3_bind_int(ADD_NODE_INST_S,1,targetIdx);
+    sqlite3_bind_int(ADD_NODE_INST_S,2,nc->dbId);
+    sqlite3_bind_int(ADD_NODE_INST_S,3,patchSpaceId);
     
     // Get class name to make default inst name
     sqlite3_reset(GET_NODE_CLASS_NAME_S);
@@ -1810,47 +1810,47 @@ int lsddb_addNodeInst(int patchSpaceId, struct LSD_SceneNodeClass* nc,
         
         sqlite3_bind_text(ADD_NODE_INST_S,4,newName,-1,NULL);
     }
-	
-	if(sqlite3_step(ADD_NODE_INST_S)!=SQLITE_DONE){
-		fprintf(stderr,"Error inserting element into DB in addNodeInst()\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-		return -1;
-	}
-	
-	int rowid = sqlite3_last_insert_rowid(memdb);
-	
-	if(idBinding){
-		*idBinding = rowid;
-	}
-	
-	targetPtr->dbId = rowid;
-	targetPtr->nodeClass = nc;
-	if(nc->instDataSize>0){
-		targetPtr->data = malloc(nc->instDataSize);
-	
-		if(!targetPtr->data){
-			fprintf(stderr,"Unable to allocate memory for node inst data in addNodeInst()\n");
-			return -1;
-		}
-	}
-	
-	if(ptrToBind){
-		*ptrToBind = targetPtr;
-	}
-	
-	if(nc->nodeMakeFunc){
-		if(nc->nodeMakeFunc(targetPtr,targetPtr->data)<0){
-			fprintf(stderr,"Node Make failer!\n");
-		}
-	}
-	
-	if(nc->nodeRestoreFunc){
-		if(nc->nodeRestoreFunc(targetPtr,targetPtr->data)<0){
-			fprintf(stderr,"Node Restore failer!\n");
-		}
-	}
-	
-	return 0;
+    
+    if(sqlite3_step(ADD_NODE_INST_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error inserting element into DB in addNodeInst()\n");
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        return -1;
+    }
+    
+    int rowid = sqlite3_last_insert_rowid(memdb);
+    
+    if(idBinding){
+        *idBinding = rowid;
+    }
+    
+    targetPtr->dbId = rowid;
+    targetPtr->nodeClass = nc;
+    if(nc->instDataSize>0){
+        targetPtr->data = malloc(nc->instDataSize);
+    
+        if(!targetPtr->data){
+            fprintf(stderr,"Unable to allocate memory for node inst data in addNodeInst()\n");
+            return -1;
+        }
+    }
+    
+    if(ptrToBind){
+        *ptrToBind = targetPtr;
+    }
+    
+    if(nc->nodeMakeFunc){
+        if(nc->nodeMakeFunc(targetPtr,targetPtr->data)<0){
+            fprintf(stderr,"Node Make failer!\n");
+        }
+    }
+    
+    if(nc->nodeRestoreFunc){
+        if(nc->nodeRestoreFunc(targetPtr,targetPtr->data)<0){
+            fprintf(stderr,"Node Restore failer!\n");
+        }
+    }
+    
+    return 0;
 }
 
 static const char REMOVE_NODE_INST_CHECK[] =
@@ -1870,64 +1870,64 @@ static const char REMOVE_NODE_INST_DELETE[] =
 static sqlite3_stmt* REMOVE_NODE_INST_DELETE_S;
 
 int lsddb_removeNodeInst(int nodeId){
-	// First check to see if the node exists, and get
-	// its array index
-	sqlite3_reset(REMOVE_NODE_INST_CHECK_S);
-	sqlite3_bind_int(REMOVE_NODE_INST_CHECK_S,1,nodeId);
-	
-	if(sqlite3_step(REMOVE_NODE_INST_CHECK_S)==SQLITE_ROW){
-		int arrIdx = sqlite3_column_int(REMOVE_NODE_INST_CHECK_S,0);
-		
-		// Pick node, run delete, remove from array (which runs clean)
-		struct LSD_SceneNodeInst* condemnedNode;
-		
-		if(pickIdx(getArr_lsdNodeInstArr(),(void**)&condemnedNode,arrIdx)<0){
-			fprintf(stderr,"Unable to pick inst from array in removeNodeInst()\n");
-			return -1;
-		}
-		
-		if(condemnedNode->nodeClass->nodeDeleteFunc){
-			condemnedNode->nodeClass->nodeDeleteFunc(condemnedNode,condemnedNode->data);
-		}
-		
-		if(delIdx(getArr_lsdNodeInstArr(),arrIdx)<0){
-			fprintf(stderr,"Unable to remove node from array in removeNodeInst()\n");
-		}
-		
-		// Remove each inst input
-		sqlite3_reset(REMOVE_NODE_INST_GET_INS_S);
-		sqlite3_bind_int(REMOVE_NODE_INST_GET_INS_S,1,nodeId);
-		
-		while(sqlite3_step(REMOVE_NODE_INST_GET_INS_S)==SQLITE_ROW){
-			int inId = sqlite3_column_int(REMOVE_NODE_INST_GET_INS_S,0);
-			lsddb_removeNodeInstInput(inId);
-		}
-		
-		// Remove each inst output
-		sqlite3_reset(REMOVE_NODE_INST_GET_OUTS_S);
-		sqlite3_bind_int(REMOVE_NODE_INST_GET_OUTS_S,1,nodeId);
-		
-		while(sqlite3_step(REMOVE_NODE_INST_GET_OUTS_S)==SQLITE_ROW){
-			int outId = sqlite3_column_int(REMOVE_NODE_INST_GET_OUTS_S,0);
-			lsddb_removeNodeInstOutput(outId);
-		}
-		
-		
-		// Remove node
-		sqlite3_reset(REMOVE_NODE_INST_DELETE_S);
-		sqlite3_bind_int(REMOVE_NODE_INST_DELETE_S,1,nodeId);
-		if(sqlite3_step(REMOVE_NODE_INST_DELETE_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to remove node from DB\n");
-			return -1;
-		}
-				
-	}
-	else{
-		fprintf(stderr,"Node inst non-existant in removeNodeInst()\n");
-		return -1;
-	}
-	
-	return 0;
+    // First check to see if the node exists, and get
+    // its array index
+    sqlite3_reset(REMOVE_NODE_INST_CHECK_S);
+    sqlite3_bind_int(REMOVE_NODE_INST_CHECK_S,1,nodeId);
+    
+    if(sqlite3_step(REMOVE_NODE_INST_CHECK_S)==SQLITE_ROW){
+        int arrIdx = sqlite3_column_int(REMOVE_NODE_INST_CHECK_S,0);
+        
+        // Pick node, run delete, remove from array (which runs clean)
+        struct LSD_SceneNodeInst* condemnedNode;
+        
+        if(pickIdx(getArr_lsdNodeInstArr(),(void**)&condemnedNode,arrIdx)<0){
+            fprintf(stderr,"Unable to pick inst from array in removeNodeInst()\n");
+            return -1;
+        }
+        
+        if(condemnedNode->nodeClass->nodeDeleteFunc){
+            condemnedNode->nodeClass->nodeDeleteFunc(condemnedNode,condemnedNode->data);
+        }
+        
+        if(delIdx(getArr_lsdNodeInstArr(),arrIdx)<0){
+            fprintf(stderr,"Unable to remove node from array in removeNodeInst()\n");
+        }
+        
+        // Remove each inst input
+        sqlite3_reset(REMOVE_NODE_INST_GET_INS_S);
+        sqlite3_bind_int(REMOVE_NODE_INST_GET_INS_S,1,nodeId);
+        
+        while(sqlite3_step(REMOVE_NODE_INST_GET_INS_S)==SQLITE_ROW){
+            int inId = sqlite3_column_int(REMOVE_NODE_INST_GET_INS_S,0);
+            lsddb_removeNodeInstInput(inId);
+        }
+        
+        // Remove each inst output
+        sqlite3_reset(REMOVE_NODE_INST_GET_OUTS_S);
+        sqlite3_bind_int(REMOVE_NODE_INST_GET_OUTS_S,1,nodeId);
+        
+        while(sqlite3_step(REMOVE_NODE_INST_GET_OUTS_S)==SQLITE_ROW){
+            int outId = sqlite3_column_int(REMOVE_NODE_INST_GET_OUTS_S,0);
+            lsddb_removeNodeInstOutput(outId);
+        }
+        
+        
+        // Remove node
+        sqlite3_reset(REMOVE_NODE_INST_DELETE_S);
+        sqlite3_bind_int(REMOVE_NODE_INST_DELETE_S,1,nodeId);
+        if(sqlite3_step(REMOVE_NODE_INST_DELETE_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to remove node from DB\n");
+            return -1;
+        }
+                
+    }
+    else{
+        fprintf(stderr,"Node inst non-existant in removeNodeInst()\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 static const char UPDATE_NODE_NAME[] =
@@ -1986,17 +1986,17 @@ static const char NODE_INST_POS[] =
 static sqlite3_stmt* NODE_INST_POS_S;
 
 int lsddb_nodeInstPos(int nodeId,int xVal, int yVal){
-	sqlite3_reset(NODE_INST_POS_S);
-	sqlite3_bind_int(NODE_INST_POS_S,1,nodeId);
-	sqlite3_bind_int(NODE_INST_POS_S,2,xVal);
-	sqlite3_bind_int(NODE_INST_POS_S,3,yVal);
-	
-	if(sqlite3_step(NODE_INST_POS_S)!=SQLITE_DONE){
-		fprintf(stderr,"Error while updating node position values\n");
-		return -1;
-	}
-	
-	return 0;
+    sqlite3_reset(NODE_INST_POS_S);
+    sqlite3_bind_int(NODE_INST_POS_S,1,nodeId);
+    sqlite3_bind_int(NODE_INST_POS_S,2,xVal);
+    sqlite3_bind_int(NODE_INST_POS_S,3,yVal);
+    
+    if(sqlite3_step(NODE_INST_POS_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error while updating node position values\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 static const char FACADE_INST_POS[] =
@@ -2004,17 +2004,17 @@ static const char FACADE_INST_POS[] =
 static sqlite3_stmt* FACADE_INST_POS_S;
 
 int lsddb_facadeInstPos(int nodeId,int xVal, int yVal){
-	sqlite3_reset(FACADE_INST_POS_S);
-	sqlite3_bind_int(FACADE_INST_POS_S,1,nodeId);
-	sqlite3_bind_int(FACADE_INST_POS_S,2,xVal);
-	sqlite3_bind_int(FACADE_INST_POS_S,3,yVal);
-	
-	if(sqlite3_step(FACADE_INST_POS_S)!=SQLITE_DONE){
-		fprintf(stderr,"Error while updating facade position values\n");
-		return -1;
-	}
-	
-	return 0;
+    sqlite3_reset(FACADE_INST_POS_S);
+    sqlite3_bind_int(FACADE_INST_POS_S,1,nodeId);
+    sqlite3_bind_int(FACADE_INST_POS_S,2,xVal);
+    sqlite3_bind_int(FACADE_INST_POS_S,3,yVal);
+    
+    if(sqlite3_step(FACADE_INST_POS_S)!=SQLITE_DONE){
+        fprintf(stderr,"Error while updating facade position values\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 
@@ -2023,17 +2023,17 @@ static const char PAN_PATCH_SPACE[] =
 static sqlite3_stmt* PAN_PATCH_SPACE_S;
 
 int lsddb_panPatchSpace(int psId, int xVal, int yVal, double scale){
-	sqlite3_reset(PAN_PATCH_SPACE_S);
-	sqlite3_bind_int(PAN_PATCH_SPACE_S,1,psId);
-	sqlite3_bind_int(PAN_PATCH_SPACE_S,2,xVal);
-	sqlite3_bind_int(PAN_PATCH_SPACE_S,3,yVal);
-	sqlite3_bind_double(PAN_PATCH_SPACE_S,4,scale);
-	
-	if(sqlite3_step(PAN_PATCH_SPACE_S)!=SQLITE_DONE){
-		return -1;
-	}
-	
-	return 0;
+    sqlite3_reset(PAN_PATCH_SPACE_S);
+    sqlite3_bind_int(PAN_PATCH_SPACE_S,1,psId);
+    sqlite3_bind_int(PAN_PATCH_SPACE_S,2,xVal);
+    sqlite3_bind_int(PAN_PATCH_SPACE_S,3,yVal);
+    sqlite3_bind_double(PAN_PATCH_SPACE_S,4,scale);
+    
+    if(sqlite3_step(PAN_PATCH_SPACE_S)!=SQLITE_DONE){
+        return -1;
+    }
+    
+    return 0;
 }
 
 
@@ -2083,18 +2083,18 @@ int lsddb_indexHtmlGen(const char* pluginsDir, struct evbuffer* target){
     // Add head of html template
     evbuffer_add_printf(target,"%s",INDEX_HTML_HEAD);
     
-	// Get plugin includes
-	sqlite3_reset(INDEX_HTML_GEN_S);
-	while(sqlite3_step(INDEX_HTML_GEN_S)==SQLITE_ROW){
-		const unsigned char* pluginDirName = sqlite3_column_text(INDEX_HTML_GEN_S,0);
-		int pluginId = sqlite3_column_int(INDEX_HTML_GEN_S,1);
-		if(pluginDirName){
-			getPluginWebIncludes(target,pluginsDir,(const char*)pluginDirName);
-			evbuffer_add_printf(target,"\t\t<script type=\"text/javascript\">\n\t\t\tLSD_PLUGIN_TABLE[%d] = "
-								"%s_CoreHead;\n\t\t</script>\n",pluginId,(const char*)pluginDirName);
-		}
-	}
-	
+    // Get plugin includes
+    sqlite3_reset(INDEX_HTML_GEN_S);
+    while(sqlite3_step(INDEX_HTML_GEN_S)==SQLITE_ROW){
+        const unsigned char* pluginDirName = sqlite3_column_text(INDEX_HTML_GEN_S,0);
+        int pluginId = sqlite3_column_int(INDEX_HTML_GEN_S,1);
+        if(pluginDirName){
+            getPluginWebIncludes(target,pluginsDir,(const char*)pluginDirName);
+            evbuffer_add_printf(target,"\t\t<script type=\"text/javascript\">\n\t\t\tLSD_PLUGIN_TABLE[%d] = "
+                                "%s_CoreHead;\n\t\t</script>\n",pluginId,(const char*)pluginDirName);
+        }
+    }
+    
     // Add foot of html template
     evbuffer_add_printf(target,"%s",INDEX_HTML_FOOT);
     
@@ -2161,6 +2161,27 @@ int lsddb_enablePlugin(int pluginId){
     return -1;
 }
 
+// Remove all traces of a plugin given its id
+// Removes plugin, classes, nodes, types, tables 
+
+static const char PURGE_PLUGIN_SELECT_CLASS[] =
+"";
+
+int lsddb_purgePlugin(int pluginId){
+    
+    // First disable plugin
+    lsddb_disablePlugin(pluginId);
+    
+    // remove nodes
+    
+    
+    // remove classes
+    // remove types
+    // remove tables
+    // remove plugin
+    return 0;
+}
+
 // Plugin HEAD loader - ensures HEAD (extracted from SOs iteratively) exists in DB, adds if not,
 // inits plugin if 'enabled' is true
 static const char PLUGIN_HEAD_LOADER_CHECK_NAME[] =
@@ -2188,23 +2209,23 @@ static const char PLUGIN_HEAD_LOADER_UPDIDX_LOAD[] =
 static sqlite3_stmt* PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S;
 
 int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
-						   const char* parentDirectoryName, const char* pluginSha, void* dlObj){
-	if(!ph || !ph->initFunc || !ph->cleanupFunc || !pluginSha){
-		fprintf(stderr,"Invalid PluginHEAD provided in pluginHeadLoader()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(PLUGIN_HEAD_LOADER_CHECK_NAME_S);
-	sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1,parentDirectoryName,-1,NULL);
-	printf("Checking %s\n",parentDirectoryName);
+                           const char* parentDirectoryName, const char* pluginSha, void* dlObj){
+    if(!ph || !ph->initFunc || !ph->cleanupFunc || !pluginSha){
+        fprintf(stderr,"Invalid PluginHEAD provided in pluginHeadLoader()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(PLUGIN_HEAD_LOADER_CHECK_NAME_S);
+    sqlite3_bind_text(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1,parentDirectoryName,-1,NULL);
+    printf("Checking %s\n",parentDirectoryName);
     
     
-	int pluginId;
-	int enabled = 0;
-	if(sqlite3_step(PLUGIN_HEAD_LOADER_CHECK_NAME_S)==SQLITE_ROW){ // Found by name
-		printf("Found already\n");
-		pluginId = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_NAME_S,0);
-		enabled = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1);
+    int pluginId;
+    int enabled = 0;
+    if(sqlite3_step(PLUGIN_HEAD_LOADER_CHECK_NAME_S)==SQLITE_ROW){ // Found by name
+        printf("Found already\n");
+        pluginId = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_NAME_S,0);
+        enabled = sqlite3_column_int(PLUGIN_HEAD_LOADER_CHECK_NAME_S,1);
         
         // If enabled, verify SHA1 matches last known SHA1
         if(enabled){
@@ -2223,75 +2244,75 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable,
                 }
             }
         }
-		
-		sqlite3_reset(PLUGIN_HEAD_LOADER_SEEN_S);
-		sqlite3_bind_int(PLUGIN_HEAD_LOADER_SEEN_S,1,pluginId);
-		
-		if(sqlite3_step(PLUGIN_HEAD_LOADER_SEEN_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to mark plugin seen in pluginHeadLoader()\n");
-			return -1;
-		}
-	}
-	else{ // We must add new plugin record to DB
-		printf("Not Found\n");
-		sqlite3_reset(PLUGIN_HEAD_LOADER_INSERT_S);
-		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,1,parentDirectoryName,-1,NULL);
-		sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,2,pluginSha,40,NULL);
-		
-		if(sqlite3_step(PLUGIN_HEAD_LOADER_INSERT_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to insert newfound plugin into DB in pluginHeadLoader()\n");
-			fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-			return -1;
-		}
-		if(enable){
-			pluginId = sqlite3_last_insert_rowid(memdb);
-			//printf("Plugin ID: %d\n",pluginId);
-			//enabled = 1;
-		}
-		
-		//return 0;
-	}
-	
-	if(enabled || enable){ // Cleared to allocate plugin and execute it's init function.
-		//printf("Plugin enabled, loading...\n");
-		size_t pluginArrIdx;
-		struct LSD_ScenePlugin* scenePlugin;
-		if(insertElem(getArr_lsdPluginArr(),&pluginArrIdx,(void**)&scenePlugin)<0){
-			fprintf(stderr,"Unable to insert plugin into array in pluginHeadLoader()\n");
-			return -1;
-		}
-		
-		scenePlugin->dbId = pluginId;
-		
-		if(ph->initFunc(scenePlugin)<0){ // Second argument for future JSON conf interface
-			fprintf(stderr,"Plugin's own init failed within pluginHeadLoader()\n");
-			return -1;
-		}
-		
-		// Copy plugin destructor to plugin array for future use
-		scenePlugin->cleanupFunc = ph->cleanupFunc;
-		scenePlugin->handleRPC = ph->handler;
-		
-		// Copy dlObj to be able to close SO
-		scenePlugin->dlObj = dlObj;
-		
-		// Now that the plugin is allocated and inited, it's loaded status and arrIdx is updated
-		sqlite3_reset(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S);
-		sqlite3_bind_int(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S,1,pluginArrIdx);
-		sqlite3_bind_int(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S,2,pluginId);
-		
-		if(sqlite3_step(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S)!=SQLITE_DONE){
-			fprintf(stderr,"Error updating plugin's status in DB in pluginHeadLoader()\n");
-			return -1;
-		}
+        
+        sqlite3_reset(PLUGIN_HEAD_LOADER_SEEN_S);
+        sqlite3_bind_int(PLUGIN_HEAD_LOADER_SEEN_S,1,pluginId);
+        
+        if(sqlite3_step(PLUGIN_HEAD_LOADER_SEEN_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to mark plugin seen in pluginHeadLoader()\n");
+            return -1;
+        }
+    }
+    else{ // We must add new plugin record to DB
+        printf("Not Found\n");
+        sqlite3_reset(PLUGIN_HEAD_LOADER_INSERT_S);
+        sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,1,parentDirectoryName,-1,NULL);
+        sqlite3_bind_text(PLUGIN_HEAD_LOADER_INSERT_S,2,pluginSha,40,NULL);
+        
+        if(sqlite3_step(PLUGIN_HEAD_LOADER_INSERT_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to insert newfound plugin into DB in pluginHeadLoader()\n");
+            fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+            return -1;
+        }
+        if(enable){
+            pluginId = sqlite3_last_insert_rowid(memdb);
+            //printf("Plugin ID: %d\n",pluginId);
+            //enabled = 1;
+        }
+        
+        //return 0;
+    }
+    
+    if(enabled || enable){ // Cleared to allocate plugin and execute it's init function.
+        //printf("Plugin enabled, loading...\n");
+        size_t pluginArrIdx;
+        struct LSD_ScenePlugin* scenePlugin;
+        if(insertElem(getArr_lsdPluginArr(),&pluginArrIdx,(void**)&scenePlugin)<0){
+            fprintf(stderr,"Unable to insert plugin into array in pluginHeadLoader()\n");
+            return -1;
+        }
+        
+        scenePlugin->dbId = pluginId;
+        
+        if(ph->initFunc(scenePlugin)<0){ // Second argument for future JSON conf interface
+            fprintf(stderr,"Plugin's own init failed within pluginHeadLoader()\n");
+            return -1;
+        }
+        
+        // Copy plugin destructor to plugin array for future use
+        scenePlugin->cleanupFunc = ph->cleanupFunc;
+        scenePlugin->handleRPC = ph->handler;
+        
+        // Copy dlObj to be able to close SO
+        scenePlugin->dlObj = dlObj;
+        
+        // Now that the plugin is allocated and inited, it's loaded status and arrIdx is updated
+        sqlite3_reset(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S);
+        sqlite3_bind_int(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S,1,pluginArrIdx);
+        sqlite3_bind_int(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S,2,pluginId);
+        
+        if(sqlite3_step(PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S)!=SQLITE_DONE){
+            fprintf(stderr,"Error updating plugin's status in DB in pluginHeadLoader()\n");
+            return -1;
+        }
 
-	}
-	else
-		if(dlObj)
-			dlclose(dlObj);
-	
-	return 0;
-	
+    }
+    else
+        if(dlObj)
+            dlclose(dlObj);
+    
+    return 0;
+    
 }
 
 static const char RESOLVE_PLUGIN_FROM_NODE[] =
@@ -2300,23 +2321,23 @@ static const char RESOLVE_PLUGIN_FROM_NODE[] =
 static sqlite3_stmt* RESOLVE_PLUGIN_FROM_NODE_S;
 
 int lsddb_resolvePluginFromNodeId(struct LSD_ScenePlugin** pluginBind, int nodeId){
-	sqlite3_reset(RESOLVE_PLUGIN_FROM_NODE_S);
-	sqlite3_bind_int(RESOLVE_PLUGIN_FROM_NODE_S,1,nodeId);
-	
-	if(sqlite3_step(RESOLVE_PLUGIN_FROM_NODE_S)==SQLITE_ROW){
-		int pluginArrayIdx = sqlite3_column_int(RESOLVE_PLUGIN_FROM_NODE_S,0);
-		
-		if(pickIdx(getArr_lsdPluginArr(),(void**)pluginBind,pluginArrayIdx)<0){
-			fprintf(stderr,"Unable to pick plugin from array in resolvePluginFromNodeId()\n");
-			return -1;
-		}
-	}
-	else{
-		fprintf(stderr,"Unable to resolve plugin id in resolvePluginFromNodeId()\n");
-		return -1;
-	}
-	
-	return 0;
+    sqlite3_reset(RESOLVE_PLUGIN_FROM_NODE_S);
+    sqlite3_bind_int(RESOLVE_PLUGIN_FROM_NODE_S,1,nodeId);
+    
+    if(sqlite3_step(RESOLVE_PLUGIN_FROM_NODE_S)==SQLITE_ROW){
+        int pluginArrayIdx = sqlite3_column_int(RESOLVE_PLUGIN_FROM_NODE_S,0);
+        
+        if(pickIdx(getArr_lsdPluginArr(),(void**)pluginBind,pluginArrayIdx)<0){
+            fprintf(stderr,"Unable to pick plugin from array in resolvePluginFromNodeId()\n");
+            return -1;
+        }
+    }
+    else{
+        fprintf(stderr,"Unable to resolve plugin id in resolvePluginFromNodeId()\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 static const char TRACE_INPUT[] =
@@ -2324,29 +2345,29 @@ static const char TRACE_INPUT[] =
 static sqlite3_stmt* TRACE_INPUT_S;
 
 int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId, int* typeIdBind, int* tracedIn){
-	// Recursively drill down to find a standard node's input (i.e. not a facade input)
-	int facadeBool = 1;
-	int aliasedIn = inputId;
-	
-	while(facadeBool){
-		sqlite3_reset(TRACE_INPUT_S);
-		sqlite3_bind_int(TRACE_INPUT_S,1,aliasedIn);
-		if(sqlite3_step(TRACE_INPUT_S)==SQLITE_ROW){
-			facadeBool = sqlite3_column_int(TRACE_INPUT_S,0);
-			aliasedIn = sqlite3_column_int(TRACE_INPUT_S,1);
-		}
-		else{
-			fprintf(stderr,"Unable to traceInput %d()\n",inputId);
+    // Recursively drill down to find a standard node's input (i.e. not a facade input)
+    int facadeBool = 1;
+    int aliasedIn = inputId;
+    
+    while(facadeBool){
+        sqlite3_reset(TRACE_INPUT_S);
+        sqlite3_bind_int(TRACE_INPUT_S,1,aliasedIn);
+        if(sqlite3_step(TRACE_INPUT_S)==SQLITE_ROW){
+            facadeBool = sqlite3_column_int(TRACE_INPUT_S,0);
+            aliasedIn = sqlite3_column_int(TRACE_INPUT_S,1);
+        }
+        else{
+            fprintf(stderr,"Unable to traceInput %d()\n",inputId);
             fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-			return -1;
-		}
-	}
-	// Finally done
-	int arrIdx = sqlite3_column_int(TRACE_INPUT_S,2);
+            return -1;
+        }
+    }
+    // Finally done
+    int arrIdx = sqlite3_column_int(TRACE_INPUT_S,2);
     if(arrIdx == -1){
-		fprintf(stderr,"Input is not constructed in memory; its plugin may be disabled\n");
-		return -1;
-	}
+        fprintf(stderr,"Input is not constructed in memory; its plugin may be disabled\n");
+        return -1;
+    }
     
     if(tracedIn)
         *tracedIn = sqlite3_column_int(TRACE_INPUT_S,4);
@@ -2356,17 +2377,17 @@ int lsddb_traceInput(struct LSD_SceneNodeInput** ptrToBind, int inputId, int* ty
     
     if(!ptrToBind)
         return 0;
-	
-	// Bind input object for caller
-	struct LSD_SceneNodeInput* inputObj;
-	if(pickIdx(getArr_lsdNodeInputArr(),(void**)&inputObj,arrIdx)<0){
-		fprintf(stderr,"Unable to pick Input in traceInput()\n");
-		return -1;
-	}
-	
+    
+    // Bind input object for caller
+    struct LSD_SceneNodeInput* inputObj;
+    if(pickIdx(getArr_lsdNodeInputArr(),(void**)&inputObj,arrIdx)<0){
+        fprintf(stderr,"Unable to pick Input in traceInput()\n");
+        return -1;
+    }
+    
     *ptrToBind = inputObj;
-	
-	return 0;
+    
+    return 0;
 }
 
 static const char TRACE_OUTPUT[] =
@@ -2374,28 +2395,28 @@ static const char TRACE_OUTPUT[] =
 static sqlite3_stmt* TRACE_OUTPUT_S;
 
 int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId, int* typeIdBind, int* tracedOut){
-	// Recursively drill down to find a standard node's output (i.e. not a facade output)
-	int facadeBool = 1;
-	int aliasedOut = outputId;
-	
-	while(facadeBool){
-		sqlite3_reset(TRACE_OUTPUT_S);
-		sqlite3_bind_int(TRACE_OUTPUT_S,1,aliasedOut);
-		if(sqlite3_step(TRACE_OUTPUT_S)==SQLITE_ROW){
-			facadeBool = sqlite3_column_int(TRACE_OUTPUT_S,0);
-			aliasedOut = sqlite3_column_int(TRACE_OUTPUT_S,1);
-		}
-		else{
-			//fprintf(stderr,"Unable to traceOutput()\n");
-			return -1;
-		}
-	}
-	// Finally done
-	int arrIdx = sqlite3_column_int(TRACE_OUTPUT_S,2);
-	if(arrIdx == -1){
-		fprintf(stderr,"Output is not constructed in memory; its plugin may be disabled\n");
-		return -1;
-	}
+    // Recursively drill down to find a standard node's output (i.e. not a facade output)
+    int facadeBool = 1;
+    int aliasedOut = outputId;
+    
+    while(facadeBool){
+        sqlite3_reset(TRACE_OUTPUT_S);
+        sqlite3_bind_int(TRACE_OUTPUT_S,1,aliasedOut);
+        if(sqlite3_step(TRACE_OUTPUT_S)==SQLITE_ROW){
+            facadeBool = sqlite3_column_int(TRACE_OUTPUT_S,0);
+            aliasedOut = sqlite3_column_int(TRACE_OUTPUT_S,1);
+        }
+        else{
+            //fprintf(stderr,"Unable to traceOutput()\n");
+            return -1;
+        }
+    }
+    // Finally done
+    int arrIdx = sqlite3_column_int(TRACE_OUTPUT_S,2);
+    if(arrIdx == -1){
+        fprintf(stderr,"Output is not constructed in memory; its plugin may be disabled\n");
+        return -1;
+    }
     
     if(tracedOut)
         *tracedOut = sqlite3_column_int(TRACE_OUTPUT_S,4);
@@ -2405,17 +2426,17 @@ int lsddb_traceOutput(struct LSD_SceneNodeOutput** ptrToBind, int outputId, int*
     
     if(!ptrToBind)
         return 0;
-	
-	// Bind output object for caller
-	struct LSD_SceneNodeOutput* outputObj;
-	if(pickIdx(getArr_lsdNodeOutputArr(),(void**)&outputObj,arrIdx)<0){
-		fprintf(stderr,"Unable to pick Output in traceOutput()\n");
-		return -1;
-	}
-	
+    
+    // Bind output object for caller
+    struct LSD_SceneNodeOutput* outputObj;
+    if(pickIdx(getArr_lsdNodeOutputArr(),(void**)&outputObj,arrIdx)<0){
+        fprintf(stderr,"Unable to pick Output in traceOutput()\n");
+        return -1;
+    }
+    
     *ptrToBind = outputObj;
-	
-	return 0;
+    
+    return 0;
 }
 
 
@@ -2430,86 +2451,86 @@ static const char CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX[] =
 static sqlite3_stmt* CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S;
 
 int lsddb_checkChannelWiring(int facadeOutId, int srcOut){
-	// from srcOut=2 to facadeOut=1
-	//printf("Checking to wire channel from %d (traceroot) to %d\n",srcOut,facadeOutId);
-		
-	sqlite3_reset(CHECK_CHANNEL_WIRING_GET_PS_S);
-	sqlite3_bind_int(CHECK_CHANNEL_WIRING_GET_PS_S,1,facadeOutId);
-	if(sqlite3_step(CHECK_CHANNEL_WIRING_GET_PS_S)==SQLITE_ROW){
-		int psId = sqlite3_column_int(CHECK_CHANNEL_WIRING_GET_PS_S,0);
-		
-		if(psId==0){ // This is a channel output, make connection
-			
-			sqlite3_reset(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S);
-			sqlite3_bind_int(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S,1,facadeOutId);
-			if(sqlite3_step(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S)==SQLITE_ROW){
-				int chanArrIdx = sqlite3_column_int(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S,0);
-				
-				// Pick the channel
-				struct LSD_Channel* chan;
-				if(pickIdx(getArr_lsdChannelArr(),(void**)&chan,chanArrIdx)<0){
-					fprintf(stderr,"Unable to pick channel from array in checkChannelWiring()\n");
-					return -1;
-				}
-				
-				// Trace the output and connect on channel
-				chan->output = NULL;
-				lsddb_traceOutput(&(chan->output),srcOut,NULL,NULL);
+    // from srcOut=2 to facadeOut=1
+    //printf("Checking to wire channel from %d (traceroot) to %d\n",srcOut,facadeOutId);
+        
+    sqlite3_reset(CHECK_CHANNEL_WIRING_GET_PS_S);
+    sqlite3_bind_int(CHECK_CHANNEL_WIRING_GET_PS_S,1,facadeOutId);
+    if(sqlite3_step(CHECK_CHANNEL_WIRING_GET_PS_S)==SQLITE_ROW){
+        int psId = sqlite3_column_int(CHECK_CHANNEL_WIRING_GET_PS_S,0);
+        
+        if(psId==0){ // This is a channel output, make connection
+            
+            sqlite3_reset(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S);
+            sqlite3_bind_int(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S,1,facadeOutId);
+            if(sqlite3_step(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S)==SQLITE_ROW){
+                int chanArrIdx = sqlite3_column_int(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S,0);
+                
+                // Pick the channel
+                struct LSD_Channel* chan;
+                if(pickIdx(getArr_lsdChannelArr(),(void**)&chan,chanArrIdx)<0){
+                    fprintf(stderr,"Unable to pick channel from array in checkChannelWiring()\n");
+                    return -1;
+                }
+                
+                // Trace the output and connect on channel
+                chan->output = NULL;
+                lsddb_traceOutput(&(chan->output),srcOut,NULL,NULL);
 
-				
-			}
-			else{
-				fprintf(stderr,"Couldn't resolve arrIdx from facadeOut on root patchSpace\n");
-				return -1;
-			}
-			
-		}
-	}
-	else{
-		fprintf(stderr,"Unable to retrieve parentPatchSpace from facadeOut\n");
-		return -1;
-	}
-	return 0;
+                
+            }
+            else{
+                fprintf(stderr,"Couldn't resolve arrIdx from facadeOut on root patchSpace\n");
+                return -1;
+            }
+            
+        }
+    }
+    else{
+        fprintf(stderr,"Unable to retrieve parentPatchSpace from facadeOut\n");
+        return -1;
+    }
+    return 0;
 }
 
 
 int lsddb_checkChannelUnwiring(int facadeOutId){
-	sqlite3_reset(CHECK_CHANNEL_WIRING_GET_PS_S);
-	sqlite3_bind_int(CHECK_CHANNEL_WIRING_GET_PS_S,1,facadeOutId);
-	if(sqlite3_step(CHECK_CHANNEL_WIRING_GET_PS_S)==SQLITE_ROW){
-		int psId = sqlite3_column_int(CHECK_CHANNEL_WIRING_GET_PS_S,0);
-		
-		if(psId==0){ // This is a channel output, disconnect
-			
-			
-			sqlite3_reset(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S);
-			sqlite3_bind_int(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S,1,facadeOutId);
-			if(sqlite3_step(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S)==SQLITE_ROW){
-				int chanArrIdx = sqlite3_column_int(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S,0);
-				
-				// Pick the channel
-				struct LSD_Channel* chan;
-				if(pickIdx(getArr_lsdChannelArr(),(void**)&chan,chanArrIdx)<0){
-					fprintf(stderr,"Unable to pick channel from array in checkChannelUnwiring()\n");
-					return -1;
-				}
-				
-				// Disconnect on channel
-				chan->output = NULL;
-				
-			}
-			else{
-				fprintf(stderr,"Couldn't resolve arrIdx from facadeOut on root patchSpace\n");
-				return -1;
-			}
-			
-		}
-	}
-	else{
-		fprintf(stderr,"Unable to retrieve parentPatchSpace from facadeOut\n");
-		return -1;
-	}
-	return 0;
+    sqlite3_reset(CHECK_CHANNEL_WIRING_GET_PS_S);
+    sqlite3_bind_int(CHECK_CHANNEL_WIRING_GET_PS_S,1,facadeOutId);
+    if(sqlite3_step(CHECK_CHANNEL_WIRING_GET_PS_S)==SQLITE_ROW){
+        int psId = sqlite3_column_int(CHECK_CHANNEL_WIRING_GET_PS_S,0);
+        
+        if(psId==0){ // This is a channel output, disconnect
+            
+            
+            sqlite3_reset(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S);
+            sqlite3_bind_int(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S,1,facadeOutId);
+            if(sqlite3_step(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S)==SQLITE_ROW){
+                int chanArrIdx = sqlite3_column_int(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX_S,0);
+                
+                // Pick the channel
+                struct LSD_Channel* chan;
+                if(pickIdx(getArr_lsdChannelArr(),(void**)&chan,chanArrIdx)<0){
+                    fprintf(stderr,"Unable to pick channel from array in checkChannelUnwiring()\n");
+                    return -1;
+                }
+                
+                // Disconnect on channel
+                chan->output = NULL;
+                
+            }
+            else{
+                fprintf(stderr,"Couldn't resolve arrIdx from facadeOut on root patchSpace\n");
+                return -1;
+            }
+            
+        }
+    }
+    else{
+        fprintf(stderr,"Unable to retrieve parentPatchSpace from facadeOut\n");
+        return -1;
+    }
+    return 0;
 }
 
 // Statement to ensure that no two wires are connected to facade interior out
@@ -2565,290 +2586,290 @@ static const char WIRE_NODES[] =
 static sqlite3_stmt* WIRE_NODES_S;
 
 int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, int* idBinding){
-	
-	// Connecting an interior facade in and out
-	// Redundant and disallowed to avoid recursion bugs
-	if(srcFacadeInt && destFacadeInt){
-		fprintf(stderr,"Redundant connections not allowed\n");
-		return -1;
-	}
-	
-	
-	// Ensure nothing is already plugged into the destination
-	if(destFacadeInt){
-		// Destination is a facade. Find wires
-		sqlite3_reset(WIRE_NODES_CHECK_FACADE_INT_OUT_S);
-		sqlite3_bind_int(WIRE_NODES_CHECK_FACADE_INT_OUT_S,1,destId);
-		if(sqlite3_step(WIRE_NODES_CHECK_FACADE_INT_OUT_S)==SQLITE_ROW){
-			fprintf(stderr,"Attempting to connect wire to already connected facade interior out\n");
-			return -1;
-		}
-	}
-	else{
-		// Destination is a node. Use this stmt to find any wires
-		sqlite3_reset(REMOVE_NODE_INST_INPUT_GET_WIRES_S);
-		sqlite3_bind_int(REMOVE_NODE_INST_INPUT_GET_WIRES_S,1,destId);
-		if(sqlite3_step(REMOVE_NODE_INST_INPUT_GET_WIRES_S)==SQLITE_ROW){
-			fprintf(stderr,"Attempting to connect a wire to an already connected input\n");
-			return -1;
-		}
-	}
-	
-	
-	int srcPS;
-	int destPS;
+    
+    // Connecting an interior facade in and out
+    // Redundant and disallowed to avoid recursion bugs
+    if(srcFacadeInt && destFacadeInt){
+        fprintf(stderr,"Redundant connections not allowed\n");
+        return -1;
+    }
+    
+    
+    // Ensure nothing is already plugged into the destination
+    if(destFacadeInt){
+        // Destination is a facade. Find wires
+        sqlite3_reset(WIRE_NODES_CHECK_FACADE_INT_OUT_S);
+        sqlite3_bind_int(WIRE_NODES_CHECK_FACADE_INT_OUT_S,1,destId);
+        if(sqlite3_step(WIRE_NODES_CHECK_FACADE_INT_OUT_S)==SQLITE_ROW){
+            fprintf(stderr,"Attempting to connect wire to already connected facade interior out\n");
+            return -1;
+        }
+    }
+    else{
+        // Destination is a node. Use this stmt to find any wires
+        sqlite3_reset(REMOVE_NODE_INST_INPUT_GET_WIRES_S);
+        sqlite3_bind_int(REMOVE_NODE_INST_INPUT_GET_WIRES_S,1,destId);
+        if(sqlite3_step(REMOVE_NODE_INST_INPUT_GET_WIRES_S)==SQLITE_ROW){
+            fprintf(stderr,"Attempting to connect a wire to an already connected input\n");
+            return -1;
+        }
+    }
+    
+    
+    int srcPS;
+    int destPS;
     int srcClass = -1;
     int destClass = -1;
-	
-	// holder of wire ID for after insertion
-	int wireId;
+    
+    // holder of wire ID for after insertion
+    int wireId;
 
-	if(srcFacadeInt){ // Left of wire is attached to interior of facade (technically an input)
-		
-		// First ensure that the interior of the facade input is
-		// within the same patchSpace as the input being connected to
+    if(srcFacadeInt){ // Left of wire is attached to interior of facade (technically an input)
+        
+        // First ensure that the interior of the facade input is
+        // within the same patchSpace as the input being connected to
 
-		// Src
-		sqlite3_reset(WIRE_NODES_GET_FACADE_IN_CPS_S);
-		sqlite3_bind_int(WIRE_NODES_GET_FACADE_IN_CPS_S,1,srcId);
-		if(sqlite3_step(WIRE_NODES_GET_FACADE_IN_CPS_S)==SQLITE_ROW){
-			srcPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_IN_CPS_S,0);
-		}
-		else{
-			fprintf(stderr,"Unable to verify facade input's patch space\n");
-			return -1;
-		}
-		
-		// Dest
-		sqlite3_reset(WIRE_NODES_GET_IN_PS_S);
-		sqlite3_bind_int(WIRE_NODES_GET_IN_PS_S,1,destId);
-		if(sqlite3_step(WIRE_NODES_GET_IN_PS_S)==SQLITE_ROW){
-			destPS = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,0);
+        // Src
+        sqlite3_reset(WIRE_NODES_GET_FACADE_IN_CPS_S);
+        sqlite3_bind_int(WIRE_NODES_GET_FACADE_IN_CPS_S,1,srcId);
+        if(sqlite3_step(WIRE_NODES_GET_FACADE_IN_CPS_S)==SQLITE_ROW){
+            srcPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_IN_CPS_S,0);
+        }
+        else{
+            fprintf(stderr,"Unable to verify facade input's patch space\n");
+            return -1;
+        }
+        
+        // Dest
+        sqlite3_reset(WIRE_NODES_GET_IN_PS_S);
+        sqlite3_bind_int(WIRE_NODES_GET_IN_PS_S,1,destId);
+        if(sqlite3_step(WIRE_NODES_GET_IN_PS_S)==SQLITE_ROW){
+            destPS = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,0);
             destClass = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,2);
-		}
-		else{
-			fprintf(stderr,"Unable to verify node input's patch space 1\n");
-			return -1;
-		}
-		
-		if(srcPS!=destPS){
-			fprintf(stderr,"Patch Spaces Do not match in wireNodes()\n");
-			return -1;
-		}
-		
+        }
+        else{
+            fprintf(stderr,"Unable to verify node input's patch space 1\n");
+            return -1;
+        }
+        
+        if(srcPS!=destPS){
+            fprintf(stderr,"Patch Spaces Do not match in wireNodes()\n");
+            return -1;
+        }
+        
         if(!lsddb_checkClassEnabled(destClass)){
             fprintf(stderr,"Unable to connect wire's destination; destination class disabled\n");
             return -1;
         }
-		
-		// Get data of wire src to verify that it actually is a facade plug (the afformentioned input)
-		sqlite3_reset(WIRE_NODES_CHECK_DEST_IN_S);
-		sqlite3_bind_int(WIRE_NODES_CHECK_DEST_IN_S,1,srcId);
-		int checkFacadeBool = 0;
-		if(sqlite3_step(WIRE_NODES_CHECK_DEST_IN_S)==SQLITE_ROW){
-			checkFacadeBool = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,1);
-		}
-		if(!checkFacadeBool){
-			fprintf(stderr,"Wire source does not check to be a facade plug as claimed in wireNodes()\n");
-			return -1;
-		}
-		
-		// Get data of wire dest (inside facade)
-		sqlite3_reset(WIRE_NODES_CHECK_DEST_IN_S);
-		sqlite3_bind_int(WIRE_NODES_CHECK_DEST_IN_S,1,destId);
-		if(sqlite3_step(WIRE_NODES_CHECK_DEST_IN_S)==SQLITE_ROW){
-			int typeId = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,0);
-			//int facadeBool = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,1);
-			//int aliasedIn = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,2);
-			
-			if(typeId<0){
-				fprintf(stderr,"Facade Plug not internally connected on input %d\n",destId);
-				return -1;
-			}
-			
-			// set typeId and aliasedIn of src (still the input)
-			sqlite3_reset(WIRE_NODES_SET_FACADE_IN_DATA_S);
-			sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,1,srcId);
-			sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,2,typeId);
-			sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,3,destId);
-			
-			if(sqlite3_step(WIRE_NODES_SET_FACADE_IN_DATA_S)!=SQLITE_DONE){
-				fprintf(stderr,"Unable to update facade plug data after internal connection in wireNodes()\n");
-				return -1;
-			}
-			
-		}
-		else{
-			fprintf(stderr,"Dest Input non-existant\n");
-			return -1;
-		}
-		
-		// Now the Edge can be added to DB
-		sqlite3_reset(WIRE_NODES_S);
-		sqlite3_bind_int(WIRE_NODES_S,1,1);
-		sqlite3_bind_int(WIRE_NODES_S,2,srcId);
-		sqlite3_bind_int(WIRE_NODES_S,3,0);
-		sqlite3_bind_int(WIRE_NODES_S,4,destId);
-		sqlite3_bind_int(WIRE_NODES_S,5,srcPS);
-		
-		if(sqlite3_step(WIRE_NODES_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to insert wire into DB in wireNodes()\n");
-			return -1;
-		}
-		
-		wireId = sqlite3_last_insert_rowid(memdb);
-		
-		if(idBinding)
-			*idBinding = wireId;
-		
-		// Done here (now able to wire facade input externally)
-		return 0;
-	}
-	
-	if(destFacadeInt){ // Right of wire is attached to interior of facade (technically an output)
-		
-		// First ensure that the interior of the facade output is
-		// within the same patchSpace as the output being connected to
-		
-		// Src
-		sqlite3_reset(WIRE_NODES_GET_OUT_PS_S);
-		sqlite3_bind_int(WIRE_NODES_GET_OUT_PS_S,1,srcId);
-		if(sqlite3_step(WIRE_NODES_GET_OUT_PS_S)==SQLITE_ROW){
-			srcPS = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,0);
+        
+        // Get data of wire src to verify that it actually is a facade plug (the afformentioned input)
+        sqlite3_reset(WIRE_NODES_CHECK_DEST_IN_S);
+        sqlite3_bind_int(WIRE_NODES_CHECK_DEST_IN_S,1,srcId);
+        int checkFacadeBool = 0;
+        if(sqlite3_step(WIRE_NODES_CHECK_DEST_IN_S)==SQLITE_ROW){
+            checkFacadeBool = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,1);
+        }
+        if(!checkFacadeBool){
+            fprintf(stderr,"Wire source does not check to be a facade plug as claimed in wireNodes()\n");
+            return -1;
+        }
+        
+        // Get data of wire dest (inside facade)
+        sqlite3_reset(WIRE_NODES_CHECK_DEST_IN_S);
+        sqlite3_bind_int(WIRE_NODES_CHECK_DEST_IN_S,1,destId);
+        if(sqlite3_step(WIRE_NODES_CHECK_DEST_IN_S)==SQLITE_ROW){
+            int typeId = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,0);
+            //int facadeBool = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,1);
+            //int aliasedIn = sqlite3_column_int(WIRE_NODES_CHECK_DEST_IN_S,2);
+            
+            if(typeId<0){
+                fprintf(stderr,"Facade Plug not internally connected on input %d\n",destId);
+                return -1;
+            }
+            
+            // set typeId and aliasedIn of src (still the input)
+            sqlite3_reset(WIRE_NODES_SET_FACADE_IN_DATA_S);
+            sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,1,srcId);
+            sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,2,typeId);
+            sqlite3_bind_int(WIRE_NODES_SET_FACADE_IN_DATA_S,3,destId);
+            
+            if(sqlite3_step(WIRE_NODES_SET_FACADE_IN_DATA_S)!=SQLITE_DONE){
+                fprintf(stderr,"Unable to update facade plug data after internal connection in wireNodes()\n");
+                return -1;
+            }
+            
+        }
+        else{
+            fprintf(stderr,"Dest Input non-existant\n");
+            return -1;
+        }
+        
+        // Now the Edge can be added to DB
+        sqlite3_reset(WIRE_NODES_S);
+        sqlite3_bind_int(WIRE_NODES_S,1,1);
+        sqlite3_bind_int(WIRE_NODES_S,2,srcId);
+        sqlite3_bind_int(WIRE_NODES_S,3,0);
+        sqlite3_bind_int(WIRE_NODES_S,4,destId);
+        sqlite3_bind_int(WIRE_NODES_S,5,srcPS);
+        
+        if(sqlite3_step(WIRE_NODES_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to insert wire into DB in wireNodes()\n");
+            return -1;
+        }
+        
+        wireId = sqlite3_last_insert_rowid(memdb);
+        
+        if(idBinding)
+            *idBinding = wireId;
+        
+        // Done here (now able to wire facade input externally)
+        return 0;
+    }
+    
+    if(destFacadeInt){ // Right of wire is attached to interior of facade (technically an output)
+        
+        // First ensure that the interior of the facade output is
+        // within the same patchSpace as the output being connected to
+        
+        // Src
+        sqlite3_reset(WIRE_NODES_GET_OUT_PS_S);
+        sqlite3_bind_int(WIRE_NODES_GET_OUT_PS_S,1,srcId);
+        if(sqlite3_step(WIRE_NODES_GET_OUT_PS_S)==SQLITE_ROW){
+            srcPS = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,0);
             srcClass = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,2);
-		}
-		else{ // Try connecting with facade src
-			sqlite3_reset(WIRE_NODES_GET_FACADE_OUT_CPS_S);
-			sqlite3_bind_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1,srcId);
-			if(sqlite3_step(WIRE_NODES_GET_FACADE_OUT_CPS_S)==SQLITE_ROW){
-				srcPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1);
-				srcClass = -1;
-			}
-			else{
-				fprintf(stderr,"Unable to verify node output's patch space 1\n");
-				return -1;
-			}
-			
-		}
-		
-		// Dest
-		sqlite3_reset(WIRE_NODES_GET_FACADE_OUT_CPS_S);
-		sqlite3_bind_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1,destId);
-		if(sqlite3_step(WIRE_NODES_GET_FACADE_OUT_CPS_S)==SQLITE_ROW){
-			destPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,0);
-		}
-		else{
-			fprintf(stderr,"Unable to verify facade output's patch space\n");
-			return -1;
-		}
-		
-		
-		if(srcPS!=destPS){
-			fprintf(stderr,"Patch Spaces Do not match in wireNodes()\n");
-			return -1;
-		}
+        }
+        else{ // Try connecting with facade src
+            sqlite3_reset(WIRE_NODES_GET_FACADE_OUT_CPS_S);
+            sqlite3_bind_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1,srcId);
+            if(sqlite3_step(WIRE_NODES_GET_FACADE_OUT_CPS_S)==SQLITE_ROW){
+                srcPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1);
+                srcClass = -1;
+            }
+            else{
+                fprintf(stderr,"Unable to verify node output's patch space 1\n");
+                return -1;
+            }
+            
+        }
+        
+        // Dest
+        sqlite3_reset(WIRE_NODES_GET_FACADE_OUT_CPS_S);
+        sqlite3_bind_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1,destId);
+        if(sqlite3_step(WIRE_NODES_GET_FACADE_OUT_CPS_S)==SQLITE_ROW){
+            destPS = sqlite3_column_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,0);
+        }
+        else{
+            fprintf(stderr,"Unable to verify facade output's patch space\n");
+            return -1;
+        }
+        
+        
+        if(srcPS!=destPS){
+            fprintf(stderr,"Patch Spaces Do not match in wireNodes()\n");
+            return -1;
+        }
 
-		if(srcClass == -1){ // Verify internal connection
-			sqlite3_reset(WIRE_NODES_CHECK_SRC_OUT_S);
-			sqlite3_bind_int(WIRE_NODES_CHECK_SRC_OUT_S,1,srcId);
-			int aliasedOut = -1;
-			if(sqlite3_step(WIRE_NODES_CHECK_SRC_OUT_S) == SQLITE_ROW){
-				aliasedOut = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,2);
-			}
-			if(aliasedOut <= 0){
-				fprintf(stderr,"Unable to connect wire's source; not internally connected\n");
-				return -1;
-			}
-		}
+        if(srcClass == -1){ // Verify internal connection
+            sqlite3_reset(WIRE_NODES_CHECK_SRC_OUT_S);
+            sqlite3_bind_int(WIRE_NODES_CHECK_SRC_OUT_S,1,srcId);
+            int aliasedOut = -1;
+            if(sqlite3_step(WIRE_NODES_CHECK_SRC_OUT_S) == SQLITE_ROW){
+                aliasedOut = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,2);
+            }
+            if(aliasedOut <= 0){
+                fprintf(stderr,"Unable to connect wire's source; not internally connected\n");
+                return -1;
+            }
+        }
         else if(!lsddb_checkClassEnabled(srcClass)){
             fprintf(stderr,"Unable to connect wire's source; source class disabled\n");
             return -1;
         }
-		
-		
-		// Get data of wire dest to verify that it actually is a facade plug (the afformentioned output)
-		sqlite3_reset(WIRE_NODES_CHECK_SRC_OUT_S);
-		sqlite3_bind_int(WIRE_NODES_CHECK_SRC_OUT_S,1,destId);
-		int checkFacadeBool = 0;
-		if(sqlite3_step(WIRE_NODES_CHECK_SRC_OUT_S)==SQLITE_ROW){
-			checkFacadeBool = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,1);
-		}
-		if(!checkFacadeBool){
-			fprintf(stderr,"Wire source does not check to be a facade plug as claimed in wireNodes()\n");
-			return -1;
-		}
-		
-		// Get data of wire src (output inside facade)
-		sqlite3_reset(WIRE_NODES_CHECK_SRC_OUT_S);
-		sqlite3_bind_int(WIRE_NODES_CHECK_SRC_OUT_S,1,srcId);
-		if(sqlite3_step(WIRE_NODES_CHECK_SRC_OUT_S)==SQLITE_ROW){
-			int typeId = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,0);
-			//int facadeBool = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,1);
-			//int aliasedOut = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,2);
-			
-			if(typeId<0){
-				fprintf(stderr,"Facade Plug not internally connected on output %d\n",destId);
-				return -1;
-			}
-			
-			// set typeId and aliasedOut of dest (still the output)
-			sqlite3_reset(WIRE_NODES_SET_FACADE_OUT_DATA_S);
-			sqlite3_bind_int(WIRE_NODES_SET_FACADE_OUT_DATA_S,1,destId);
-			sqlite3_bind_int(WIRE_NODES_SET_FACADE_OUT_DATA_S,2,typeId);
-			sqlite3_bind_int(WIRE_NODES_SET_FACADE_OUT_DATA_S,3,srcId);
-			
-			if(sqlite3_step(WIRE_NODES_SET_FACADE_OUT_DATA_S)!=SQLITE_DONE){
-				fprintf(stderr,"Unable to update facade plug data after internal connection in wireNodes()\n");
-				return -1;
-			}
-			
-			// Facade output (srcId) MAY actually be a partition's channel
-			// This function checks this possibilility and sets the correct channel pointers
-			lsddb_checkChannelWiring(destId, srcId);
-			
-		}
-		else{
-			fprintf(stderr,"Dest Output non-existant\n");
-			return -1;
-		}
-		
-		// Now the Edge can be added to DB
-		sqlite3_reset(WIRE_NODES_S);
-		sqlite3_bind_int(WIRE_NODES_S,1,0);
-		sqlite3_bind_int(WIRE_NODES_S,2,srcId);
-		sqlite3_bind_int(WIRE_NODES_S,3,1);
-		sqlite3_bind_int(WIRE_NODES_S,4,destId);
-		sqlite3_bind_int(WIRE_NODES_S,5,srcPS);
-		
-		if(sqlite3_step(WIRE_NODES_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to insert wire into DB in wireNodes()\n");
-			return -1;
-		}
-		
-		wireId = sqlite3_last_insert_rowid(memdb);
-		
-		if(idBinding)
-			*idBinding = wireId;
-		
-		// Done here (now able to wire facade output externally)
-		return 0;
-	}
-		
-	// First ensure that the src is
-	// within the same patchSpace as the dest being connected to
-	
-	int srcType = -2;
-	int destType = -2;
-	
-	// Src
-	sqlite3_reset(WIRE_NODES_GET_OUT_PS_S);
-	sqlite3_bind_int(WIRE_NODES_GET_OUT_PS_S,1,srcId);
-	if(sqlite3_step(WIRE_NODES_GET_OUT_PS_S)==SQLITE_ROW){
-		srcPS = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,0);
-		srcType = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,1);
+        
+        
+        // Get data of wire dest to verify that it actually is a facade plug (the afformentioned output)
+        sqlite3_reset(WIRE_NODES_CHECK_SRC_OUT_S);
+        sqlite3_bind_int(WIRE_NODES_CHECK_SRC_OUT_S,1,destId);
+        int checkFacadeBool = 0;
+        if(sqlite3_step(WIRE_NODES_CHECK_SRC_OUT_S)==SQLITE_ROW){
+            checkFacadeBool = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,1);
+        }
+        if(!checkFacadeBool){
+            fprintf(stderr,"Wire source does not check to be a facade plug as claimed in wireNodes()\n");
+            return -1;
+        }
+        
+        // Get data of wire src (output inside facade)
+        sqlite3_reset(WIRE_NODES_CHECK_SRC_OUT_S);
+        sqlite3_bind_int(WIRE_NODES_CHECK_SRC_OUT_S,1,srcId);
+        if(sqlite3_step(WIRE_NODES_CHECK_SRC_OUT_S)==SQLITE_ROW){
+            int typeId = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,0);
+            //int facadeBool = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,1);
+            //int aliasedOut = sqlite3_column_int(WIRE_NODES_CHECK_SRC_OUT_S,2);
+            
+            if(typeId<0){
+                fprintf(stderr,"Facade Plug not internally connected on output %d\n",destId);
+                return -1;
+            }
+            
+            // set typeId and aliasedOut of dest (still the output)
+            sqlite3_reset(WIRE_NODES_SET_FACADE_OUT_DATA_S);
+            sqlite3_bind_int(WIRE_NODES_SET_FACADE_OUT_DATA_S,1,destId);
+            sqlite3_bind_int(WIRE_NODES_SET_FACADE_OUT_DATA_S,2,typeId);
+            sqlite3_bind_int(WIRE_NODES_SET_FACADE_OUT_DATA_S,3,srcId);
+            
+            if(sqlite3_step(WIRE_NODES_SET_FACADE_OUT_DATA_S)!=SQLITE_DONE){
+                fprintf(stderr,"Unable to update facade plug data after internal connection in wireNodes()\n");
+                return -1;
+            }
+            
+            // Facade output (srcId) MAY actually be a partition's channel
+            // This function checks this possibilility and sets the correct channel pointers
+            lsddb_checkChannelWiring(destId, srcId);
+            
+        }
+        else{
+            fprintf(stderr,"Dest Output non-existant\n");
+            return -1;
+        }
+        
+        // Now the Edge can be added to DB
+        sqlite3_reset(WIRE_NODES_S);
+        sqlite3_bind_int(WIRE_NODES_S,1,0);
+        sqlite3_bind_int(WIRE_NODES_S,2,srcId);
+        sqlite3_bind_int(WIRE_NODES_S,3,1);
+        sqlite3_bind_int(WIRE_NODES_S,4,destId);
+        sqlite3_bind_int(WIRE_NODES_S,5,srcPS);
+        
+        if(sqlite3_step(WIRE_NODES_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to insert wire into DB in wireNodes()\n");
+            return -1;
+        }
+        
+        wireId = sqlite3_last_insert_rowid(memdb);
+        
+        if(idBinding)
+            *idBinding = wireId;
+        
+        // Done here (now able to wire facade output externally)
+        return 0;
+    }
+        
+    // First ensure that the src is
+    // within the same patchSpace as the dest being connected to
+    
+    int srcType = -2;
+    int destType = -2;
+    
+    // Src
+    sqlite3_reset(WIRE_NODES_GET_OUT_PS_S);
+    sqlite3_bind_int(WIRE_NODES_GET_OUT_PS_S,1,srcId);
+    if(sqlite3_step(WIRE_NODES_GET_OUT_PS_S)==SQLITE_ROW){
+        srcPS = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,0);
+        srcType = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,1);
         srcClass = sqlite3_column_int(WIRE_NODES_GET_OUT_PS_S,2);
-	}
-	else{ // Try testing as facade
+    }
+    else{ // Try testing as facade
         
         sqlite3_reset(WIRE_NODES_GET_FACADE_OUT_CPS_S);
         sqlite3_bind_int(WIRE_NODES_GET_FACADE_OUT_CPS_S,1,srcId);
@@ -2865,17 +2886,17 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
             fprintf(stderr,"Unable to verify node output's patch space 2\n");
             return -1;
         }
-	}
-	
-	// Dest
-	sqlite3_reset(WIRE_NODES_GET_IN_PS_S);
-	sqlite3_bind_int(WIRE_NODES_GET_IN_PS_S,1,destId);
-	if(sqlite3_step(WIRE_NODES_GET_IN_PS_S)==SQLITE_ROW){
-		destPS = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,0);
-		destType = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,1);
+    }
+    
+    // Dest
+    sqlite3_reset(WIRE_NODES_GET_IN_PS_S);
+    sqlite3_bind_int(WIRE_NODES_GET_IN_PS_S,1,destId);
+    if(sqlite3_step(WIRE_NODES_GET_IN_PS_S)==SQLITE_ROW){
+        destPS = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,0);
+        destType = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,1);
         destClass = sqlite3_column_int(WIRE_NODES_GET_IN_PS_S,2);
-	}
-	else{ // Try testing as facade
+    }
+    else{ // Try testing as facade
         
         sqlite3_reset(WIRE_NODES_GET_FACADE_IN_CPS_S);
         sqlite3_bind_int(WIRE_NODES_GET_FACADE_IN_CPS_S,1,destId);
@@ -2892,18 +2913,18 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
             fprintf(stderr,"Unable to verify node input's patch space 2\n");
             return -1;
         }
-	}
-	
-	
-	if(srcPS!=destPS){
-		fprintf(stderr,"Patch Spaces Do not match in wireNodes()\n");
-		return -1;
-	}
-	
-	if(srcType!=destType){
-		fprintf(stderr,"Types do not match in wireNodes()\n");
-		return -1;
-	}
+    }
+    
+    
+    if(srcPS!=destPS){
+        fprintf(stderr,"Patch Spaces Do not match in wireNodes()\n");
+        return -1;
+    }
+    
+    if(srcType!=destType){
+        fprintf(stderr,"Types do not match in wireNodes()\n");
+        return -1;
+    }
     
     if(!lsddb_checkClassEnabled(srcClass)){
         fprintf(stderr,"Unable to connect wire's source; source class disabled\n");
@@ -2914,39 +2935,39 @@ int lsddb_wireNodes(int srcFacadeInt, int srcId, int destFacadeInt, int destId, 
         fprintf(stderr,"Unable to connect wire's destination; destination class %d,%d disabled\n",destId,destClass);
         return -1;
     }
-	
-	// Use trace functions to resolve the source and destination objects
-	struct LSD_SceneNodeOutput* src;
-	struct LSD_SceneNodeInput* dest;
-	
-	if(lsddb_traceOutput(&src,srcId,NULL,NULL)<0)
-		return -1;
-	if(lsddb_traceInput(&dest,destId,NULL,NULL)<0)
-		return -1;
-	
-	// Now the Edge can be added to DB
-	sqlite3_reset(WIRE_NODES_S);
-	sqlite3_bind_int(WIRE_NODES_S,1,0);
-	sqlite3_bind_int(WIRE_NODES_S,2,srcId);
-	sqlite3_bind_int(WIRE_NODES_S,3,0);
-	sqlite3_bind_int(WIRE_NODES_S,4,destId);
-	sqlite3_bind_int(WIRE_NODES_S,5,srcPS);
-	
-	if(sqlite3_step(WIRE_NODES_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to insert wire into DB in wireNodes()\n");
-		return -1;
-	}
-	
-	wireId = sqlite3_last_insert_rowid(memdb);
+    
+    // Use trace functions to resolve the source and destination objects
+    struct LSD_SceneNodeOutput* src;
+    struct LSD_SceneNodeInput* dest;
+    
+    if(lsddb_traceOutput(&src,srcId,NULL,NULL)<0)
+        return -1;
+    if(lsddb_traceInput(&dest,destId,NULL,NULL)<0)
+        return -1;
+    
+    // Now the Edge can be added to DB
+    sqlite3_reset(WIRE_NODES_S);
+    sqlite3_bind_int(WIRE_NODES_S,1,0);
+    sqlite3_bind_int(WIRE_NODES_S,2,srcId);
+    sqlite3_bind_int(WIRE_NODES_S,3,0);
+    sqlite3_bind_int(WIRE_NODES_S,4,destId);
+    sqlite3_bind_int(WIRE_NODES_S,5,srcPS);
+    
+    if(sqlite3_step(WIRE_NODES_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to insert wire into DB in wireNodes()\n");
+        return -1;
+    }
+    
+    wireId = sqlite3_last_insert_rowid(memdb);
 
-	
-	// Perform pointer wiring
-	dest->connection = src;
-	
-	if(idBinding)
-		*idBinding = wireId;
-	
-	return 0;
+    
+    // Perform pointer wiring
+    dest->connection = src;
+    
+    if(idBinding)
+        *idBinding = wireId;
+    
+    return 0;
 }
 
 static const char UNWIRE_NODES_GET_EDGE_DETAILS[] =
@@ -2971,71 +2992,71 @@ static sqlite3_stmt* UNWIRE_FACADE_OUT_ALIAS_S;
 
 int lsddb_unwireNodes(int wireId){
 
-	// If either src or dest is an internal facade connection,
-	// the facade connention's wire is removed as well on the exterior patchSpace
-	
-	// Start by retrieving the wire's details
-	sqlite3_reset(UNWIRE_NODES_GET_EDGE_DETAILS_S);
-	sqlite3_bind_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,1,wireId);
-	if(sqlite3_step(UNWIRE_NODES_GET_EDGE_DETAILS_S)==SQLITE_ROW){
-		int srcFacadeInt = sqlite3_column_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,0);
-		int srcOut = sqlite3_column_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,1);
-		int destFacadeInt = sqlite3_column_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,2);
-		int destIn = sqlite3_column_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,3);
+    // If either src or dest is an internal facade connection,
+    // the facade connention's wire is removed as well on the exterior patchSpace
+    
+    // Start by retrieving the wire's details
+    sqlite3_reset(UNWIRE_NODES_GET_EDGE_DETAILS_S);
+    sqlite3_bind_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,1,wireId);
+    if(sqlite3_step(UNWIRE_NODES_GET_EDGE_DETAILS_S)==SQLITE_ROW){
+        int srcFacadeInt = sqlite3_column_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,0);
+        int srcOut = sqlite3_column_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,1);
+        int destFacadeInt = sqlite3_column_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,2);
+        int destIn = sqlite3_column_int(UNWIRE_NODES_GET_EDGE_DETAILS_S,3);
 
-		if(srcFacadeInt){ // Left side facade in
-			// Remove wire connected outside facade in
-			sqlite3_reset(UNWIRE_NODES_GET_SRC_FACADE_EDGE_S);
-			sqlite3_bind_int(UNWIRE_NODES_GET_SRC_FACADE_EDGE_S,1,srcOut);
-			if(sqlite3_step(UNWIRE_NODES_GET_SRC_FACADE_EDGE_S)==SQLITE_ROW){
-				int outsideEdge = sqlite3_column_int(UNWIRE_NODES_GET_SRC_FACADE_EDGE_S,0);
-				lsddb_unwireNodes(outsideEdge);
-			}
-		}
-		
-		if(destFacadeInt){ // Right side facade out
-			// Facade output (destIn) MAY actually be a partition's channel
-			// This function checks this possibilility and nullifies any channel pointers
-			lsddb_checkChannelUnwiring(destIn);
-			
-			// Remove wire connected outside facade out
-			sqlite3_reset(UNWIRE_NODES_GET_DEST_FACADE_EDGE_S);
-			sqlite3_bind_int(UNWIRE_NODES_GET_DEST_FACADE_EDGE_S,1,destIn);
-			if(sqlite3_step(UNWIRE_NODES_GET_DEST_FACADE_EDGE_S)==SQLITE_ROW){
-				int outsideEdge = sqlite3_column_int(UNWIRE_NODES_GET_DEST_FACADE_EDGE_S,0);
-				lsddb_unwireNodes(outsideEdge);
-			}
-			
-			// Remove interior alias
-			sqlite3_reset(UNWIRE_FACADE_OUT_ALIAS_S);
-			sqlite3_bind_int(UNWIRE_FACADE_OUT_ALIAS_S,1,destIn);
-			sqlite3_step(UNWIRE_FACADE_OUT_ALIAS_S);
-		}
-		
-		if(!srcFacadeInt && !destFacadeInt){ // Facade interiors not involved, disconnect
-			// Use trace functions to resolve the source and destination objects
-			struct LSD_SceneNodeInput* dest;
-			
-			if(lsddb_traceInput(&dest,destIn,NULL,NULL)<0){
-				fprintf(stderr,"Unable to trace input for node disconnection in unwireNodes()\n");
-				return -1;
-			}
-			
-			// Disconnect pointer
-			dest->connection = NULL;
-		}
-		
-		// Remove the edge
-		sqlite3_reset(UNWIRE_NODES_DELETE_EDGE_S);
-		sqlite3_bind_int(UNWIRE_NODES_DELETE_EDGE_S,1,wireId);
-		if(sqlite3_step(UNWIRE_NODES_DELETE_EDGE_S)!=SQLITE_DONE){
-			fprintf(stderr,"Unable to remove wire in unwireNodes()\n");
-			return -1;
-		}
-		
-	}
-	
-	return 0;
+        if(srcFacadeInt){ // Left side facade in
+            // Remove wire connected outside facade in
+            sqlite3_reset(UNWIRE_NODES_GET_SRC_FACADE_EDGE_S);
+            sqlite3_bind_int(UNWIRE_NODES_GET_SRC_FACADE_EDGE_S,1,srcOut);
+            if(sqlite3_step(UNWIRE_NODES_GET_SRC_FACADE_EDGE_S)==SQLITE_ROW){
+                int outsideEdge = sqlite3_column_int(UNWIRE_NODES_GET_SRC_FACADE_EDGE_S,0);
+                lsddb_unwireNodes(outsideEdge);
+            }
+        }
+        
+        if(destFacadeInt){ // Right side facade out
+            // Facade output (destIn) MAY actually be a partition's channel
+            // This function checks this possibilility and nullifies any channel pointers
+            lsddb_checkChannelUnwiring(destIn);
+            
+            // Remove wire connected outside facade out
+            sqlite3_reset(UNWIRE_NODES_GET_DEST_FACADE_EDGE_S);
+            sqlite3_bind_int(UNWIRE_NODES_GET_DEST_FACADE_EDGE_S,1,destIn);
+            if(sqlite3_step(UNWIRE_NODES_GET_DEST_FACADE_EDGE_S)==SQLITE_ROW){
+                int outsideEdge = sqlite3_column_int(UNWIRE_NODES_GET_DEST_FACADE_EDGE_S,0);
+                lsddb_unwireNodes(outsideEdge);
+            }
+            
+            // Remove interior alias
+            sqlite3_reset(UNWIRE_FACADE_OUT_ALIAS_S);
+            sqlite3_bind_int(UNWIRE_FACADE_OUT_ALIAS_S,1,destIn);
+            sqlite3_step(UNWIRE_FACADE_OUT_ALIAS_S);
+        }
+        
+        if(!srcFacadeInt && !destFacadeInt){ // Facade interiors not involved, disconnect
+            // Use trace functions to resolve the source and destination objects
+            struct LSD_SceneNodeInput* dest;
+            
+            if(lsddb_traceInput(&dest,destIn,NULL,NULL)<0){
+                fprintf(stderr,"Unable to trace input for node disconnection in unwireNodes()\n");
+                return -1;
+            }
+            
+            // Disconnect pointer
+            dest->connection = NULL;
+        }
+        
+        // Remove the edge
+        sqlite3_reset(UNWIRE_NODES_DELETE_EDGE_S);
+        sqlite3_bind_int(UNWIRE_NODES_DELETE_EDGE_S,1,wireId);
+        if(sqlite3_step(UNWIRE_NODES_DELETE_EDGE_S)!=SQLITE_DONE){
+            fprintf(stderr,"Unable to remove wire in unwireNodes()\n");
+            return -1;
+        }
+        
+    }
+    
+    return 0;
 }
 
 static const char REWIRE_NODES[] =
@@ -3090,18 +3111,18 @@ static const char JSON_CLASS_LIBRARY[] =
 static sqlite3_stmt* JSON_CLASS_LIBRARY_S;
 
 int lsddb_jsonClassLibrary(cJSON* target){
-	if(!target){
-		fprintf(stderr,"target may not be null in jsonClassLibrary()\n");
-		return -1;
-	}
-	
-	cJSON* classArr = cJSON_CreateArray();
-	
-	sqlite3_reset(JSON_CLASS_LIBRARY_S);
-	
-	while(sqlite3_step(JSON_CLASS_LIBRARY_S)==SQLITE_ROW){
+    if(!target){
+        fprintf(stderr,"target may not be null in jsonClassLibrary()\n");
+        return -1;
+    }
+    
+    cJSON* classArr = cJSON_CreateArray();
+    
+    sqlite3_reset(JSON_CLASS_LIBRARY_S);
+    
+    while(sqlite3_step(JSON_CLASS_LIBRARY_S)==SQLITE_ROW){
         int classId = sqlite3_column_int(JSON_CLASS_LIBRARY_S,0);
-		const char* className = (const char*)sqlite3_column_text(JSON_CLASS_LIBRARY_S,1);
+        const char* className = (const char*)sqlite3_column_text(JSON_CLASS_LIBRARY_S,1);
         
         if(lsddb_checkClassEnabled(classId)){
             
@@ -3113,11 +3134,11 @@ int lsddb_jsonClassLibrary(cJSON* target){
             cJSON_AddItemToArray(classArr,classObj);
             
         }
-	}
-	
-	cJSON_AddItemToObject(target,"classes",classArr);
-	
-	return 0;
+    }
+    
+    cJSON_AddItemToObject(target,"classes",classArr);
+    
+    return 0;
 }
 
 static const char JSON_GET_FACADE_OUTS[] =
@@ -3125,27 +3146,27 @@ static const char JSON_GET_FACADE_OUTS[] =
 static sqlite3_stmt* JSON_GET_FACADE_OUTS_S;
 
 int lsddb_jsonGetFacadeOuts(int psId, cJSON* target){
-	if(!target){
-		return -1;
-	}
-	
-	cJSON* outArr = cJSON_CreateArray();
-	
-	sqlite3_reset(JSON_GET_FACADE_OUTS_S);
-	sqlite3_bind_int(JSON_GET_FACADE_OUTS_S,1,psId);
-	while(sqlite3_step(JSON_GET_FACADE_OUTS_S)==SQLITE_ROW){
-		int outId = sqlite3_column_int(JSON_GET_FACADE_OUTS_S,0);
-		const unsigned char* outName = sqlite3_column_text(JSON_GET_FACADE_OUTS_S,1);
+    if(!target){
+        return -1;
+    }
+    
+    cJSON* outArr = cJSON_CreateArray();
+    
+    sqlite3_reset(JSON_GET_FACADE_OUTS_S);
+    sqlite3_bind_int(JSON_GET_FACADE_OUTS_S,1,psId);
+    while(sqlite3_step(JSON_GET_FACADE_OUTS_S)==SQLITE_ROW){
+        int outId = sqlite3_column_int(JSON_GET_FACADE_OUTS_S,0);
+        const unsigned char* outName = sqlite3_column_text(JSON_GET_FACADE_OUTS_S,1);
 
-		cJSON* outObj = cJSON_CreateObject();
-		cJSON_AddNumberToObject(outObj,"outId",outId);
-		cJSON_AddStringToObject(outObj,"outName",(const char*)outName);
-		cJSON_AddItemToArray(outArr,outObj);
-	}
-	
-	cJSON_AddItemToObject(target,"facadeOuts",outArr);
-	
-	return 0;
+        cJSON* outObj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(outObj,"outId",outId);
+        cJSON_AddStringToObject(outObj,"outName",(const char*)outName);
+        cJSON_AddItemToArray(outArr,outObj);
+    }
+    
+    cJSON_AddItemToObject(target,"facadeOuts",outArr);
+    
+    return 0;
 }
 
 static const char JSON_GET_FACADE_INS[] =
@@ -3153,27 +3174,27 @@ static const char JSON_GET_FACADE_INS[] =
 static sqlite3_stmt* JSON_GET_FACADE_INS_S;
 
 int lsddb_jsonGetFacadeIns(int psId, cJSON* target){
-	if(!target){
-		return -1;
-	}
-	
-	cJSON* inArr = cJSON_CreateArray();
-	
-	sqlite3_reset(JSON_GET_FACADE_INS_S);
-	sqlite3_bind_int(JSON_GET_FACADE_INS_S,1,psId);
-	while(sqlite3_step(JSON_GET_FACADE_INS_S)==SQLITE_ROW){
-		int inId = sqlite3_column_int(JSON_GET_FACADE_INS_S,0);
-		const unsigned char* inName = sqlite3_column_text(JSON_GET_FACADE_INS_S,1);
-		
-		cJSON* inObj = cJSON_CreateObject();
-		cJSON_AddNumberToObject(inObj,"inId",inId);
-		cJSON_AddStringToObject(inObj,"inName",(const char*)inName);
-		cJSON_AddItemToArray(inArr,inObj);
-	}
-	
-	cJSON_AddItemToObject(target,"facadeIns",inArr);
-	
-	return 0;
+    if(!target){
+        return -1;
+    }
+    
+    cJSON* inArr = cJSON_CreateArray();
+    
+    sqlite3_reset(JSON_GET_FACADE_INS_S);
+    sqlite3_bind_int(JSON_GET_FACADE_INS_S,1,psId);
+    while(sqlite3_step(JSON_GET_FACADE_INS_S)==SQLITE_ROW){
+        int inId = sqlite3_column_int(JSON_GET_FACADE_INS_S,0);
+        const unsigned char* inName = sqlite3_column_text(JSON_GET_FACADE_INS_S,1);
+        
+        cJSON* inObj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(inObj,"inId",inId);
+        cJSON_AddStringToObject(inObj,"inName",(const char*)inName);
+        cJSON_AddItemToArray(inArr,inObj);
+    }
+    
+    cJSON_AddItemToObject(target,"facadeIns",inArr);
+    
+    return 0;
 }
 
 static const char JSON_PARTS[] = 
@@ -3181,38 +3202,38 @@ static const char JSON_PARTS[] =
 static sqlite3_stmt* JSON_PARTS_S;
 
 int lsddb_jsonParts(cJSON* target){
-	if(!target){
-		fprintf(stderr,"target may not be null in jsonParts()\n");
-		return -1;
-	}
-	
-	cJSON* partArr = cJSON_CreateArray();
-	
-	sqlite3_reset(JSON_PARTS_S);
-	
-	while(sqlite3_step(JSON_PARTS_S)==SQLITE_ROW){
-		cJSON* partObj = cJSON_CreateObject();
-		
-		int partId = sqlite3_column_int(JSON_PARTS_S,0);
-		const char* partName = (const char*)sqlite3_column_text(JSON_PARTS_S,1);
-		int psId = sqlite3_column_int(JSON_PARTS_S,2);
-		const char* imageUrl = (const char*)sqlite3_column_text(JSON_PARTS_S,3);
-		
-		cJSON_AddNumberToObject(partObj,"partId",partId);
-		cJSON_AddStringToObject(partObj,"partName",partName);
-		cJSON_AddNumberToObject(partObj,"psId",psId);
-		if(imageUrl)
-			cJSON_AddStringToObject(partObj,"imageUrl",imageUrl);
-		
-		// Add partition facade outs
-		//lsddb_jsonGetFacadeOuts(psId,partObj);
-		
-		cJSON_AddItemToArray(partArr,partObj);
-	}
-	
-	cJSON_AddItemToObject(target,"partitions",partArr);
-	
-	return 0;
+    if(!target){
+        fprintf(stderr,"target may not be null in jsonParts()\n");
+        return -1;
+    }
+    
+    cJSON* partArr = cJSON_CreateArray();
+    
+    sqlite3_reset(JSON_PARTS_S);
+    
+    while(sqlite3_step(JSON_PARTS_S)==SQLITE_ROW){
+        cJSON* partObj = cJSON_CreateObject();
+        
+        int partId = sqlite3_column_int(JSON_PARTS_S,0);
+        const char* partName = (const char*)sqlite3_column_text(JSON_PARTS_S,1);
+        int psId = sqlite3_column_int(JSON_PARTS_S,2);
+        const char* imageUrl = (const char*)sqlite3_column_text(JSON_PARTS_S,3);
+        
+        cJSON_AddNumberToObject(partObj,"partId",partId);
+        cJSON_AddStringToObject(partObj,"partName",partName);
+        cJSON_AddNumberToObject(partObj,"psId",psId);
+        if(imageUrl)
+            cJSON_AddStringToObject(partObj,"imageUrl",imageUrl);
+        
+        // Add partition facade outs
+        //lsddb_jsonGetFacadeOuts(psId,partObj);
+        
+        cJSON_AddItemToArray(partArr,partObj);
+    }
+    
+    cJSON_AddItemToObject(target,"partitions",partArr);
+    
+    return 0;
 }
 
 
@@ -3224,27 +3245,27 @@ static sqlite3_stmt* JSON_INSERT_CLASS_OBJECT_S;
 // pluginId, and classIdx to allow a node in the client to resolve its
 // various class members implemented in static files
 int lsddb_jsonInsertClassObject(cJSON* target, int classId){
-	if(!target || target->type != cJSON_Object)
-		return -1;
-	
-	sqlite3_reset(JSON_INSERT_CLASS_OBJECT_S);
-	sqlite3_bind_int(JSON_INSERT_CLASS_OBJECT_S,1,classId);
-	
-	if(sqlite3_step(JSON_INSERT_CLASS_OBJECT_S)==SQLITE_ROW){
-		int pluginId = sqlite3_column_int(JSON_INSERT_CLASS_OBJECT_S,0);
-		int classIdx = sqlite3_column_int(JSON_INSERT_CLASS_OBJECT_S,1);
-		
-		cJSON* classObj = cJSON_CreateObject();
-		cJSON_AddNumberToObject(classObj,"classId",classId);
-		cJSON_AddNumberToObject(classObj,"pluginId",pluginId);
-		cJSON_AddNumberToObject(classObj,"classIdx",classIdx);
-		
-		cJSON_AddItemToObject(target,"classObj",classObj);
-		
-		return 0;
-	}
-	fprintf(stderr,"Unable to resolve class from DB in jsonInsertClassObject()\n");
-	return -1;
+    if(!target || target->type != cJSON_Object)
+        return -1;
+    
+    sqlite3_reset(JSON_INSERT_CLASS_OBJECT_S);
+    sqlite3_bind_int(JSON_INSERT_CLASS_OBJECT_S,1,classId);
+    
+    if(sqlite3_step(JSON_INSERT_CLASS_OBJECT_S)==SQLITE_ROW){
+        int pluginId = sqlite3_column_int(JSON_INSERT_CLASS_OBJECT_S,0);
+        int classIdx = sqlite3_column_int(JSON_INSERT_CLASS_OBJECT_S,1);
+        
+        cJSON* classObj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(classObj,"classId",classId);
+        cJSON_AddNumberToObject(classObj,"pluginId",pluginId);
+        cJSON_AddNumberToObject(classObj,"classIdx",classIdx);
+        
+        cJSON_AddItemToObject(target,"classObj",classObj);
+        
+        return 0;
+    }
+    fprintf(stderr,"Unable to resolve class from DB in jsonInsertClassObject()\n");
+    return -1;
 }
 
 static const char JSON_NODES[] =
@@ -3268,23 +3289,23 @@ static const char JSON_NODES_FACADES_OUTS[] =
 static sqlite3_stmt* JSON_NODES_FACADES_OUTS_S;
 
 int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
-	sqlite3_reset(JSON_NODES_S);
-	sqlite3_bind_int(JSON_NODES_S,1,patchSpaceId);
-	
-	cJSON* nodeArr = cJSON_CreateArray();
-	
-	while(sqlite3_step(JSON_NODES_S)==SQLITE_ROW){
-		cJSON* nodeObj = cJSON_CreateObject();
-		
-		int nodeId = sqlite3_column_int(JSON_NODES_S,0);
-		int posX = sqlite3_column_int(JSON_NODES_S,1);
-		int posY = sqlite3_column_int(JSON_NODES_S,2);
+    sqlite3_reset(JSON_NODES_S);
+    sqlite3_bind_int(JSON_NODES_S,1,patchSpaceId);
+    
+    cJSON* nodeArr = cJSON_CreateArray();
+    
+    while(sqlite3_step(JSON_NODES_S)==SQLITE_ROW){
+        cJSON* nodeObj = cJSON_CreateObject();
+        
+        int nodeId = sqlite3_column_int(JSON_NODES_S,0);
+        int posX = sqlite3_column_int(JSON_NODES_S,1);
+        int posY = sqlite3_column_int(JSON_NODES_S,2);
         const unsigned char* name = sqlite3_column_text(JSON_NODES_S,4);
-		int classId = sqlite3_column_int(JSON_NODES_S,3);
-		
-		cJSON_AddNumberToObject(nodeObj,"nodeId",nodeId);
-		cJSON_AddNumberToObject(nodeObj,"x",posX);
-		cJSON_AddNumberToObject(nodeObj,"y",posY);
+        int classId = sqlite3_column_int(JSON_NODES_S,3);
+        
+        cJSON_AddNumberToObject(nodeObj,"nodeId",nodeId);
+        cJSON_AddNumberToObject(nodeObj,"x",posX);
+        cJSON_AddNumberToObject(nodeObj,"y",posY);
         cJSON_AddStringToObject(nodeObj,"name",(const char*)name);
         
         // Colour Object
@@ -3298,72 +3319,72 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
             cJSON_AddTrueToObject(nodeObj,"enabled");
         else
             cJSON_AddFalseToObject(nodeObj,"enabled");
-		lsddb_jsonInsertClassObject(nodeObj,classId);
-		
-		// Get node's ins
-		sqlite3_reset(JSON_NODES_INS_S);
-		sqlite3_bind_int(JSON_NODES_INS_S,1,nodeId);
-		
-		cJSON* nodeInArr = cJSON_CreateArray();
-		while(sqlite3_step(JSON_NODES_INS_S)==SQLITE_ROW){
-			cJSON* inObj = cJSON_CreateObject();
-			
-			int inId = sqlite3_column_int(JSON_NODES_INS_S,0);
-			int typeId = sqlite3_column_int(JSON_NODES_INS_S,1);
-			const unsigned char* name = sqlite3_column_text(JSON_NODES_INS_S,2);
-			
-			cJSON_AddNumberToObject(inObj,"inId",inId);
-			cJSON_AddNumberToObject(inObj,"typeId",typeId);
-			cJSON_AddStringToObject(inObj,"name",(const char*)name);
-			
-			cJSON_AddItemToArray(nodeInArr,inObj);
-		}
-		
-		cJSON_AddItemToObject(nodeObj,"nodeIns",nodeInArr);
-		
-		// Get node's outs
-		sqlite3_reset(JSON_NODES_OUTS_S);
-		sqlite3_bind_int(JSON_NODES_OUTS_S,1,nodeId);
-		
-		cJSON* nodeOutArr = cJSON_CreateArray();
-		while(sqlite3_step(JSON_NODES_OUTS_S)==SQLITE_ROW){
-			cJSON* outObj = cJSON_CreateObject();
-			
-			int outId = sqlite3_column_int(JSON_NODES_OUTS_S,0);
-			int typeId = sqlite3_column_int(JSON_NODES_OUTS_S,1);
-			const unsigned char* name = sqlite3_column_text(JSON_NODES_OUTS_S,2);
-			
-			cJSON_AddNumberToObject(outObj,"outId",outId);
-			cJSON_AddNumberToObject(outObj,"typeId",typeId);
-			cJSON_AddStringToObject(outObj,"name",(const char*)name);
-			
-			cJSON_AddItemToArray(nodeOutArr,outObj);
-		}
-		
-		cJSON_AddItemToObject(nodeObj,"nodeOuts",nodeOutArr);
-		
-		// Add node to array
-		cJSON_AddItemToArray(nodeArr,nodeObj);
-	}
-	
-	
-	// Facades
-	
-	sqlite3_reset(JSON_NODES_FACADES_S);
-	sqlite3_bind_int(JSON_NODES_FACADES_S,1,patchSpaceId);
-	
-	while(sqlite3_step(JSON_NODES_FACADES_S)==SQLITE_ROW){
-		cJSON* nodeObj = cJSON_CreateObject();
-		
-		int nodeId = sqlite3_column_int(JSON_NODES_FACADES_S,0);
-		const unsigned char* psName = sqlite3_column_text(JSON_NODES_FACADES_S,3);
-		int posX = sqlite3_column_int(JSON_NODES_FACADES_S,1);
-		int posY = sqlite3_column_int(JSON_NODES_FACADES_S,2);
-		
-		cJSON_AddNumberToObject(nodeObj,"facadeId",nodeId);
-		cJSON_AddStringToObject(nodeObj,"name",(const char*)psName);
-		cJSON_AddNumberToObject(nodeObj,"x",posX);
-		cJSON_AddNumberToObject(nodeObj,"y",posY);
+        lsddb_jsonInsertClassObject(nodeObj,classId);
+        
+        // Get node's ins
+        sqlite3_reset(JSON_NODES_INS_S);
+        sqlite3_bind_int(JSON_NODES_INS_S,1,nodeId);
+        
+        cJSON* nodeInArr = cJSON_CreateArray();
+        while(sqlite3_step(JSON_NODES_INS_S)==SQLITE_ROW){
+            cJSON* inObj = cJSON_CreateObject();
+            
+            int inId = sqlite3_column_int(JSON_NODES_INS_S,0);
+            int typeId = sqlite3_column_int(JSON_NODES_INS_S,1);
+            const unsigned char* name = sqlite3_column_text(JSON_NODES_INS_S,2);
+            
+            cJSON_AddNumberToObject(inObj,"inId",inId);
+            cJSON_AddNumberToObject(inObj,"typeId",typeId);
+            cJSON_AddStringToObject(inObj,"name",(const char*)name);
+            
+            cJSON_AddItemToArray(nodeInArr,inObj);
+        }
+        
+        cJSON_AddItemToObject(nodeObj,"nodeIns",nodeInArr);
+        
+        // Get node's outs
+        sqlite3_reset(JSON_NODES_OUTS_S);
+        sqlite3_bind_int(JSON_NODES_OUTS_S,1,nodeId);
+        
+        cJSON* nodeOutArr = cJSON_CreateArray();
+        while(sqlite3_step(JSON_NODES_OUTS_S)==SQLITE_ROW){
+            cJSON* outObj = cJSON_CreateObject();
+            
+            int outId = sqlite3_column_int(JSON_NODES_OUTS_S,0);
+            int typeId = sqlite3_column_int(JSON_NODES_OUTS_S,1);
+            const unsigned char* name = sqlite3_column_text(JSON_NODES_OUTS_S,2);
+            
+            cJSON_AddNumberToObject(outObj,"outId",outId);
+            cJSON_AddNumberToObject(outObj,"typeId",typeId);
+            cJSON_AddStringToObject(outObj,"name",(const char*)name);
+            
+            cJSON_AddItemToArray(nodeOutArr,outObj);
+        }
+        
+        cJSON_AddItemToObject(nodeObj,"nodeOuts",nodeOutArr);
+        
+        // Add node to array
+        cJSON_AddItemToArray(nodeArr,nodeObj);
+    }
+    
+    
+    // Facades
+    
+    sqlite3_reset(JSON_NODES_FACADES_S);
+    sqlite3_bind_int(JSON_NODES_FACADES_S,1,patchSpaceId);
+    
+    while(sqlite3_step(JSON_NODES_FACADES_S)==SQLITE_ROW){
+        cJSON* nodeObj = cJSON_CreateObject();
+        
+        int nodeId = sqlite3_column_int(JSON_NODES_FACADES_S,0);
+        const unsigned char* psName = sqlite3_column_text(JSON_NODES_FACADES_S,3);
+        int posX = sqlite3_column_int(JSON_NODES_FACADES_S,1);
+        int posY = sqlite3_column_int(JSON_NODES_FACADES_S,2);
+        
+        cJSON_AddNumberToObject(nodeObj,"facadeId",nodeId);
+        cJSON_AddStringToObject(nodeObj,"name",(const char*)psName);
+        cJSON_AddNumberToObject(nodeObj,"x",posX);
+        cJSON_AddNumberToObject(nodeObj,"y",posY);
         
         // Colour Object
         cJSON* colourObj = cJSON_CreateObject();
@@ -3371,57 +3392,57 @@ int lsddb_jsonNodes(int patchSpaceId, cJSON* resp){
         cJSON_AddNumberToObject(colourObj,"g",sqlite3_column_double(JSON_NODES_FACADES_S,5));
         cJSON_AddNumberToObject(colourObj,"b",sqlite3_column_double(JSON_NODES_FACADES_S,6));
         cJSON_AddItemToObject(nodeObj,"colour",colourObj);
-		
-		// Get facade's ins
-		sqlite3_reset(JSON_NODES_FACADES_INS_S);
-		sqlite3_bind_int(JSON_NODES_FACADES_INS_S,1,nodeId);
-		
-		cJSON* nodeInArr = cJSON_CreateArray();
-		while(sqlite3_step(JSON_NODES_FACADES_INS_S)==SQLITE_ROW){
-			cJSON* inObj = cJSON_CreateObject();
-			
-			int inId = sqlite3_column_int(JSON_NODES_FACADES_INS_S,0);
-			int typeId = sqlite3_column_int(JSON_NODES_FACADES_INS_S,1);
-			const unsigned char* name = sqlite3_column_text(JSON_NODES_FACADES_INS_S,2);
-			
-			cJSON_AddNumberToObject(inObj,"inId",inId);
-			cJSON_AddNumberToObject(inObj,"typeId",typeId);
-			cJSON_AddStringToObject(inObj,"name",(const char*)name);
-			
-			cJSON_AddItemToArray(nodeInArr,inObj);
-		}
-		
-		cJSON_AddItemToObject(nodeObj,"facadeIns",nodeInArr);
-		
-		// Get facade's outs
-		sqlite3_reset(JSON_NODES_FACADES_OUTS_S);
-		sqlite3_bind_int(JSON_NODES_FACADES_OUTS_S,1,nodeId);
-		
-		cJSON* nodeOutArr = cJSON_CreateArray();
-		while(sqlite3_step(JSON_NODES_FACADES_OUTS_S)==SQLITE_ROW){
-			cJSON* outObj = cJSON_CreateObject();
-			
-			int outId = sqlite3_column_int(JSON_NODES_FACADES_OUTS_S,0);
-			int typeId = sqlite3_column_int(JSON_NODES_FACADES_OUTS_S,1);
-			const unsigned char* name = sqlite3_column_text(JSON_NODES_FACADES_OUTS_S,2);
-			
-			cJSON_AddNumberToObject(outObj,"outId",outId);
-			cJSON_AddNumberToObject(outObj,"typeId",typeId);
-			cJSON_AddStringToObject(outObj,"name",(const char*)name);
-			
-			cJSON_AddItemToArray(nodeOutArr,outObj);
-		}
-		
-		cJSON_AddItemToObject(nodeObj,"facadeOuts",nodeOutArr);
-		
-		// Add node to array
-		cJSON_AddItemToArray(nodeArr,nodeObj);
-	}
-	
-	//cJSON_AddNumberToObject(resp,"psId",patchSpaceId);
-	cJSON_AddItemToObject(resp,"nodes",nodeArr);
-	
-	return 0;
+        
+        // Get facade's ins
+        sqlite3_reset(JSON_NODES_FACADES_INS_S);
+        sqlite3_bind_int(JSON_NODES_FACADES_INS_S,1,nodeId);
+        
+        cJSON* nodeInArr = cJSON_CreateArray();
+        while(sqlite3_step(JSON_NODES_FACADES_INS_S)==SQLITE_ROW){
+            cJSON* inObj = cJSON_CreateObject();
+            
+            int inId = sqlite3_column_int(JSON_NODES_FACADES_INS_S,0);
+            int typeId = sqlite3_column_int(JSON_NODES_FACADES_INS_S,1);
+            const unsigned char* name = sqlite3_column_text(JSON_NODES_FACADES_INS_S,2);
+            
+            cJSON_AddNumberToObject(inObj,"inId",inId);
+            cJSON_AddNumberToObject(inObj,"typeId",typeId);
+            cJSON_AddStringToObject(inObj,"name",(const char*)name);
+            
+            cJSON_AddItemToArray(nodeInArr,inObj);
+        }
+        
+        cJSON_AddItemToObject(nodeObj,"facadeIns",nodeInArr);
+        
+        // Get facade's outs
+        sqlite3_reset(JSON_NODES_FACADES_OUTS_S);
+        sqlite3_bind_int(JSON_NODES_FACADES_OUTS_S,1,nodeId);
+        
+        cJSON* nodeOutArr = cJSON_CreateArray();
+        while(sqlite3_step(JSON_NODES_FACADES_OUTS_S)==SQLITE_ROW){
+            cJSON* outObj = cJSON_CreateObject();
+            
+            int outId = sqlite3_column_int(JSON_NODES_FACADES_OUTS_S,0);
+            int typeId = sqlite3_column_int(JSON_NODES_FACADES_OUTS_S,1);
+            const unsigned char* name = sqlite3_column_text(JSON_NODES_FACADES_OUTS_S,2);
+            
+            cJSON_AddNumberToObject(outObj,"outId",outId);
+            cJSON_AddNumberToObject(outObj,"typeId",typeId);
+            cJSON_AddStringToObject(outObj,"name",(const char*)name);
+            
+            cJSON_AddItemToArray(nodeOutArr,outObj);
+        }
+        
+        cJSON_AddItemToObject(nodeObj,"facadeOuts",nodeOutArr);
+        
+        // Add node to array
+        cJSON_AddItemToArray(nodeArr,nodeObj);
+    }
+    
+    //cJSON_AddNumberToObject(resp,"psId",patchSpaceId);
+    cJSON_AddItemToObject(resp,"nodes",nodeArr);
+    
+    return 0;
 }
 
 
@@ -3462,33 +3483,33 @@ static const char JSON_WIRES[] =
 static sqlite3_stmt* JSON_WIRES_S;
 
 int lsddb_jsonWires(int patchSpaceId, cJSON* resp){
-	sqlite3_reset(JSON_WIRES_S);
-	sqlite3_bind_int(JSON_WIRES_S,1,patchSpaceId);
-	
-	cJSON* wireArr = cJSON_CreateArray();
-	
-	while(sqlite3_step(JSON_WIRES_S)==SQLITE_ROW){
-		cJSON* wireObj = cJSON_CreateObject();
-		
-		int wireId = sqlite3_column_int(JSON_WIRES_S,0);
-		int wireLeft = sqlite3_column_int(JSON_WIRES_S,1);
-		int wireRight = sqlite3_column_int(JSON_WIRES_S,2);
+    sqlite3_reset(JSON_WIRES_S);
+    sqlite3_bind_int(JSON_WIRES_S,1,patchSpaceId);
+    
+    cJSON* wireArr = cJSON_CreateArray();
+    
+    while(sqlite3_step(JSON_WIRES_S)==SQLITE_ROW){
+        cJSON* wireObj = cJSON_CreateObject();
+        
+        int wireId = sqlite3_column_int(JSON_WIRES_S,0);
+        int wireLeft = sqlite3_column_int(JSON_WIRES_S,1);
+        int wireRight = sqlite3_column_int(JSON_WIRES_S,2);
         int wireLeftInt = sqlite3_column_int(JSON_WIRES_S,3);
         int wireRightInt = sqlite3_column_int(JSON_WIRES_S,4);
-		
-		cJSON_AddNumberToObject(wireObj,"wireId",wireId);
+        
+        cJSON_AddNumberToObject(wireObj,"wireId",wireId);
         cJSON_AddNumberToObject(wireObj,"wireLeftInt",wireLeftInt);
-		cJSON_AddNumberToObject(wireObj,"wireLeft",wireLeft);
+        cJSON_AddNumberToObject(wireObj,"wireLeft",wireLeft);
         cJSON_AddNumberToObject(wireObj,"wireRightInt",wireRightInt);
-		cJSON_AddNumberToObject(wireObj,"wireRight",wireRight);
-		
-		cJSON_AddItemToArray(wireArr,wireObj);
-	}
-	
-	//cJSON_AddNumberToObject(resp,"psId",patchSpaceId);
-	cJSON_AddItemToObject(resp,"wireArr",wireArr);
-	
-	return 0;
+        cJSON_AddNumberToObject(wireObj,"wireRight",wireRight);
+        
+        cJSON_AddItemToArray(wireArr,wireObj);
+    }
+    
+    //cJSON_AddNumberToObject(resp,"psId",patchSpaceId);
+    cJSON_AddItemToObject(resp,"wireArr",wireArr);
+    
+    return 0;
 }
 
 static const char JSON_PATCH_SPACE[] = 
@@ -3496,32 +3517,32 @@ static const char JSON_PATCH_SPACE[] =
 static sqlite3_stmt* JSON_PATCH_SPACE_S;
 
 int lsddb_jsonPatchSpace(int patchSpaceId, cJSON* resp){
-	sqlite3_reset(JSON_PATCH_SPACE_S);
-	sqlite3_bind_int(JSON_PATCH_SPACE_S,1,patchSpaceId);
-	
-	if(sqlite3_step(JSON_PATCH_SPACE_S)==SQLITE_ROW){
-		const unsigned char* psName = sqlite3_column_text(JSON_PATCH_SPACE_S,0);
-		int panX = sqlite3_column_int(JSON_PATCH_SPACE_S,1);
-		int panY = sqlite3_column_int(JSON_PATCH_SPACE_S,2);
-		double scale = sqlite3_column_double(JSON_PATCH_SPACE_S,3);
-		
-		cJSON_AddNumberToObject(resp,"psId",patchSpaceId);
-		cJSON_AddStringToObject(resp,"name",(const char*)psName);
-		cJSON_AddNumberToObject(resp,"x",panX);
-		cJSON_AddNumberToObject(resp,"y",panY);
-		cJSON_AddNumberToObject(resp,"scale",scale);
-		
-		lsddb_jsonNodes(patchSpaceId,resp);
-		lsddb_jsonWires(patchSpaceId,resp);
-		lsddb_jsonGetFacadeIns(patchSpaceId,resp);
-		lsddb_jsonGetFacadeOuts(patchSpaceId,resp);
-	}
-	else{
-		cJSON_AddStringToObject(resp,"error","Patch Space Non-existant");
-		return -1;
-	}
-	
-	return 0;
+    sqlite3_reset(JSON_PATCH_SPACE_S);
+    sqlite3_bind_int(JSON_PATCH_SPACE_S,1,patchSpaceId);
+    
+    if(sqlite3_step(JSON_PATCH_SPACE_S)==SQLITE_ROW){
+        const unsigned char* psName = sqlite3_column_text(JSON_PATCH_SPACE_S,0);
+        int panX = sqlite3_column_int(JSON_PATCH_SPACE_S,1);
+        int panY = sqlite3_column_int(JSON_PATCH_SPACE_S,2);
+        double scale = sqlite3_column_double(JSON_PATCH_SPACE_S,3);
+        
+        cJSON_AddNumberToObject(resp,"psId",patchSpaceId);
+        cJSON_AddStringToObject(resp,"name",(const char*)psName);
+        cJSON_AddNumberToObject(resp,"x",panX);
+        cJSON_AddNumberToObject(resp,"y",panY);
+        cJSON_AddNumberToObject(resp,"scale",scale);
+        
+        lsddb_jsonNodes(patchSpaceId,resp);
+        lsddb_jsonWires(patchSpaceId,resp);
+        lsddb_jsonGetFacadeIns(patchSpaceId,resp);
+        lsddb_jsonGetFacadeOuts(patchSpaceId,resp);
+    }
+    else{
+        cJSON_AddStringToObject(resp,"error","Patch Space Non-existant");
+        return -1;
+    }
+    
+    return 0;
 }
 
 static const char RESOLVE_CLASS_FROM_ID[] =
@@ -3529,28 +3550,28 @@ static const char RESOLVE_CLASS_FROM_ID[] =
 static sqlite3_stmt* RESOLVE_CLASS_FROM_ID_S;
 
 int lsddb_resolveClassFromId(struct LSD_SceneNodeClass** ptrToBind, int classId){
-	sqlite3_reset(RESOLVE_CLASS_FROM_ID_S);
-	sqlite3_bind_int(RESOLVE_CLASS_FROM_ID_S,1,classId);
-	
-	struct LSD_SceneNodeClass* pickedClass;
+    sqlite3_reset(RESOLVE_CLASS_FROM_ID_S);
+    sqlite3_bind_int(RESOLVE_CLASS_FROM_ID_S,1,classId);
+    
+    struct LSD_SceneNodeClass* pickedClass;
 
-	if(sqlite3_step(RESOLVE_CLASS_FROM_ID_S)==SQLITE_ROW){
-		int arrIdx = sqlite3_column_int(RESOLVE_CLASS_FROM_ID_S,0);
-		
-		if(pickIdx(getArr_lsdNodeClassArr(),(void**)&pickedClass,arrIdx)<0){
-			fprintf(stderr,"Unable to pick class from array in resolveClassFromId()\n");
-			return -1;
-		}
-	}
-	else{
-		fprintf(stderr,"Class could not be resolved or its plugin is disabled in resolveClassFromId()\n");
-		return -1;
-	}
-	
-	if(ptrToBind)
-		*ptrToBind=pickedClass;
-	
-	return 0;
+    if(sqlite3_step(RESOLVE_CLASS_FROM_ID_S)==SQLITE_ROW){
+        int arrIdx = sqlite3_column_int(RESOLVE_CLASS_FROM_ID_S,0);
+        
+        if(pickIdx(getArr_lsdNodeClassArr(),(void**)&pickedClass,arrIdx)<0){
+            fprintf(stderr,"Unable to pick class from array in resolveClassFromId()\n");
+            return -1;
+        }
+    }
+    else{
+        fprintf(stderr,"Class could not be resolved or its plugin is disabled in resolveClassFromId()\n");
+        return -1;
+    }
+    
+    if(ptrToBind)
+        *ptrToBind=pickedClass;
+    
+    return 0;
 }
 
 static const char RESOLVE_INST_FROM_ID[] =
@@ -3558,33 +3579,33 @@ static const char RESOLVE_INST_FROM_ID[] =
 static sqlite3_stmt* RESOLVE_INST_FROM_ID_S;
 
 int lsddb_resolveInstFromId(struct LSD_SceneNodeInst const ** target, int nodeId, void** dataBind){
-	if(!target)
-		return -1;
-	
-	sqlite3_reset(RESOLVE_INST_FROM_ID_S);
-	sqlite3_bind_int(RESOLVE_INST_FROM_ID_S,1,nodeId);
-	
-	struct LSD_SceneNodeInst* pickedInst;
-	
-	if(sqlite3_step(RESOLVE_INST_FROM_ID_S)==SQLITE_ROW){
-		int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_ID_S,0);
-		
-		if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
-			fprintf(stderr,"Unable to pick inst from array in resolveInstFromId()\n");
-			return -1;
-		}
-	}
-	else{
-		fprintf(stderr,"Inst could not be resolved in DB in resolveInstFromId()\n");
-		return -1;
-	}
-	
-	*target=pickedInst;
-	
-	if(dataBind)
-		*dataBind = pickedInst->data;
-	
-	return 0;
+    if(!target)
+        return -1;
+    
+    sqlite3_reset(RESOLVE_INST_FROM_ID_S);
+    sqlite3_bind_int(RESOLVE_INST_FROM_ID_S,1,nodeId);
+    
+    struct LSD_SceneNodeInst* pickedInst;
+    
+    if(sqlite3_step(RESOLVE_INST_FROM_ID_S)==SQLITE_ROW){
+        int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_ID_S,0);
+        
+        if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
+            fprintf(stderr,"Unable to pick inst from array in resolveInstFromId()\n");
+            return -1;
+        }
+    }
+    else{
+        fprintf(stderr,"Inst could not be resolved in DB in resolveInstFromId()\n");
+        return -1;
+    }
+    
+    *target=pickedInst;
+    
+    if(dataBind)
+        *dataBind = pickedInst->data;
+    
+    return 0;
 }
 
 static const char RESOLVE_INST_FROM_IN_ID[] =
@@ -3594,30 +3615,30 @@ static const char RESOLVE_INST_FROM_IN_ID[] =
 static sqlite3_stmt* RESOLVE_INST_FROM_IN_ID_S;
 
 int lsddb_resolveInstFromInId(struct LSD_SceneNodeInst const ** target, int inId){
-	if(!target)
-		return -1;
-	
-	sqlite3_reset(RESOLVE_INST_FROM_IN_ID_S);
-	sqlite3_bind_int(RESOLVE_INST_FROM_IN_ID_S,1,inId);
-	
-	struct LSD_SceneNodeInst* pickedInst;
-	
-	if(sqlite3_step(RESOLVE_INST_FROM_IN_ID_S)==SQLITE_ROW){
-		int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_IN_ID_S,0);
-		
-		if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
-			fprintf(stderr,"Unable to pick inst from array in resolveInstFromInId()\n");
-			return -1;
-		}
-	}
-	else{
-		fprintf(stderr,"Inst could not be resolved in DB in resolveInstFromInId()\n");
-		return -1;
-	}
-	
-	*target=pickedInst;
-	
-	return 0;
+    if(!target)
+        return -1;
+    
+    sqlite3_reset(RESOLVE_INST_FROM_IN_ID_S);
+    sqlite3_bind_int(RESOLVE_INST_FROM_IN_ID_S,1,inId);
+    
+    struct LSD_SceneNodeInst* pickedInst;
+    
+    if(sqlite3_step(RESOLVE_INST_FROM_IN_ID_S)==SQLITE_ROW){
+        int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_IN_ID_S,0);
+        
+        if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
+            fprintf(stderr,"Unable to pick inst from array in resolveInstFromInId()\n");
+            return -1;
+        }
+    }
+    else{
+        fprintf(stderr,"Inst could not be resolved in DB in resolveInstFromInId()\n");
+        return -1;
+    }
+    
+    *target=pickedInst;
+    
+    return 0;
 }
 
 static const char RESOLVE_INST_FROM_OUT_ID[] =
@@ -3627,52 +3648,52 @@ static const char RESOLVE_INST_FROM_OUT_ID[] =
 static sqlite3_stmt* RESOLVE_INST_FROM_OUT_ID_S;
 
 int lsddb_resolveInstFromOutId(struct LSD_SceneNodeInst const ** target, int outId){
-	if(!target)
-		return -1;
-	
-	sqlite3_reset(RESOLVE_INST_FROM_OUT_ID_S);
-	sqlite3_bind_int(RESOLVE_INST_FROM_OUT_ID_S,1,outId);
-	
-	struct LSD_SceneNodeInst* pickedInst;
-	
-	if(sqlite3_step(RESOLVE_INST_FROM_OUT_ID_S)==SQLITE_ROW){
-		int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_OUT_ID_S,0);
-		
-		if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
-			fprintf(stderr,"Unable to pick inst from array in resolveInstFromOutId()\n");
-			return -1;
-		}
-	}
-	else{
-		fprintf(stderr,"Inst %d could not be resolved in DB in resolveInstFromOutId()\n%s\n",outId,sqlite3_errmsg(memdb));
-		return -1;
-	}
-	
-	*target=pickedInst;
-	
-	return 0;
+    if(!target)
+        return -1;
+    
+    sqlite3_reset(RESOLVE_INST_FROM_OUT_ID_S);
+    sqlite3_bind_int(RESOLVE_INST_FROM_OUT_ID_S,1,outId);
+    
+    struct LSD_SceneNodeInst* pickedInst;
+    
+    if(sqlite3_step(RESOLVE_INST_FROM_OUT_ID_S)==SQLITE_ROW){
+        int arrIdx = sqlite3_column_int(RESOLVE_INST_FROM_OUT_ID_S,0);
+        
+        if(pickIdx(getArr_lsdNodeInstArr(),(void**)&pickedInst,arrIdx)<0){
+            fprintf(stderr,"Unable to pick inst from array in resolveInstFromOutId()\n");
+            return -1;
+        }
+    }
+    else{
+        fprintf(stderr,"Inst %d could not be resolved in DB in resolveInstFromOutId()\n%s\n",outId,sqlite3_errmsg(memdb));
+        return -1;
+    }
+    
+    *target=pickedInst;
+    
+    return 0;
 }
 
 
 int lsddb_resolveInputFromId(struct LSD_SceneNodeInput** inBind, int inId){
-	if(!inBind)
-		return -1;
-	
-	sqlite3_reset(REMOVE_NODE_INST_INPUT_ARRIDX_S);
-	sqlite3_bind_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,1,inId);
-	if(sqlite3_step(REMOVE_NODE_INST_INPUT_ARRIDX_S) == SQLITE_ROW){
-		int arrIdx = sqlite3_column_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,0);
-		if(arrIdx < 0)
-			return -1;
-		
-		if(pickIdx(getArr_lsdNodeInputArr(),(void**)inBind,arrIdx)<0){
-			fprintf(stderr,"Unable to pick input from array in resolveInputFromId()\n");
-			return -1;
-		}
-		return 0;
-	}
-	
-	return -1;
+    if(!inBind)
+        return -1;
+    
+    sqlite3_reset(REMOVE_NODE_INST_INPUT_ARRIDX_S);
+    sqlite3_bind_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,1,inId);
+    if(sqlite3_step(REMOVE_NODE_INST_INPUT_ARRIDX_S) == SQLITE_ROW){
+        int arrIdx = sqlite3_column_int(REMOVE_NODE_INST_INPUT_ARRIDX_S,0);
+        if(arrIdx < 0)
+            return -1;
+        
+        if(pickIdx(getArr_lsdNodeInputArr(),(void**)inBind,arrIdx)<0){
+            fprintf(stderr,"Unable to pick input from array in resolveInputFromId()\n");
+            return -1;
+        }
+        return 0;
+    }
+    
+    return -1;
 }
 
 
@@ -3691,91 +3712,91 @@ static const char GET_PATCH_CHANNELS_ADDITIONAL[] =
 static sqlite3_stmt* GET_PATCH_CHANNELS_ADDITIONAL_S;
 
 int lsddb_getPatchChannels(cJSON* target){
-	if(!target){
-		return -1;
-	}
-	
-	// Begin partition iteration
-	cJSON* partArr = cJSON_CreateArray();
-	
-	sqlite3_reset(GET_PATCH_CHANNELS_PARTS_S);
-	
-	while(sqlite3_step(GET_PATCH_CHANNELS_PARTS_S)==SQLITE_ROW){
-		int partId = sqlite3_column_int(GET_PATCH_CHANNELS_PARTS_S,0);
-		const unsigned char* partName = sqlite3_column_text(GET_PATCH_CHANNELS_PARTS_S,1);
-		
-		cJSON* partObj = cJSON_CreateObject();
-		cJSON_AddNumberToObject(partObj,"partId",partId);
-		cJSON_AddStringToObject(partObj,"partName",(const char*)partName);
-		
-		// Construct channel array for this partition
-		cJSON* chanArr = cJSON_CreateArray();
-		
-		sqlite3_reset(GET_PATCH_CHANNELS_CHANS_S);
-		sqlite3_bind_int(GET_PATCH_CHANNELS_CHANS_S,1,partId);
-		
-		while(sqlite3_step(GET_PATCH_CHANNELS_CHANS_S)==SQLITE_ROW){
-			int chanId = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,0);
-			const unsigned char* chanName = sqlite3_column_text(GET_PATCH_CHANNELS_CHANS_S,1);
-			int single = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,2);
-			int rUnivId = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,3);
-			int rLightAddr = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,4);
-			int sixteenBit = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,5);
-			
-			cJSON* chanObj = cJSON_CreateObject();
-			cJSON_AddNumberToObject(chanObj,"chanId",chanId);
-			cJSON_AddStringToObject(chanObj,"chanName",(const char*)chanName);
-			cJSON_AddNumberToObject(chanObj,"single",single);
-			cJSON_AddNumberToObject(chanObj,"sixteenBit",sixteenBit);
-			
-			cJSON* rObj = cJSON_CreateObject();
-			cJSON_AddNumberToObject(rObj,"univId",rUnivId);
-			cJSON_AddNumberToObject(rObj,"lightAddr",rLightAddr);
-			cJSON_AddItemToObject(chanObj,"redAddr",rObj);
-			
-			// If RGB channel, get green and blue address data
-			if(!single){
-				int gAddrId = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,6);
-				int bAddrId = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,7);
-				
-				// Green
-				sqlite3_reset(GET_PATCH_CHANNELS_ADDITIONAL_S);
-				sqlite3_bind_int(GET_PATCH_CHANNELS_ADDITIONAL_S,1,gAddrId);
-				if(sqlite3_step(GET_PATCH_CHANNELS_ADDITIONAL_S)==SQLITE_ROW){
-					int gUnivId = sqlite3_column_int(GET_PATCH_CHANNELS_ADDITIONAL_S,0);
-					int gLightAddr = sqlite3_column_int(GET_PATCH_CHANNELS_ADDITIONAL_S,1);
-					
-					cJSON* gObj = cJSON_CreateObject();
-					cJSON_AddNumberToObject(gObj,"univId",gUnivId);
-					cJSON_AddNumberToObject(gObj,"lightAddr",gLightAddr);
-					
-					cJSON_AddItemToObject(chanObj,"greenAddr",gObj);
-				}
-				
-				// Blue
-				sqlite3_reset(GET_PATCH_CHANNELS_ADDITIONAL_S);
-				sqlite3_bind_int(GET_PATCH_CHANNELS_ADDITIONAL_S,1,bAddrId);
-				if(sqlite3_step(GET_PATCH_CHANNELS_ADDITIONAL_S)==SQLITE_ROW){
-					int bUnivId = sqlite3_column_int(GET_PATCH_CHANNELS_ADDITIONAL_S,0);
-					int bLightAddr = sqlite3_column_int(GET_PATCH_CHANNELS_ADDITIONAL_S,1);
-					
-					cJSON* bObj = cJSON_CreateObject();
-					cJSON_AddNumberToObject(bObj,"univId",bUnivId);
-					cJSON_AddNumberToObject(bObj,"lightAddr",bLightAddr);
-					
-					cJSON_AddItemToObject(chanObj,"blueAddr",bObj);
-				}
-			}
-			
-			cJSON_AddItemToArray(chanArr,chanObj);
-		}
-		cJSON_AddItemToObject(partObj,"channels",chanArr);
-		cJSON_AddItemToArray(partArr,partObj);
-	}
-	
-	cJSON_AddItemToObject(target,"partitions",partArr);
-	
-	return 0;
+    if(!target){
+        return -1;
+    }
+    
+    // Begin partition iteration
+    cJSON* partArr = cJSON_CreateArray();
+    
+    sqlite3_reset(GET_PATCH_CHANNELS_PARTS_S);
+    
+    while(sqlite3_step(GET_PATCH_CHANNELS_PARTS_S)==SQLITE_ROW){
+        int partId = sqlite3_column_int(GET_PATCH_CHANNELS_PARTS_S,0);
+        const unsigned char* partName = sqlite3_column_text(GET_PATCH_CHANNELS_PARTS_S,1);
+        
+        cJSON* partObj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(partObj,"partId",partId);
+        cJSON_AddStringToObject(partObj,"partName",(const char*)partName);
+        
+        // Construct channel array for this partition
+        cJSON* chanArr = cJSON_CreateArray();
+        
+        sqlite3_reset(GET_PATCH_CHANNELS_CHANS_S);
+        sqlite3_bind_int(GET_PATCH_CHANNELS_CHANS_S,1,partId);
+        
+        while(sqlite3_step(GET_PATCH_CHANNELS_CHANS_S)==SQLITE_ROW){
+            int chanId = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,0);
+            const unsigned char* chanName = sqlite3_column_text(GET_PATCH_CHANNELS_CHANS_S,1);
+            int single = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,2);
+            int rUnivId = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,3);
+            int rLightAddr = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,4);
+            int sixteenBit = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,5);
+            
+            cJSON* chanObj = cJSON_CreateObject();
+            cJSON_AddNumberToObject(chanObj,"chanId",chanId);
+            cJSON_AddStringToObject(chanObj,"chanName",(const char*)chanName);
+            cJSON_AddNumberToObject(chanObj,"single",single);
+            cJSON_AddNumberToObject(chanObj,"sixteenBit",sixteenBit);
+            
+            cJSON* rObj = cJSON_CreateObject();
+            cJSON_AddNumberToObject(rObj,"univId",rUnivId);
+            cJSON_AddNumberToObject(rObj,"lightAddr",rLightAddr);
+            cJSON_AddItemToObject(chanObj,"redAddr",rObj);
+            
+            // If RGB channel, get green and blue address data
+            if(!single){
+                int gAddrId = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,6);
+                int bAddrId = sqlite3_column_int(GET_PATCH_CHANNELS_CHANS_S,7);
+                
+                // Green
+                sqlite3_reset(GET_PATCH_CHANNELS_ADDITIONAL_S);
+                sqlite3_bind_int(GET_PATCH_CHANNELS_ADDITIONAL_S,1,gAddrId);
+                if(sqlite3_step(GET_PATCH_CHANNELS_ADDITIONAL_S)==SQLITE_ROW){
+                    int gUnivId = sqlite3_column_int(GET_PATCH_CHANNELS_ADDITIONAL_S,0);
+                    int gLightAddr = sqlite3_column_int(GET_PATCH_CHANNELS_ADDITIONAL_S,1);
+                    
+                    cJSON* gObj = cJSON_CreateObject();
+                    cJSON_AddNumberToObject(gObj,"univId",gUnivId);
+                    cJSON_AddNumberToObject(gObj,"lightAddr",gLightAddr);
+                    
+                    cJSON_AddItemToObject(chanObj,"greenAddr",gObj);
+                }
+                
+                // Blue
+                sqlite3_reset(GET_PATCH_CHANNELS_ADDITIONAL_S);
+                sqlite3_bind_int(GET_PATCH_CHANNELS_ADDITIONAL_S,1,bAddrId);
+                if(sqlite3_step(GET_PATCH_CHANNELS_ADDITIONAL_S)==SQLITE_ROW){
+                    int bUnivId = sqlite3_column_int(GET_PATCH_CHANNELS_ADDITIONAL_S,0);
+                    int bLightAddr = sqlite3_column_int(GET_PATCH_CHANNELS_ADDITIONAL_S,1);
+                    
+                    cJSON* bObj = cJSON_CreateObject();
+                    cJSON_AddNumberToObject(bObj,"univId",bUnivId);
+                    cJSON_AddNumberToObject(bObj,"lightAddr",bLightAddr);
+                    
+                    cJSON_AddItemToObject(chanObj,"blueAddr",bObj);
+                }
+            }
+            
+            cJSON_AddItemToArray(chanArr,chanObj);
+        }
+        cJSON_AddItemToObject(partObj,"channels",chanArr);
+        cJSON_AddItemToArray(partArr,partObj);
+    }
+    
+    cJSON_AddItemToObject(target,"partitions",partArr);
+    
+    return 0;
 }
 
 
@@ -3792,76 +3813,76 @@ static const char ADD_PATCH_CHANNEL_FACADE_OUT[] =
 static sqlite3_stmt* ADD_PATCH_CHANNEL_FACADE_OUT_S;
 
 int lsddb_addPatchChannelAddr(int* addrIdBind, cJSON* addrObj, int sixteenBit){
-	if(!addrObj)
-		return -1;
-	
-	cJSON* univId = cJSON_GetObjectItem(addrObj,"univId");
-	if(!univId || univId->type!=cJSON_Number)
-		return -1;
-	
-	cJSON* lightAddr = cJSON_GetObjectItem(addrObj,"lightAddr");
-	if(!lightAddr || lightAddr->type!=cJSON_Number)
-		return -1;
-	
-	sqlite3_reset(ADD_PATCH_CHANNEL_ADDR_S);
-	sqlite3_bind_int(ADD_PATCH_CHANNEL_ADDR_S,1,univId->valueint);
-	sqlite3_bind_int(ADD_PATCH_CHANNEL_ADDR_S,2,lightAddr->valueint);
-	sqlite3_bind_int(ADD_PATCH_CHANNEL_ADDR_S,3,sixteenBit);
+    if(!addrObj)
+        return -1;
+    
+    cJSON* univId = cJSON_GetObjectItem(addrObj,"univId");
+    if(!univId || univId->type!=cJSON_Number)
+        return -1;
+    
+    cJSON* lightAddr = cJSON_GetObjectItem(addrObj,"lightAddr");
+    if(!lightAddr || lightAddr->type!=cJSON_Number)
+        return -1;
+    
+    sqlite3_reset(ADD_PATCH_CHANNEL_ADDR_S);
+    sqlite3_bind_int(ADD_PATCH_CHANNEL_ADDR_S,1,univId->valueint);
+    sqlite3_bind_int(ADD_PATCH_CHANNEL_ADDR_S,2,lightAddr->valueint);
+    sqlite3_bind_int(ADD_PATCH_CHANNEL_ADDR_S,3,sixteenBit);
 
-	if(sqlite3_step(ADD_PATCH_CHANNEL_ADDR_S)!=SQLITE_DONE){
+    if(sqlite3_step(ADD_PATCH_CHANNEL_ADDR_S)!=SQLITE_DONE){
         fprintf(stderr,"Error while adding address into DB\n");
         fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-		return -1;
-	}
-	
-	if(addrIdBind)
-		*addrIdBind = sqlite3_last_insert_rowid(memdb);
-	
-	return 0;
+        return -1;
+    }
+    
+    if(addrIdBind)
+        *addrIdBind = sqlite3_last_insert_rowid(memdb);
+    
+    return 0;
 }
 
 int lsddb_addPatchChannel(int partId, cJSON* opts){
-	if(!opts)
-		return -1;
-	
-	cJSON* name = cJSON_GetObjectItem(opts,"name");
-	if(!name || name->type!=cJSON_String)
-		return -1;
-	
-	cJSON* single = cJSON_GetObjectItem(opts,"single");
-	if(!single || single->type!=cJSON_Number)
-		return -1;
-	
-	cJSON* sixteenBit = cJSON_GetObjectItem(opts,"sixteenBit");
-	if(!sixteenBit || sixteenBit->type!=cJSON_Number)
-		return -1;
-	
-	cJSON* rAddr = cJSON_GetObjectItem(opts,"redAddr");
-	if(!rAddr || rAddr->type!=cJSON_Object)
-		return -1;
+    if(!opts)
+        return -1;
+    
+    cJSON* name = cJSON_GetObjectItem(opts,"name");
+    if(!name || name->type!=cJSON_String)
+        return -1;
+    
+    cJSON* single = cJSON_GetObjectItem(opts,"single");
+    if(!single || single->type!=cJSON_Number)
+        return -1;
+    
+    cJSON* sixteenBit = cJSON_GetObjectItem(opts,"sixteenBit");
+    if(!sixteenBit || sixteenBit->type!=cJSON_Number)
+        return -1;
+    
+    cJSON* rAddr = cJSON_GetObjectItem(opts,"redAddr");
+    if(!rAddr || rAddr->type!=cJSON_Object)
+        return -1;
     
     cJSON* gAddr = NULL;
     cJSON* bAddr = NULL;
     if(!single->valueint){
         gAddr = cJSON_GetObjectItem(opts,"greenAddr");
-		if(!gAddr || gAddr->type!=cJSON_Object)
-			return -1;
+        if(!gAddr || gAddr->type!=cJSON_Object)
+            return -1;
         
         bAddr = cJSON_GetObjectItem(opts,"blueAddr");
-		if(!bAddr || bAddr->type!=cJSON_Object)
-			return -1;
+        if(!bAddr || bAddr->type!=cJSON_Object)
+            return -1;
     }
-	
-	sqlite3_reset(ADD_PATCH_CHANNEL_S);
-	sqlite3_bind_text(ADD_PATCH_CHANNEL_S,1,name->valuestring,-1,NULL);
-	sqlite3_bind_int(ADD_PATCH_CHANNEL_S,2,partId);
-	sqlite3_bind_int(ADD_PATCH_CHANNEL_S,3,single->valueint);
-	
-	int rAddrId;
-	lsddb_addPatchChannelAddr(&rAddrId,rAddr,sixteenBit->valueint);
-	sqlite3_bind_int(ADD_PATCH_CHANNEL_S,4,rAddrId);
-	
-	if(!single->valueint){
+    
+    sqlite3_reset(ADD_PATCH_CHANNEL_S);
+    sqlite3_bind_text(ADD_PATCH_CHANNEL_S,1,name->valuestring,-1,NULL);
+    sqlite3_bind_int(ADD_PATCH_CHANNEL_S,2,partId);
+    sqlite3_bind_int(ADD_PATCH_CHANNEL_S,3,single->valueint);
+    
+    int rAddrId;
+    lsddb_addPatchChannelAddr(&rAddrId,rAddr,sixteenBit->valueint);
+    sqlite3_bind_int(ADD_PATCH_CHANNEL_S,4,rAddrId);
+    
+    if(!single->valueint){
         int gAddrId;
         lsddb_addPatchChannelAddr(&gAddrId,gAddr,sixteenBit->valueint);
         sqlite3_bind_int(ADD_PATCH_CHANNEL_S,5,gAddrId);
@@ -3870,44 +3891,44 @@ int lsddb_addPatchChannel(int partId, cJSON* opts){
         int bAddrId;
         lsddb_addPatchChannelAddr(&bAddrId,bAddr,sixteenBit->valueint);
         sqlite3_bind_int(ADD_PATCH_CHANNEL_S,6,bAddrId);
-	}
-	
-	// Add facade Out to partition's patchSpace's facade
-	int psId;
-	sqlite3_reset(GET_PARTITON_PATCHSPACE_S);
-	sqlite3_bind_int(GET_PARTITON_PATCHSPACE_S,1,partId);
-	if(sqlite3_step(GET_PARTITON_PATCHSPACE_S)==SQLITE_ROW){
-		psId = sqlite3_column_int(GET_PARTITON_PATCHSPACE_S,0);
-	}
-	else{
-		fprintf(stderr,"Unable to resolve partition's patchSpace in addPatchChannel()\n");
-		return -1;
-	}
-	
-	sqlite3_reset(ADD_PATCH_CHANNEL_FACADE_OUT_S);
-	sqlite3_bind_int(ADD_PATCH_CHANNEL_FACADE_OUT_S,1,psId);
-	sqlite3_bind_text(ADD_PATCH_CHANNEL_FACADE_OUT_S,2,name->valuestring,-1,NULL);
-	if(sqlite3_step(ADD_PATCH_CHANNEL_FACADE_OUT_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to add facade out in addPatchChannel()\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
-		return -1;
-	}
-	
-	int facadeOut = sqlite3_last_insert_rowid(memdb);
-	//printf("Added Facade Out: %d\n",facadeOut);
+    }
+    
+    // Add facade Out to partition's patchSpace's facade
+    int psId;
+    sqlite3_reset(GET_PARTITON_PATCHSPACE_S);
+    sqlite3_bind_int(GET_PARTITON_PATCHSPACE_S,1,partId);
+    if(sqlite3_step(GET_PARTITON_PATCHSPACE_S)==SQLITE_ROW){
+        psId = sqlite3_column_int(GET_PARTITON_PATCHSPACE_S,0);
+    }
+    else{
+        fprintf(stderr,"Unable to resolve partition's patchSpace in addPatchChannel()\n");
+        return -1;
+    }
+    
+    sqlite3_reset(ADD_PATCH_CHANNEL_FACADE_OUT_S);
+    sqlite3_bind_int(ADD_PATCH_CHANNEL_FACADE_OUT_S,1,psId);
+    sqlite3_bind_text(ADD_PATCH_CHANNEL_FACADE_OUT_S,2,name->valuestring,-1,NULL);
+    if(sqlite3_step(ADD_PATCH_CHANNEL_FACADE_OUT_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to add facade out in addPatchChannel()\n");
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        return -1;
+    }
+    
+    int facadeOut = sqlite3_last_insert_rowid(memdb);
+    //printf("Added Facade Out: %d\n",facadeOut);
 
-	
-	sqlite3_bind_int(ADD_PATCH_CHANNEL_S,7,facadeOut);
-	
-	
-	
-	if(sqlite3_step(ADD_PATCH_CHANNEL_S)!=SQLITE_DONE){
+    
+    sqlite3_bind_int(ADD_PATCH_CHANNEL_S,7,facadeOut);
+    
+    
+    
+    if(sqlite3_step(ADD_PATCH_CHANNEL_S)!=SQLITE_DONE){
         fprintf(stderr,"Error while inserting channel into DB\n");
         fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
-	
-	return 0;
+    
+    return 0;
 }
 
 
@@ -3928,13 +3949,13 @@ static sqlite3_stmt* DELETE_PATCH_CHANNEL_ADDR_S;
 
 // Helper for deleting addresses
 int lsddb_deletePatchChannelAddr(int addrId){
-	sqlite3_reset(DELETE_PATCH_CHANNEL_ADDR_S);
-	sqlite3_bind_int(DELETE_PATCH_CHANNEL_ADDR_S,1,addrId);
-	if(sqlite3_step(DELETE_PATCH_CHANNEL_ADDR_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to remove address on behalf of deletePatchChannel()\n");
-		return -1;
-	}
-	return 0;
+    sqlite3_reset(DELETE_PATCH_CHANNEL_ADDR_S);
+    sqlite3_bind_int(DELETE_PATCH_CHANNEL_ADDR_S,1,addrId);
+    if(sqlite3_step(DELETE_PATCH_CHANNEL_ADDR_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to remove address on behalf of deletePatchChannel()\n");
+        return -1;
+    }
+    return 0;
 }
 
 // Updating statement to handle name changes for facadeOut
@@ -3943,79 +3964,79 @@ static const char UPDATE_PATCH_CHANNEL_FACADE_OUT[] =
 static sqlite3_stmt* UPDATE_PATCH_CHANNEL_FACADE_OUT_S;
 
 int lsddb_updatePatchChannel(int chanId, cJSON* opts){
-	if(!opts)
-		return -1;
-	
+    if(!opts)
+        return -1;
+    
     // Check to see if all fields are present to ensure atomicity
     
-	cJSON* name = cJSON_GetObjectItem(opts,"name");
-	if(!name || name->type!=cJSON_String)
-		return -1;
-	
-	cJSON* single = cJSON_GetObjectItem(opts,"single");
-	if(!single || single->type!=cJSON_Number)
-		return -1;
-	
-	cJSON* sixteenBit = cJSON_GetObjectItem(opts,"sixteenBit");
-	if(!sixteenBit || sixteenBit->type!=cJSON_Number)
-		return -1;
-	
-	cJSON* rAddr = cJSON_GetObjectItem(opts,"redAddr");
-	if(!rAddr || rAddr->type!=cJSON_Object)
-		return -1;
+    cJSON* name = cJSON_GetObjectItem(opts,"name");
+    if(!name || name->type!=cJSON_String)
+        return -1;
+    
+    cJSON* single = cJSON_GetObjectItem(opts,"single");
+    if(!single || single->type!=cJSON_Number)
+        return -1;
+    
+    cJSON* sixteenBit = cJSON_GetObjectItem(opts,"sixteenBit");
+    if(!sixteenBit || sixteenBit->type!=cJSON_Number)
+        return -1;
+    
+    cJSON* rAddr = cJSON_GetObjectItem(opts,"redAddr");
+    if(!rAddr || rAddr->type!=cJSON_Object)
+        return -1;
     
     cJSON* gAddr = NULL;
     cJSON* bAddr = NULL;
     if(!single->valueint){
         gAddr = cJSON_GetObjectItem(opts,"greenAddr");
-		if(!gAddr || gAddr->type!=cJSON_Object)
-			return -1;
+        if(!gAddr || gAddr->type!=cJSON_Object)
+            return -1;
         
         bAddr = cJSON_GetObjectItem(opts,"blueAddr");
-		if(!bAddr || bAddr->type!=cJSON_Object)
-			return -1;
+        if(!bAddr || bAddr->type!=cJSON_Object)
+            return -1;
     }
     
     // Delete old addresses
-	sqlite3_reset(CHANNEL_GET_ADDRS_S);
-	sqlite3_bind_int(CHANNEL_GET_ADDRS_S,1,chanId);
-	
-	if(sqlite3_step(CHANNEL_GET_ADDRS_S)==SQLITE_ROW){
-		int singleOld = sqlite3_column_int(CHANNEL_GET_ADDRS_S,0);
-		int rAddrIdOld = sqlite3_column_int(CHANNEL_GET_ADDRS_S,1);
-		lsddb_deletePatchChannelAddr(rAddrIdOld);
-		
-		if(!singleOld){
-			int gAddrIdOld = sqlite3_column_int(CHANNEL_GET_ADDRS_S,2);
-			lsddb_deletePatchChannelAddr(gAddrIdOld);
-			int bAddrIdOld = sqlite3_column_int(CHANNEL_GET_ADDRS_S,3);
-			lsddb_deletePatchChannelAddr(bAddrIdOld);
-		}
-		
-		// Update facadeOut name
-		int facadeOutId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,4);
-		sqlite3_reset(UPDATE_PATCH_CHANNEL_FACADE_OUT_S);
-		sqlite3_bind_int(UPDATE_PATCH_CHANNEL_FACADE_OUT_S,1,facadeOutId);
-		sqlite3_bind_text(UPDATE_PATCH_CHANNEL_FACADE_OUT_S,2,name->valuestring,-1,NULL);
-		if(sqlite3_step(UPDATE_PATCH_CHANNEL_FACADE_OUT_S)!=SQLITE_DONE)
-			fprintf(stderr,"Unable to update facadeOut's name in updatePatchChannel()\n");
-	}
-	else{
-		fprintf(stderr,"Unable to discover addresses in updatePatchChannel()\n");
-        return -1;
-	}    
+    sqlite3_reset(CHANNEL_GET_ADDRS_S);
+    sqlite3_bind_int(CHANNEL_GET_ADDRS_S,1,chanId);
     
-	// Insert new Addresses and record them in channel
-	sqlite3_reset(UPDATE_PATCH_CHANNEL_S);
+    if(sqlite3_step(CHANNEL_GET_ADDRS_S)==SQLITE_ROW){
+        int singleOld = sqlite3_column_int(CHANNEL_GET_ADDRS_S,0);
+        int rAddrIdOld = sqlite3_column_int(CHANNEL_GET_ADDRS_S,1);
+        lsddb_deletePatchChannelAddr(rAddrIdOld);
+        
+        if(!singleOld){
+            int gAddrIdOld = sqlite3_column_int(CHANNEL_GET_ADDRS_S,2);
+            lsddb_deletePatchChannelAddr(gAddrIdOld);
+            int bAddrIdOld = sqlite3_column_int(CHANNEL_GET_ADDRS_S,3);
+            lsddb_deletePatchChannelAddr(bAddrIdOld);
+        }
+        
+        // Update facadeOut name
+        int facadeOutId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,4);
+        sqlite3_reset(UPDATE_PATCH_CHANNEL_FACADE_OUT_S);
+        sqlite3_bind_int(UPDATE_PATCH_CHANNEL_FACADE_OUT_S,1,facadeOutId);
+        sqlite3_bind_text(UPDATE_PATCH_CHANNEL_FACADE_OUT_S,2,name->valuestring,-1,NULL);
+        if(sqlite3_step(UPDATE_PATCH_CHANNEL_FACADE_OUT_S)!=SQLITE_DONE)
+            fprintf(stderr,"Unable to update facadeOut's name in updatePatchChannel()\n");
+    }
+    else{
+        fprintf(stderr,"Unable to discover addresses in updatePatchChannel()\n");
+        return -1;
+    }    
+    
+    // Insert new Addresses and record them in channel
+    sqlite3_reset(UPDATE_PATCH_CHANNEL_S);
     sqlite3_bind_int(UPDATE_PATCH_CHANNEL_S,1,chanId);
-	sqlite3_bind_text(UPDATE_PATCH_CHANNEL_S,2,name->valuestring,-1,NULL);
-	sqlite3_bind_int(UPDATE_PATCH_CHANNEL_S,3,single->valueint);
-	
-	int rAddrId;
-	lsddb_addPatchChannelAddr(&rAddrId,rAddr,sixteenBit->valueint);
-	sqlite3_bind_int(UPDATE_PATCH_CHANNEL_S,4,rAddrId);
-	
-	if(!single->valueint){
+    sqlite3_bind_text(UPDATE_PATCH_CHANNEL_S,2,name->valuestring,-1,NULL);
+    sqlite3_bind_int(UPDATE_PATCH_CHANNEL_S,3,single->valueint);
+    
+    int rAddrId;
+    lsddb_addPatchChannelAddr(&rAddrId,rAddr,sixteenBit->valueint);
+    sqlite3_bind_int(UPDATE_PATCH_CHANNEL_S,4,rAddrId);
+    
+    if(!single->valueint){
         int gAddrId;
         lsddb_addPatchChannelAddr(&gAddrId,gAddr,sixteenBit->valueint);
         sqlite3_bind_int(UPDATE_PATCH_CHANNEL_S,5,gAddrId);
@@ -4024,14 +4045,14 @@ int lsddb_updatePatchChannel(int chanId, cJSON* opts){
         int bAddrId;
         lsddb_addPatchChannelAddr(&bAddrId,bAddr,sixteenBit->valueint);
         sqlite3_bind_int(UPDATE_PATCH_CHANNEL_S,6,bAddrId);
-	}
-	
-	if(sqlite3_step(UPDATE_PATCH_CHANNEL_S)!=SQLITE_DONE){
+    }
+    
+    if(sqlite3_step(UPDATE_PATCH_CHANNEL_S)!=SQLITE_DONE){
         fprintf(stderr,"Error while updating channel on DB\n");
         return -1;
     }
-	
-	return 0;
+    
+    return 0;
 }
 
 static const char DELETE_PATCH_CHANNEL[] =
@@ -4044,43 +4065,43 @@ static const char DELETE_PATCH_CHANNEL_FACADE_OUT[] =
 static sqlite3_stmt* DELETE_PATCH_CHANNEL_FACADE_OUT_S;
 
 int lsddb_deletePatchChannel(int chanId){
-	// First delete addresses
-	sqlite3_reset(CHANNEL_GET_ADDRS_S);
-	sqlite3_bind_int(CHANNEL_GET_ADDRS_S,1,chanId);
-	
-	if(sqlite3_step(CHANNEL_GET_ADDRS_S)==SQLITE_ROW){
-		int single = sqlite3_column_int(CHANNEL_GET_ADDRS_S,0);
-		int rAddrId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,1);
-		lsddb_deletePatchChannelAddr(rAddrId);
-		
-		if(!single){
-			int gAddrId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,2);
-			lsddb_deletePatchChannelAddr(gAddrId);
-			int bAddrId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,3);
-			lsddb_deletePatchChannelAddr(bAddrId);
-		}
-		
-		// Delete channel's facadeOut
-		int facadeOutId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,4);
-		sqlite3_reset(DELETE_PATCH_CHANNEL_FACADE_OUT_S);
-		sqlite3_bind_int(DELETE_PATCH_CHANNEL_FACADE_OUT_S,1,facadeOutId);
-		if(sqlite3_step(DELETE_PATCH_CHANNEL_FACADE_OUT_S)!=SQLITE_DONE)
-			fprintf(stderr,"Unable to delete facadeOut in deletePatchChannel()\n");
-	}
-	else{
-		fprintf(stderr,"Unable to discover addresses in deletePatchChannel()\n");
-	}
-	
-	// Now Delete Channel
-	sqlite3_reset(DELETE_PATCH_CHANNEL_S);
-	sqlite3_bind_int(DELETE_PATCH_CHANNEL_S,1,chanId);
-	
-	if(sqlite3_step(DELETE_PATCH_CHANNEL_S)!=SQLITE_DONE){
-		fprintf(stderr,"Unable to delete channel in deletePatchChannel()\n");
-		return -1;
-	}
-	
-	return 0;
+    // First delete addresses
+    sqlite3_reset(CHANNEL_GET_ADDRS_S);
+    sqlite3_bind_int(CHANNEL_GET_ADDRS_S,1,chanId);
+    
+    if(sqlite3_step(CHANNEL_GET_ADDRS_S)==SQLITE_ROW){
+        int single = sqlite3_column_int(CHANNEL_GET_ADDRS_S,0);
+        int rAddrId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,1);
+        lsddb_deletePatchChannelAddr(rAddrId);
+        
+        if(!single){
+            int gAddrId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,2);
+            lsddb_deletePatchChannelAddr(gAddrId);
+            int bAddrId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,3);
+            lsddb_deletePatchChannelAddr(bAddrId);
+        }
+        
+        // Delete channel's facadeOut
+        int facadeOutId = sqlite3_column_int(CHANNEL_GET_ADDRS_S,4);
+        sqlite3_reset(DELETE_PATCH_CHANNEL_FACADE_OUT_S);
+        sqlite3_bind_int(DELETE_PATCH_CHANNEL_FACADE_OUT_S,1,facadeOutId);
+        if(sqlite3_step(DELETE_PATCH_CHANNEL_FACADE_OUT_S)!=SQLITE_DONE)
+            fprintf(stderr,"Unable to delete facadeOut in deletePatchChannel()\n");
+    }
+    else{
+        fprintf(stderr,"Unable to discover addresses in deletePatchChannel()\n");
+    }
+    
+    // Now Delete Channel
+    sqlite3_reset(DELETE_PATCH_CHANNEL_S);
+    sqlite3_bind_int(DELETE_PATCH_CHANNEL_S,1,chanId);
+    
+    if(sqlite3_step(DELETE_PATCH_CHANNEL_S)!=SQLITE_DONE){
+        fprintf(stderr,"Unable to delete channel in deletePatchChannel()\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 // Plugin API backend below
@@ -4155,20 +4176,20 @@ int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs)
     else if(pluginName){ // Doesn't exist (but plugin does); make it!
         
         // Using the plugin name, we make a composite name for our individual table
-		char tableName[256];
-		snprintf(tableName,256,"%s_%s",pluginName,subName);
+        char tableName[256];
+        snprintf(tableName,256,"%s_%s",pluginName,subName);
         char tableStmt[512];
         snprintf(tableStmt,512,"CREATE TABLE IF NOT EXISTS %s (%s);",tableName,colDefs);
-		
-		// Ensure there is only one semicolon to prevent SQL injection attacks
-		const char* semicolon = strchr(tableStmt,';');
-		if(semicolon[1] != '\0'){
-			fprintf(stderr,"Two or more semicolons were detected in table creation statement, aborting\n");
-			return -1;
-		}
         
-		char* createErr;
-		sqlite3_exec(memdb,tableStmt,NULL,NULL,&createErr);
+        // Ensure there is only one semicolon to prevent SQL injection attacks
+        const char* semicolon = strchr(tableStmt,';');
+        if(semicolon[1] != '\0'){
+            fprintf(stderr,"Two or more semicolons were detected in table creation statement, aborting\n");
+            return -1;
+        }
+        
+        char* createErr;
+        sqlite3_exec(memdb,tableStmt,NULL,NULL,&createErr);
         if(!createErr){
             // Successful creation, make record
             sqlite3_reset(API_INSERT_PLUGIN_TABLE_REC_S);
@@ -4183,7 +4204,7 @@ int lsddbapi_createTable(int pluginId, const char* subName, const char* colDefs)
         }
         else{
             fprintf(stderr,"Unable to create table: %s\n",createErr);
-			sqlite3_free(createErr);
+            sqlite3_free(createErr);
             return -1;
         }
     }
@@ -4204,29 +4225,29 @@ int lsddbapi_createIndex(int pluginId, const char* idxName, const char* subName,
     else if(pluginName){ // Doesn't exist (but plugin does); make it!
         
         // Using the plugin name, we make a composite name for our individual table
-		char indexName[256];
-		snprintf(indexName,256,"%s_%s",pluginName,idxName);
-		char tableName[256];
-		snprintf(tableName,256,"%s_%s",pluginName,subName);
+        char indexName[256];
+        snprintf(indexName,256,"%s_%s",pluginName,idxName);
+        char tableName[256];
+        snprintf(tableName,256,"%s_%s",pluginName,subName);
 
-		char indexStmt[512];
-		snprintf(indexStmt,512,"CREATE INDEX IF NOT EXISTS %s ON %s (%s);",indexName,tableName,colDefs);
-		
-		// Ensure there is only one semicolon to prevent SQL injection attacks
-		const char* semicolon = strchr(indexStmt,';');
-		if(semicolon[1] != '\0'){
-			fprintf(stderr,"Two or more semicolons were detected in table creation statement, aborting\n");
-			return -1;
-		}
+        char indexStmt[512];
+        snprintf(indexStmt,512,"CREATE INDEX IF NOT EXISTS %s ON %s (%s);",indexName,tableName,colDefs);
         
-		char* createErr;
-		sqlite3_exec(memdb,indexStmt,NULL,NULL,&createErr);
+        // Ensure there is only one semicolon to prevent SQL injection attacks
+        const char* semicolon = strchr(indexStmt,';');
+        if(semicolon[1] != '\0'){
+            fprintf(stderr,"Two or more semicolons were detected in table creation statement, aborting\n");
+            return -1;
+        }
+        
+        char* createErr;
+        sqlite3_exec(memdb,indexStmt,NULL,NULL,&createErr);
         if(!createErr){
             return 0;
         }
         else{
             fprintf(stderr,"Unable to create table index: %s\n",createErr);
-			sqlite3_free(createErr);
+            sqlite3_free(createErr);
             return -1;
         }
     }
@@ -4260,7 +4281,7 @@ int lsddbapi_prepSelect(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     sqlite3_stmt* newStmt;
     if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
         fprintf(stderr,"Sqlite was unable to prep a statement\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
     
@@ -4302,7 +4323,7 @@ int lsddbapi_prepInsert(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     sqlite3_stmt* newStmt;
     if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
         fprintf(stderr,"Sqlite was unable to prep a statement\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
     
@@ -4344,7 +4365,7 @@ int lsddbapi_prepUpdate(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     sqlite3_stmt* newStmt;
     if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
         fprintf(stderr,"Sqlite was unable to prep a statement\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
     
@@ -4385,7 +4406,7 @@ int lsddbapi_prepDelete(struct LSD_ScenePlugin const * pluginObj, unsigned int* 
     sqlite3_stmt* newStmt;
     if(sqlite3_prepare_v2(memdb,stmtSource,256,&newStmt,NULL)!=SQLITE_OK){
         fprintf(stderr,"Sqlite was unable to prep a statement\n");
-		fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
+        fprintf(stderr,"Details: %s\n",sqlite3_errmsg(memdb));
         return -1;
     }
     
@@ -4411,18 +4432,18 @@ int lsddbapi_stmtReset(struct LSD_ScenePlugin const * plugin, unsigned int stmtI
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_reset(stmtObj->stmt);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_reset(stmtObj->stmt);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtStep(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, int* result){
@@ -4430,263 +4451,253 @@ int lsddbapi_stmtStep(struct LSD_ScenePlugin const * plugin, unsigned int stmtId
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_step(stmtObj->stmt);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_step(stmtObj->stmt);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtBindDouble(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-							unsigned int sqlIdx, double data, int* result){
+                            unsigned int sqlIdx, double data, int* result){
     // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_bind_double(stmtObj->stmt,sqlIdx,data);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_bind_double(stmtObj->stmt,sqlIdx,data);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtBindInt(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						 unsigned int sqlIdx, int data, int* result){
+                         unsigned int sqlIdx, int data, int* result){
     // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_bind_int(stmtObj->stmt,sqlIdx,data);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_bind_int(stmtObj->stmt,sqlIdx,data);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtBindInt64(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						   unsigned int sqlIdx, sqlite3_int64 data, int* result){
+                           unsigned int sqlIdx, sqlite3_int64 data, int* result){
     // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_bind_int64(stmtObj->stmt,sqlIdx,data);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_bind_int64(stmtObj->stmt,sqlIdx,data);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtBindNull(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						  unsigned int sqlIdx, int* result){
+                          unsigned int sqlIdx, int* result){
     // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_bind_null(stmtObj->stmt,sqlIdx);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_bind_null(stmtObj->stmt,sqlIdx);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtBindText(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						  unsigned int sqlIdx, const char* data, int length, 
-						  void(*destructor)(void*), int* result){
+                          unsigned int sqlIdx, const char* data, int length, 
+                          void(*destructor)(void*), int* result){
     // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_bind_text(stmtObj->stmt,sqlIdx,data,length,destructor);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_bind_text(stmtObj->stmt,sqlIdx,data,length,destructor);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtBindText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						    unsigned int sqlIdx, const void* data, int length, 
-						    void(*destructor)(void*), int* result){
+                            unsigned int sqlIdx, const void* data, int length, 
+                            void(*destructor)(void*), int* result){
     // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_bind_text16(stmtObj->stmt,sqlIdx,data,length,destructor);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_bind_text16(stmtObj->stmt,sqlIdx,data,length,destructor);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtColDouble(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						   unsigned int colIdx, double* result){
-	// Pick stmt object and verify plugin ownership
+                           unsigned int colIdx, double* result){
+    // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_column_double(stmtObj->stmt,colIdx);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_column_double(stmtObj->stmt,colIdx);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtColInt(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						   unsigned int colIdx, int* result){
-	// Pick stmt object and verify plugin ownership
+                           unsigned int colIdx, int* result){
+    // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_column_int(stmtObj->stmt,colIdx);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_column_int(stmtObj->stmt,colIdx);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtColInt64(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						unsigned int colIdx, sqlite3_int64* result){
-	// Pick stmt object and verify plugin ownership
+                        unsigned int colIdx, sqlite3_int64* result){
+    // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_column_int64(stmtObj->stmt,colIdx);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_column_int64(stmtObj->stmt,colIdx);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtColText(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						  unsigned int colIdx, const unsigned char** result){
-	// Pick stmt object and verify plugin ownership
+                          unsigned int colIdx, const unsigned char** result){
+    // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_column_text(stmtObj->stmt,colIdx);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_column_text(stmtObj->stmt,colIdx);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_stmtColText16(struct LSD_ScenePlugin const * plugin, unsigned int stmtIdx, 
-						 unsigned int colIdx, const void** result){
-	// Pick stmt object and verify plugin ownership
+                         unsigned int colIdx, const void** result){
+    // Pick stmt object and verify plugin ownership
     struct LSD_SceneDBStmt* stmtObj;
     if(pickIdx(getArr_lsdDBStmtArr(),(void**)&stmtObj,stmtIdx)<0){
         fprintf(stderr,"Unable to pick stmt from array\n");
-		return -1;
+        return -1;
     }
-	
-	if(plugin == stmtObj->pluginPtr){
-		*result = sqlite3_column_text16(stmtObj->stmt,colIdx);
-	}
-	else{
-		fprintf(stderr,"Unable to verify ownership of stmt\n");
-		return -1;
-	}
-	
-	return 0;
+    
+    if(plugin == stmtObj->pluginPtr){
+        *result = sqlite3_column_text16(stmtObj->stmt,colIdx);
+    }
+    else{
+        fprintf(stderr,"Unable to verify ownership of stmt\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 int lsddbapi_getLastInsertRowId(){
-	return sqlite3_last_insert_rowid(memdb);
+    return sqlite3_last_insert_rowid(memdb);
 }
 
-// Remove all traces of a plugin given its id
-// Removes plugin, classes, nodes, types, tables 
-int lsddbapi_purgePlugin(int pluginId){
-    // First disable plugin
-    // remove nodes
-    // remove classes
-    // remove types
-    // remove tables
-    // remove plugin
-    return 0;
-}
+
 
 
 
 // General database things below
 void lsddb_reportPrepProblem(int problem){
-	fprintf(stderr,"Prep problem: %d\nDetails: %s\n",problem,sqlite3_errmsg(memdb));
+    fprintf(stderr,"Prep problem: %d\nDetails: %s\n",problem,sqlite3_errmsg(memdb));
 }
 
 #define PREP(stmt, num) 	if(sqlite3_prepare_v2(memdb, stmt, -1, &stmt##_S, NULL)!=SQLITE_OK){lsddb_reportPrepProblem(num);return -1;}
@@ -4696,376 +4707,376 @@ void lsddb_reportPrepProblem(int problem){
 // they serve no functional purpose
 
 int lsddb_prepStmts(){
-	PREP(CREATE_PATCH_SPACE,1);
-	
-	PREP(REMOVE_PATCH_SPACE,2);
-	PREP(REMOVE_PATCH_SPACE_NODES,3);
-	PREP(REMOVE_PATCH_SPACE_FACADES,33);
-	PREP(REMOVE_PATCH_SPACE_INS,4);
-	PREP(REMOVE_PATCH_SPACE_OUTS,5);
-	
+    PREP(CREATE_PATCH_SPACE,1);
+    
+    PREP(REMOVE_PATCH_SPACE,2);
+    PREP(REMOVE_PATCH_SPACE_NODES,3);
+    PREP(REMOVE_PATCH_SPACE_FACADES,33);
+    PREP(REMOVE_PATCH_SPACE_INS,4);
+    PREP(REMOVE_PATCH_SPACE_OUTS,5);
+    
     PREP(UPDATE_PATCH_SPACE_NAME,55);
     PREP(SET_PS_COLOUR,555);
     
-	PREP(CREATE_PATCH_SPACE_IN,6);
-	PREP(CREATE_PATCH_SPACE_OUT,7);
+    PREP(CREATE_PATCH_SPACE_IN,6);
+    PREP(CREATE_PATCH_SPACE_OUT,7);
     PREP(REMOVE_PATCH_SPACE_OUT,777);
     PREP(REMOVE_PATCH_SPACE_IN,888);
     PREP(UPDATE_PATCH_SPACE_IN_NAME,999);
     PREP(UPDATE_PATCH_SPACE_OUT_NAME,111);
-	
-	PREP(CREATE_PARTITION,8);
-	
-	PREP(SET_PARTITION_IMAGE,9);
-	
-	PREP(REMOVE_PARTITON,10);
-	PREP(GET_PARTITON_PATCHSPACE,11);
+    
+    PREP(CREATE_PARTITION,8);
+    
+    PREP(SET_PARTITION_IMAGE,9);
+    
+    PREP(REMOVE_PARTITON,10);
+    PREP(GET_PARTITON_PATCHSPACE,11);
     PREP(REMOVE_PARTITON_GET_CHANNELS,12);
-	
-	PREP(UPDATE_PARTITON_NAME,13);
-	PREP(UPDATE_PARTITON_PS_NAME,14);
-	
-	PREP(ADD_NODE_CLASS_CHECK,15);
-	PREP(ADD_NODE_CLASS_INSERT,16);
-	PREP(ADD_NODE_CLASS_UPDIDX,17);
-	
-	PREP(ADD_DATA_TYPE_CHECK,18);
-	PREP(ADD_DATA_TYPE_INSERT,19);
-	
-	PREP(STRUCT_NODE_INST_OUTPUT_ARR,20);
-	PREP(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX,21);
-	
-	PREP(STRUCT_NODE_INST_INPUT_ARR,22);
-	PREP(STRUCT_NODE_INST_INPUT_ARR_UPDIDX,23);
-	
+    
+    PREP(UPDATE_PARTITON_NAME,13);
+    PREP(UPDATE_PARTITON_PS_NAME,14);
+    
+    PREP(ADD_NODE_CLASS_CHECK,15);
+    PREP(ADD_NODE_CLASS_INSERT,16);
+    PREP(ADD_NODE_CLASS_UPDIDX,17);
+    
+    PREP(ADD_DATA_TYPE_CHECK,18);
+    PREP(ADD_DATA_TYPE_INSERT,19);
+    
+    PREP(STRUCT_NODE_INST_OUTPUT_ARR,20);
+    PREP(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX,21);
+    
+    PREP(STRUCT_NODE_INST_INPUT_ARR,22);
+    PREP(STRUCT_NODE_INST_INPUT_ARR_UPDIDX,23);
+    
     PREP(STRUCT_NODE_INST_ARR_CHECK_ENABLE,123);
     PREP(CHECK_INPUT_ENABLE,124);
     PREP(CHECK_OUTPUT_ENABLE,125);
-	PREP(STRUCT_NODE_INST_ARR,24);
-	PREP(STRUCT_NODE_INST_ARR_UPDIDX,25);
-	
-	PREP(STRUCT_UNIV_ARR,26);
-	PREP(STRUCT_UNIV_ARR_UPDIDX,27);
-	PREP(STRUCT_UNIV_ARR_MAXIDX,28);
-	
-	PREP(STRUCT_CHANNEL_ARR_ADDR,29);
-	
-	PREP(STRUCT_CHANNEL_ARR,30);
-	PREP(STRUCT_CHANNEL_ARR_UPDIDX,31);
-	
-	PREP(STRUCT_PARTITION_ARR,32);
-	PREP(STRUCT_PARTITION_ARR_UPDIDX,33);
-	
-	PREP(ADD_NODE_INST_INPUT_INSERT,34);
-	PREP(ADD_NODE_INST_INPUT_UPDIDX,35);
-	
-	PREP(ADD_NODE_INST_OUTPUT_INSERT,36);
-	PREP(ADD_NODE_INST_OUTPUT_UPDIDX,37);
-	
-	PREP(REMOVE_NODE_INST_INPUT_ARRIDX,38);
-	PREP(REMOVE_NODE_INST_INPUT,39);
-	PREP(REMOVE_NODE_INST_INPUT_GET_WIRES,40);
-	
-	PREP(REMOVE_NODE_INST_OUTPUT_ARRIDX,41);
-	PREP(REMOVE_NODE_INST_OUTPUT,42);
-	PREP(REMOVE_NODE_INST_OUTPUT_GET_WIRES,43);
-	
-	PREP(ADD_NODE_INST,44);
+    PREP(STRUCT_NODE_INST_ARR,24);
+    PREP(STRUCT_NODE_INST_ARR_UPDIDX,25);
+    
+    PREP(STRUCT_UNIV_ARR,26);
+    PREP(STRUCT_UNIV_ARR_UPDIDX,27);
+    PREP(STRUCT_UNIV_ARR_MAXIDX,28);
+    
+    PREP(STRUCT_CHANNEL_ARR_ADDR,29);
+    
+    PREP(STRUCT_CHANNEL_ARR,30);
+    PREP(STRUCT_CHANNEL_ARR_UPDIDX,31);
+    
+    PREP(STRUCT_PARTITION_ARR,32);
+    PREP(STRUCT_PARTITION_ARR_UPDIDX,33);
+    
+    PREP(ADD_NODE_INST_INPUT_INSERT,34);
+    PREP(ADD_NODE_INST_INPUT_UPDIDX,35);
+    
+    PREP(ADD_NODE_INST_OUTPUT_INSERT,36);
+    PREP(ADD_NODE_INST_OUTPUT_UPDIDX,37);
+    
+    PREP(REMOVE_NODE_INST_INPUT_ARRIDX,38);
+    PREP(REMOVE_NODE_INST_INPUT,39);
+    PREP(REMOVE_NODE_INST_INPUT_GET_WIRES,40);
+    
+    PREP(REMOVE_NODE_INST_OUTPUT_ARRIDX,41);
+    PREP(REMOVE_NODE_INST_OUTPUT,42);
+    PREP(REMOVE_NODE_INST_OUTPUT_GET_WIRES,43);
+    
+    PREP(ADD_NODE_INST,44);
     PREP(GET_NODE_CLASS_NAME,444);
-	
-	PREP(REMOVE_NODE_INST_CHECK,45);
-	PREP(REMOVE_NODE_INST_GET_INS,46);
-	PREP(REMOVE_NODE_INST_GET_OUTS,47);
-	PREP(REMOVE_NODE_INST_DELETE,48);
-	
+    
+    PREP(REMOVE_NODE_INST_CHECK,45);
+    PREP(REMOVE_NODE_INST_GET_INS,46);
+    PREP(REMOVE_NODE_INST_GET_OUTS,47);
+    PREP(REMOVE_NODE_INST_DELETE,48);
+    
     PREP(UPDATE_NODE_NAME,488);
     PREP(SET_NODE_COLOUR,489);
     
-	PREP(NODE_INST_POS,49);
-	
-	PREP(FACADE_INST_POS,50);
-	
-	PREP(PAN_PATCH_SPACE,51);
-	
-	PREP(INDEX_HTML_GEN,151);
+    PREP(NODE_INST_POS,49);
+    
+    PREP(FACADE_INST_POS,50);
+    
+    PREP(PAN_PATCH_SPACE,51);
+    
+    PREP(INDEX_HTML_GEN,151);
     
     PREP(JSON_PLUGINS,051);
     PREP(DISABLE_PLUGIN,151);
     PREP(ENABLE_PLUGIN,251);
-	
-	PREP(PLUGIN_HEAD_LOADER_CHECK_NAME,52);
+    
+    PREP(PLUGIN_HEAD_LOADER_CHECK_NAME,52);
     PREP(PLUGIN_HEAD_LOADER_CHECK_SHA,152);
     PREP(PLUGIN_HEAD_LOADER_UPDATE_SHA,252);
-	PREP(PLUGIN_HEAD_LOADER_SEEN,53);
-	PREP(PLUGIN_HEAD_LOADER_INSERT,54);
-	PREP(PLUGIN_HEAD_LOADER_UPDIDX_LOAD,55);
-	
-	PREP(RESOLVE_PLUGIN_FROM_NODE,555);
-	
-	PREP(TRACE_INPUT,56);
-	
-	PREP(TRACE_OUTPUT,57);
-	
-	PREP(CHECK_CHANNEL_WIRING_GET_PS,58);
-	PREP(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX,59);
-	
-	PREP(WIRE_NODES_CHECK_FACADE_INT_OUT,599);
-	PREP(WIRE_NODES_CHECK_SRC_OUT,60);
-	PREP(WIRE_NODES_CHECK_DEST_IN,61);
-	PREP(WIRE_NODES_SET_FACADE_IN_DATA,62);
-	PREP(WIRE_NODES_SET_FACADE_OUT_DATA,63);
-	PREP(WIRE_NODES_GET_FACADE_IN_CPS,64);
-	PREP(WIRE_NODES_GET_FACADE_OUT_CPS,65);
-	PREP(WIRE_NODES_GET_IN_PS,66);
-	PREP(WIRE_NODES_GET_OUT_PS,67);
-	PREP(WIRE_NODES,68);
+    PREP(PLUGIN_HEAD_LOADER_SEEN,53);
+    PREP(PLUGIN_HEAD_LOADER_INSERT,54);
+    PREP(PLUGIN_HEAD_LOADER_UPDIDX_LOAD,55);
+    
+    PREP(RESOLVE_PLUGIN_FROM_NODE,555);
+    
+    PREP(TRACE_INPUT,56);
+    
+    PREP(TRACE_OUTPUT,57);
+    
+    PREP(CHECK_CHANNEL_WIRING_GET_PS,58);
+    PREP(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX,59);
+    
+    PREP(WIRE_NODES_CHECK_FACADE_INT_OUT,599);
+    PREP(WIRE_NODES_CHECK_SRC_OUT,60);
+    PREP(WIRE_NODES_CHECK_DEST_IN,61);
+    PREP(WIRE_NODES_SET_FACADE_IN_DATA,62);
+    PREP(WIRE_NODES_SET_FACADE_OUT_DATA,63);
+    PREP(WIRE_NODES_GET_FACADE_IN_CPS,64);
+    PREP(WIRE_NODES_GET_FACADE_OUT_CPS,65);
+    PREP(WIRE_NODES_GET_IN_PS,66);
+    PREP(WIRE_NODES_GET_OUT_PS,67);
+    PREP(WIRE_NODES,68);
 
-	PREP(UNWIRE_NODES_GET_EDGE_DETAILS,69);
-	PREP(UNWIRE_NODES_DELETE_EDGE,70);
-	PREP(UNWIRE_NODES_GET_SRC_FACADE_EDGE,71);
-	PREP(UNWIRE_NODES_GET_DEST_FACADE_EDGE,72);
-	PREP(UNWIRE_FACADE_OUT_ALIAS,722);
+    PREP(UNWIRE_NODES_GET_EDGE_DETAILS,69);
+    PREP(UNWIRE_NODES_DELETE_EDGE,70);
+    PREP(UNWIRE_NODES_GET_SRC_FACADE_EDGE,71);
+    PREP(UNWIRE_NODES_GET_DEST_FACADE_EDGE,72);
+    PREP(UNWIRE_FACADE_OUT_ALIAS,722);
     
     PREP(REWIRE_NODES,777);
     PREP(REWIRE_NODES_DEST,778);
 
-	PREP(JSON_CLASS_LIBRARY,73);
-	
-	PREP(JSON_GET_FACADE_OUTS,74);
-	
-	PREP(JSON_GET_FACADE_INS,75);
-	
-	PREP(JSON_PARTS,76);
-	
-	PREP(JSON_INSERT_CLASS_OBJECT,766);
-	
-	PREP(JSON_NODES,77);
-	PREP(JSON_NODES_INS,78);
-	PREP(JSON_NODES_OUTS,79);
-	
-	PREP(JSON_NODES_FACADES,80);
-	PREP(JSON_NODES_FACADES_INS,81);
-	PREP(JSON_NODES_FACADES_OUTS,82);
+    PREP(JSON_CLASS_LIBRARY,73);
+    
+    PREP(JSON_GET_FACADE_OUTS,74);
+    
+    PREP(JSON_GET_FACADE_INS,75);
+    
+    PREP(JSON_PARTS,76);
+    
+    PREP(JSON_INSERT_CLASS_OBJECT,766);
+    
+    PREP(JSON_NODES,77);
+    PREP(JSON_NODES_INS,78);
+    PREP(JSON_NODES_OUTS,79);
+    
+    PREP(JSON_NODES_FACADES,80);
+    PREP(JSON_NODES_FACADES_INS,81);
+    PREP(JSON_NODES_FACADES_OUTS,82);
     
     PREP(JSON_GET_FACADE,882);
-	
-	PREP(JSON_WIRES,83);
-	
-	PREP(JSON_PATCH_SPACE,84);
-	
-	PREP(RESOLVE_CLASS_FROM_ID,85);
-	PREP(RESOLVE_INST_FROM_ID,885);
-	PREP(RESOLVE_INST_FROM_IN_ID,886);
-	PREP(RESOLVE_INST_FROM_OUT_ID,887);
-		
-	PREP(GET_PATCH_CHANNELS_PARTS,87);
-	PREP(GET_PATCH_CHANNELS_CHANS,88);
-	PREP(GET_PATCH_CHANNELS_ADDITIONAL,89);
+    
+    PREP(JSON_WIRES,83);
+    
+    PREP(JSON_PATCH_SPACE,84);
+    
+    PREP(RESOLVE_CLASS_FROM_ID,85);
+    PREP(RESOLVE_INST_FROM_ID,885);
+    PREP(RESOLVE_INST_FROM_IN_ID,886);
+    PREP(RESOLVE_INST_FROM_OUT_ID,887);
+        
+    PREP(GET_PATCH_CHANNELS_PARTS,87);
+    PREP(GET_PATCH_CHANNELS_CHANS,88);
+    PREP(GET_PATCH_CHANNELS_ADDITIONAL,89);
     
     PREP(ADD_PATCH_CHANNEL,90);
     PREP(ADD_PATCH_CHANNEL_ADDR,91);
-	PREP(ADD_PATCH_CHANNEL_FACADE_OUT,92);
+    PREP(ADD_PATCH_CHANNEL_FACADE_OUT,92);
 
     PREP(CHANNEL_GET_ADDRS,93);
     PREP(UPDATE_PATCH_CHANNEL,94);
     PREP(DELETE_PATCH_CHANNEL_ADDR,95);
-	
-	PREP(UPDATE_PATCH_CHANNEL_FACADE_OUT,96);
+    
+    PREP(UPDATE_PATCH_CHANNEL_FACADE_OUT,96);
 
     PREP(DELETE_PATCH_CHANNEL,97);
-	PREP(DELETE_PATCH_CHANNEL_FACADE_OUT,98);
+    PREP(DELETE_PATCH_CHANNEL_FACADE_OUT,98);
 
-	PREP(API_GET_PLUGIN_NAME,99);
-	PREP(API_CHECK_PLUGIN_TABLE_REC,100);
-	PREP(API_INSERT_PLUGIN_TABLE_REC,101);
-	
+    PREP(API_GET_PLUGIN_NAME,99);
+    PREP(API_CHECK_PLUGIN_TABLE_REC,100);
+    PREP(API_INSERT_PLUGIN_TABLE_REC,101);
+    
 
-	return 0;
+    return 0;
 }
 
 int lsddb_finishStmts(){
-	FINAL(CREATE_PATCH_SPACE);
-	
-	FINAL(REMOVE_PATCH_SPACE);
-	FINAL(REMOVE_PATCH_SPACE_NODES);
-	FINAL(REMOVE_PATCH_SPACE_FACADES);
-	FINAL(REMOVE_PATCH_SPACE_INS);
-	FINAL(REMOVE_PATCH_SPACE_OUTS);
+    FINAL(CREATE_PATCH_SPACE);
+    
+    FINAL(REMOVE_PATCH_SPACE);
+    FINAL(REMOVE_PATCH_SPACE_NODES);
+    FINAL(REMOVE_PATCH_SPACE_FACADES);
+    FINAL(REMOVE_PATCH_SPACE_INS);
+    FINAL(REMOVE_PATCH_SPACE_OUTS);
     
     FINAL(UPDATE_PATCH_SPACE_NAME);
     FINAL(SET_PS_COLOUR);
-	
-	FINAL(CREATE_PATCH_SPACE_IN);
-	FINAL(CREATE_PATCH_SPACE_OUT);
+    
+    FINAL(CREATE_PATCH_SPACE_IN);
+    FINAL(CREATE_PATCH_SPACE_OUT);
     FINAL(REMOVE_PATCH_SPACE_OUT);
     FINAL(REMOVE_PATCH_SPACE_IN);
     FINAL(UPDATE_PATCH_SPACE_IN_NAME);
     FINAL(UPDATE_PATCH_SPACE_OUT_NAME);
-	
-	FINAL(CREATE_PARTITION);
-	
-	FINAL(SET_PARTITION_IMAGE);
-	
-	FINAL(REMOVE_PARTITON);
-	FINAL(GET_PARTITON_PATCHSPACE);
+    
+    FINAL(CREATE_PARTITION);
+    
+    FINAL(SET_PARTITION_IMAGE);
+    
+    FINAL(REMOVE_PARTITON);
+    FINAL(GET_PARTITON_PATCHSPACE);
     FINAL(REMOVE_PARTITON_GET_CHANNELS);
-	
-	FINAL(UPDATE_PARTITON_NAME);
-	FINAL(UPDATE_PARTITON_PS_NAME);
-	
-	FINAL(ADD_NODE_CLASS_CHECK);
-	FINAL(ADD_NODE_CLASS_INSERT);
-	FINAL(ADD_NODE_CLASS_UPDIDX);
-	
-	FINAL(ADD_DATA_TYPE_CHECK);
-	FINAL(ADD_DATA_TYPE_INSERT);
-	
-	FINAL(STRUCT_NODE_INST_OUTPUT_ARR);
-	FINAL(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX);
-	
-	FINAL(STRUCT_NODE_INST_INPUT_ARR);
-	FINAL(STRUCT_NODE_INST_INPUT_ARR_UPDIDX);
-	
+    
+    FINAL(UPDATE_PARTITON_NAME);
+    FINAL(UPDATE_PARTITON_PS_NAME);
+    
+    FINAL(ADD_NODE_CLASS_CHECK);
+    FINAL(ADD_NODE_CLASS_INSERT);
+    FINAL(ADD_NODE_CLASS_UPDIDX);
+    
+    FINAL(ADD_DATA_TYPE_CHECK);
+    FINAL(ADD_DATA_TYPE_INSERT);
+    
+    FINAL(STRUCT_NODE_INST_OUTPUT_ARR);
+    FINAL(STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX);
+    
+    FINAL(STRUCT_NODE_INST_INPUT_ARR);
+    FINAL(STRUCT_NODE_INST_INPUT_ARR_UPDIDX);
+    
     FINAL(STRUCT_NODE_INST_ARR_CHECK_ENABLE);
     FINAL(CHECK_INPUT_ENABLE);
     FINAL(CHECK_OUTPUT_ENABLE);
-	FINAL(STRUCT_NODE_INST_ARR);
-	FINAL(STRUCT_NODE_INST_ARR_UPDIDX);
-	
-	FINAL(STRUCT_UNIV_ARR);
-	FINAL(STRUCT_UNIV_ARR_UPDIDX);
-	FINAL(STRUCT_UNIV_ARR_MAXIDX);
-	
-	FINAL(STRUCT_CHANNEL_ARR_ADDR);
-	
-	FINAL(STRUCT_CHANNEL_ARR);
-	FINAL(STRUCT_CHANNEL_ARR_UPDIDX);
-	
-	FINAL(STRUCT_PARTITION_ARR);
-	FINAL(STRUCT_PARTITION_ARR_UPDIDX);
-	
-	FINAL(ADD_NODE_INST_INPUT_INSERT);
-	FINAL(ADD_NODE_INST_INPUT_UPDIDX);
-	
-	FINAL(ADD_NODE_INST_OUTPUT_INSERT);
-	FINAL(ADD_NODE_INST_OUTPUT_UPDIDX);
-	
-	FINAL(REMOVE_NODE_INST_INPUT_ARRIDX);
-	FINAL(REMOVE_NODE_INST_INPUT);
-	FINAL(REMOVE_NODE_INST_INPUT_GET_WIRES);
-	
-	FINAL(REMOVE_NODE_INST_OUTPUT_ARRIDX);
-	FINAL(REMOVE_NODE_INST_OUTPUT);
-	FINAL(REMOVE_NODE_INST_OUTPUT_GET_WIRES);
-	
-	FINAL(ADD_NODE_INST);
+    FINAL(STRUCT_NODE_INST_ARR);
+    FINAL(STRUCT_NODE_INST_ARR_UPDIDX);
+    
+    FINAL(STRUCT_UNIV_ARR);
+    FINAL(STRUCT_UNIV_ARR_UPDIDX);
+    FINAL(STRUCT_UNIV_ARR_MAXIDX);
+    
+    FINAL(STRUCT_CHANNEL_ARR_ADDR);
+    
+    FINAL(STRUCT_CHANNEL_ARR);
+    FINAL(STRUCT_CHANNEL_ARR_UPDIDX);
+    
+    FINAL(STRUCT_PARTITION_ARR);
+    FINAL(STRUCT_PARTITION_ARR_UPDIDX);
+    
+    FINAL(ADD_NODE_INST_INPUT_INSERT);
+    FINAL(ADD_NODE_INST_INPUT_UPDIDX);
+    
+    FINAL(ADD_NODE_INST_OUTPUT_INSERT);
+    FINAL(ADD_NODE_INST_OUTPUT_UPDIDX);
+    
+    FINAL(REMOVE_NODE_INST_INPUT_ARRIDX);
+    FINAL(REMOVE_NODE_INST_INPUT);
+    FINAL(REMOVE_NODE_INST_INPUT_GET_WIRES);
+    
+    FINAL(REMOVE_NODE_INST_OUTPUT_ARRIDX);
+    FINAL(REMOVE_NODE_INST_OUTPUT);
+    FINAL(REMOVE_NODE_INST_OUTPUT_GET_WIRES);
+    
+    FINAL(ADD_NODE_INST);
     FINAL(GET_NODE_CLASS_NAME);
-	
-	FINAL(REMOVE_NODE_INST_CHECK);
-	FINAL(REMOVE_NODE_INST_GET_INS);
-	FINAL(REMOVE_NODE_INST_GET_OUTS);
-	FINAL(REMOVE_NODE_INST_DELETE);
-	
+    
+    FINAL(REMOVE_NODE_INST_CHECK);
+    FINAL(REMOVE_NODE_INST_GET_INS);
+    FINAL(REMOVE_NODE_INST_GET_OUTS);
+    FINAL(REMOVE_NODE_INST_DELETE);
+    
     FINAL(UPDATE_NODE_NAME);
     FINAL(SET_NODE_COLOUR);
     
-	FINAL(NODE_INST_POS);
-	
-	FINAL(FACADE_INST_POS);	
-	
-	FINAL(PAN_PATCH_SPACE);
-	
-	FINAL(INDEX_HTML_GEN);
-	
+    FINAL(NODE_INST_POS);
+    
+    FINAL(FACADE_INST_POS);	
+    
+    FINAL(PAN_PATCH_SPACE);
+    
+    FINAL(INDEX_HTML_GEN);
+    
     FINAL(JSON_PLUGINS);
     FINAL(DISABLE_PLUGIN);
     FINAL(ENABLE_PLUGIN);
-	
-	FINAL(PLUGIN_HEAD_LOADER_CHECK_NAME);
+    
+    FINAL(PLUGIN_HEAD_LOADER_CHECK_NAME);
     FINAL(PLUGIN_HEAD_LOADER_CHECK_SHA);
     FINAL(PLUGIN_HEAD_LOADER_UPDATE_SHA);
-	FINAL(PLUGIN_HEAD_LOADER_SEEN);
-	FINAL(PLUGIN_HEAD_LOADER_INSERT);
-	FINAL(PLUGIN_HEAD_LOADER_UPDIDX_LOAD);
-	
-	FINAL(RESOLVE_PLUGIN_FROM_NODE);
-	
-	FINAL(TRACE_INPUT);
-	
-	FINAL(TRACE_OUTPUT);
-	
-	FINAL(CHECK_CHANNEL_WIRING_GET_PS);
-	FINAL(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX);
-	
-	FINAL(WIRE_NODES_CHECK_FACADE_INT_OUT);
-	FINAL(WIRE_NODES_CHECK_SRC_OUT);
-	FINAL(WIRE_NODES_CHECK_DEST_IN);
-	FINAL(WIRE_NODES_SET_FACADE_IN_DATA);
-	FINAL(WIRE_NODES_SET_FACADE_OUT_DATA);
-	FINAL(WIRE_NODES_GET_FACADE_IN_CPS);
-	FINAL(WIRE_NODES_GET_FACADE_OUT_CPS);
-	FINAL(WIRE_NODES_GET_IN_PS);
-	FINAL(WIRE_NODES_GET_OUT_PS);
-	FINAL(WIRE_NODES);
-	
-	FINAL(UNWIRE_NODES_GET_EDGE_DETAILS);
-	FINAL(UNWIRE_NODES_DELETE_EDGE);
-	FINAL(UNWIRE_NODES_GET_SRC_FACADE_EDGE);
-	FINAL(UNWIRE_NODES_GET_DEST_FACADE_EDGE);
-	FINAL(UNWIRE_FACADE_OUT_ALIAS);
+    FINAL(PLUGIN_HEAD_LOADER_SEEN);
+    FINAL(PLUGIN_HEAD_LOADER_INSERT);
+    FINAL(PLUGIN_HEAD_LOADER_UPDIDX_LOAD);
+    
+    FINAL(RESOLVE_PLUGIN_FROM_NODE);
+    
+    FINAL(TRACE_INPUT);
+    
+    FINAL(TRACE_OUTPUT);
+    
+    FINAL(CHECK_CHANNEL_WIRING_GET_PS);
+    FINAL(CHECK_CHANNEL_WIRING_GET_CHAN_ARRIDX);
+    
+    FINAL(WIRE_NODES_CHECK_FACADE_INT_OUT);
+    FINAL(WIRE_NODES_CHECK_SRC_OUT);
+    FINAL(WIRE_NODES_CHECK_DEST_IN);
+    FINAL(WIRE_NODES_SET_FACADE_IN_DATA);
+    FINAL(WIRE_NODES_SET_FACADE_OUT_DATA);
+    FINAL(WIRE_NODES_GET_FACADE_IN_CPS);
+    FINAL(WIRE_NODES_GET_FACADE_OUT_CPS);
+    FINAL(WIRE_NODES_GET_IN_PS);
+    FINAL(WIRE_NODES_GET_OUT_PS);
+    FINAL(WIRE_NODES);
+    
+    FINAL(UNWIRE_NODES_GET_EDGE_DETAILS);
+    FINAL(UNWIRE_NODES_DELETE_EDGE);
+    FINAL(UNWIRE_NODES_GET_SRC_FACADE_EDGE);
+    FINAL(UNWIRE_NODES_GET_DEST_FACADE_EDGE);
+    FINAL(UNWIRE_FACADE_OUT_ALIAS);
     
     FINAL(REWIRE_NODES);
     FINAL(REWIRE_NODES_DEST);
-	
-	FINAL(JSON_CLASS_LIBRARY);
-	
-	FINAL(JSON_GET_FACADE_OUTS);
-	
-	FINAL(JSON_GET_FACADE_INS);
-	
-	FINAL(JSON_PARTS);
-	
-	FINAL(JSON_INSERT_CLASS_OBJECT);
-	
-	FINAL(JSON_NODES);
-	FINAL(JSON_NODES_INS);
-	FINAL(JSON_NODES_OUTS);
-	
-	FINAL(JSON_NODES_FACADES);
-	FINAL(JSON_NODES_FACADES_INS);
-	FINAL(JSON_NODES_FACADES_OUTS);
+    
+    FINAL(JSON_CLASS_LIBRARY);
+    
+    FINAL(JSON_GET_FACADE_OUTS);
+    
+    FINAL(JSON_GET_FACADE_INS);
+    
+    FINAL(JSON_PARTS);
+    
+    FINAL(JSON_INSERT_CLASS_OBJECT);
+    
+    FINAL(JSON_NODES);
+    FINAL(JSON_NODES_INS);
+    FINAL(JSON_NODES_OUTS);
+    
+    FINAL(JSON_NODES_FACADES);
+    FINAL(JSON_NODES_FACADES_INS);
+    FINAL(JSON_NODES_FACADES_OUTS);
     
     FINAL(JSON_GET_FACADE);
-	
-	FINAL(JSON_WIRES);
-	
-	FINAL(JSON_PATCH_SPACE);
-	
-	FINAL(RESOLVE_CLASS_FROM_ID);
-	FINAL(RESOLVE_INST_FROM_ID);
-	FINAL(RESOLVE_INST_FROM_IN_ID);
-	FINAL(RESOLVE_INST_FROM_OUT_ID);
-		
-	FINAL(GET_PATCH_CHANNELS_PARTS);
-	FINAL(GET_PATCH_CHANNELS_CHANS);
-	FINAL(GET_PATCH_CHANNELS_ADDITIONAL);
+    
+    FINAL(JSON_WIRES);
+    
+    FINAL(JSON_PATCH_SPACE);
+    
+    FINAL(RESOLVE_CLASS_FROM_ID);
+    FINAL(RESOLVE_INST_FROM_ID);
+    FINAL(RESOLVE_INST_FROM_IN_ID);
+    FINAL(RESOLVE_INST_FROM_OUT_ID);
+        
+    FINAL(GET_PATCH_CHANNELS_PARTS);
+    FINAL(GET_PATCH_CHANNELS_CHANS);
+    FINAL(GET_PATCH_CHANNELS_ADDITIONAL);
     
     FINAL(ADD_PATCH_CHANNEL);
     FINAL(ADD_PATCH_CHANNEL_ADDR);
-	FINAL(ADD_PATCH_CHANNEL_FACADE_OUT);
+    FINAL(ADD_PATCH_CHANNEL_FACADE_OUT);
     
     FINAL(CHANNEL_GET_ADDRS);
     FINAL(UPDATE_PATCH_CHANNEL);
     FINAL(DELETE_PATCH_CHANNEL_ADDR);
-	
-	FINAL(UPDATE_PATCH_CHANNEL_FACADE_OUT);
+    
+    FINAL(UPDATE_PATCH_CHANNEL_FACADE_OUT);
     
     FINAL(DELETE_PATCH_CHANNEL);
-	FINAL(DELETE_PATCH_CHANNEL_FACADE_OUT);
+    FINAL(DELETE_PATCH_CHANNEL_FACADE_OUT);
 
-	FINAL(API_GET_PLUGIN_NAME);
-	FINAL(API_CHECK_PLUGIN_TABLE_REC);
-	FINAL(API_INSERT_PLUGIN_TABLE_REC);
+    FINAL(API_GET_PLUGIN_NAME);
+    FINAL(API_CHECK_PLUGIN_TABLE_REC);
+    FINAL(API_INSERT_PLUGIN_TABLE_REC);
 
-	return 0;
+    return 0;
 }

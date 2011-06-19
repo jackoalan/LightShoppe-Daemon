@@ -24,9 +24,9 @@
 
 
 struct RGB_TYPE {
-	double r;
-	double g;
-	double b;
+    double r;
+    double g;
+    double b;
 };
 
 int core_getRGBTypeID();

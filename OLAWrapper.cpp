@@ -35,24 +35,24 @@ static ola::DmxBuffer dmxbuf;
 static ola::StreamingClient ola_client;
 
 int initOlaClient(){
-	if(!ola_client.Setup()){
-		return -1;
-	}
-	return 0;
+    if(!ola_client.Setup()){
+        return -1;
+    }
+    return 0;
 }
 
 int updateDMX(uint8_t* univ, size_t len, int univId){
-	dmxbuf.Blackout();
-	dmxbuf.Set(univ+1,len+1);
+    dmxbuf.Blackout();
+    dmxbuf.Set(univ+1,len+1);
 
 
-	ola_client.SendDmx(univId,dmxbuf);
-	return 0;
+    ola_client.SendDmx(univId,dmxbuf);
+    return 0;
 }
 
 void stopOlaClient(){
-	ola_client.Stop();
-	
-	dmxbuf.~DmxBuffer();
-	ola_client.~StreamingClient();
+    ola_client.Stop();
+    
+    dmxbuf.~DmxBuffer();
+    ola_client.~StreamingClient();
 }

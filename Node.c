@@ -39,8 +39,8 @@ void destruct_SceneNodeInst(void* nodeInst){
         if(castInst->nodeClass && castInst->nodeClass->nodeCleanFunc){
             castInst->nodeClass->nodeCleanFunc(castInst,castInst->data);
         }
-		free(castInst->data);
-		castInst->data = NULL;
+        free(castInst->data);
+        castInst->data = NULL;
     }
 }
 
@@ -57,9 +57,9 @@ void node_incFrameCount(){
 
 // Buffer wrapper func (eliminates redundant bufferings)
 void* node_bufferOutput(struct LSD_SceneNodeOutput* output){
-	if(!output)
-		return NULL;
-	
+    if(!output)
+        return NULL;
+    
     if(output->lastBufferedFrame != curFrame){
         output->bufferFunc(output);
         output->lastBufferedFrame = curFrame;

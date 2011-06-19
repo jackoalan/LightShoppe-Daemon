@@ -110,19 +110,19 @@ static struct LSD_SceneNodeClass* paletteSamplerClass;
 // Plug funcs
 
 void paletteRgbBuffer(struct LSD_SceneNodeOutput const * output){
-	paletteGradientOut(output->parentNode, output->dbId);
+    paletteGradientOut(output->parentNode, output->dbId);
 }
 
 void* paletteRgbPtr(struct LSD_SceneNodeOutput const * output){
-	struct PaletteSamplerInstData* instData = (struct PaletteSamplerInstData*)output->parentNode->data;
-	
-	int i;
-	for(i=0;i<instData->numOuts;++i){
-		if(instData->outDataArr[i].outId == output->dbId){
-			return (void*)&(instData->outDataArr[i].outVal);
-		}
-	}
-	
+    struct PaletteSamplerInstData* instData = (struct PaletteSamplerInstData*)output->parentNode->data;
+    
+    int i;
+    for(i=0;i<instData->numOuts;++i){
+        if(instData->outDataArr[i].outId == output->dbId){
+            return (void*)&(instData->outDataArr[i].outVal);
+        }
+    }
+    
     return NULL;
 }
 
@@ -137,8 +137,8 @@ static const bpFunc bpFuncs[] =
 
 int paletteSamplerMake(struct LSD_SceneNodeInst const * inst, void* instData){
     // Create Default entries in DB
-	newPaletteInst(inst->dbId);
-	return 0;
+    newPaletteInst(inst->dbId);
+    return 0;
 }
 
 int paletteSamplerRestore(struct LSD_SceneNodeInst const * inst, void* instData){
@@ -174,93 +174,93 @@ void paletteSamplerDelete(struct LSD_SceneNodeInst const * inst, void* instData)
  * -setRepeatMode [param SampleMode]
  */
 void paletteRPCHandler(cJSON* in, cJSON* out){
-	
-	cJSON* nodeId = cJSON_GetObjectItem(in,"nodeId");
-	if(!nodeId || nodeId->type != cJSON_Number){
-		cJSON_AddStringToObject(out,"error","nodeId not provided");
-		return;
-	}
-	
-	cJSON* paletteMethod = cJSON_GetObjectItem(in,"paletteMethod");
-	if(!paletteMethod || paletteMethod->type != cJSON_String){
-		cJSON_AddStringToObject(out,"error","paletteMethod not provided");
-		return;
-	}
-	
-	if(strcasecmp(paletteMethod->valuestring,"getSampler") == 0){
-		paletteDBGetSampler(out,nodeId->valueint);
-	}
-	else if(strcasecmp(paletteMethod->valuestring,"setSelMode") == 0){
+    
+    cJSON* nodeId = cJSON_GetObjectItem(in,"nodeId");
+    if(!nodeId || nodeId->type != cJSON_Number){
+        cJSON_AddStringToObject(out,"error","nodeId not provided");
+        return;
+    }
+    
+    cJSON* paletteMethod = cJSON_GetObjectItem(in,"paletteMethod");
+    if(!paletteMethod || paletteMethod->type != cJSON_String){
+        cJSON_AddStringToObject(out,"error","paletteMethod not provided");
+        return;
+    }
+    
+    if(strcasecmp(paletteMethod->valuestring,"getSampler") == 0){
+        paletteDBGetSampler(out,nodeId->valueint);
+    }
+    else if(strcasecmp(paletteMethod->valuestring,"setSelMode") == 0){
         cJSON* mode = cJSON_GetObjectItem(in,"mode");
         if(!mode || mode->type != cJSON_Number)
             return;
         
-		paletteDBSetSelMode(nodeId->valueint, mode->valueint);
-	}
-	else if(strcasecmp(paletteMethod->valuestring,"insertPalette") == 0){
+        paletteDBSetSelMode(nodeId->valueint, mode->valueint);
+    }
+    else if(strcasecmp(paletteMethod->valuestring,"insertPalette") == 0){
         cJSON* name = cJSON_GetObjectItem(in,"name");
         if(!name || name->type != cJSON_String)
             return;
         
-		paletteDBInsertPalette(name->valuestring);
-	}
-	else if(strcasecmp(paletteMethod->valuestring,"updatePalette") == 0){
-		cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
-		if(!paletteId || paletteId->type != cJSON_Number){
-			cJSON_AddStringToObject(out,"error","paletteId not provided");
-			return;
-		}
-		
+        paletteDBInsertPalette(name->valuestring);
+    }
+    else if(strcasecmp(paletteMethod->valuestring,"updatePalette") == 0){
+        cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
+        if(!paletteId || paletteId->type != cJSON_Number){
+            cJSON_AddStringToObject(out,"error","paletteId not provided");
+            return;
+        }
+        
         cJSON* name = cJSON_GetObjectItem(in,"name");
         if(!name || name->type != cJSON_String)
             return;
         
-		paletteDBUpdatePalette(paletteId->valueint, name->valuestring);
-	}	
-	else if(strcasecmp(paletteMethod->valuestring,"deletePalette") == 0){
-		cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
-		if(!paletteId || paletteId->type != cJSON_Number){
-			cJSON_AddStringToObject(out,"error","paletteId not provided");
-			return;
-		}
-		
-		paletteDBDeletePalette(paletteId->valueint);
-	}	
-	else if(strcasecmp(paletteMethod->valuestring,"insertSwatch") == 0){
+        paletteDBUpdatePalette(paletteId->valueint, name->valuestring);
+    }	
+    else if(strcasecmp(paletteMethod->valuestring,"deletePalette") == 0){
+        cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
+        if(!paletteId || paletteId->type != cJSON_Number){
+            cJSON_AddStringToObject(out,"error","paletteId not provided");
+            return;
+        }
+        
+        paletteDBDeletePalette(paletteId->valueint);
+    }	
+    else if(strcasecmp(paletteMethod->valuestring,"insertSwatch") == 0){
         cJSON* colour = cJSON_GetObjectItem(in,"colour");
         if(!colour || colour->type != cJSON_Object)
             return;
-		
-		cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
-		if(!paletteId || paletteId->type != cJSON_Number){
-			cJSON_AddStringToObject(out,"error","paletteId not provided");
-			return;
-		}
         
-		paletteDBInsertSwatch(paletteId->valueint, colour);
-	}	
-	else if(strcasecmp(paletteMethod->valuestring,"updateSwatch") == 0){
+        cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
+        if(!paletteId || paletteId->type != cJSON_Number){
+            cJSON_AddStringToObject(out,"error","paletteId not provided");
+            return;
+        }
+        
+        paletteDBInsertSwatch(paletteId->valueint, colour);
+    }	
+    else if(strcasecmp(paletteMethod->valuestring,"updateSwatch") == 0){
         cJSON* colour = cJSON_GetObjectItem(in,"colour");
         if(!colour || colour->type != cJSON_Object)
             return;
-		
-		cJSON* swatchId = cJSON_GetObjectItem(in,"swatchId");
-		if(!swatchId || swatchId->type != cJSON_Number){
-			cJSON_AddStringToObject(out,"error","swatchId not provided");
-			return;
-		}
         
-		paletteDBUpdateSwatchColour(swatchId->valueint, colour);
-	}	
-	else if(strcasecmp(paletteMethod->valuestring,"deleteSwatch") == 0){
-		cJSON* swatchId = cJSON_GetObjectItem(in,"swatchId");
-		if(!swatchId || swatchId->type != cJSON_Number){
-			cJSON_AddStringToObject(out,"error","swatchId not provided");
-			return;
-		}
-		
-		paletteDBDeleteSwatch(swatchId->valueint);
-	}
+        cJSON* swatchId = cJSON_GetObjectItem(in,"swatchId");
+        if(!swatchId || swatchId->type != cJSON_Number){
+            cJSON_AddStringToObject(out,"error","swatchId not provided");
+            return;
+        }
+        
+        paletteDBUpdateSwatchColour(swatchId->valueint, colour);
+    }	
+    else if(strcasecmp(paletteMethod->valuestring,"deleteSwatch") == 0){
+        cJSON* swatchId = cJSON_GetObjectItem(in,"swatchId");
+        if(!swatchId || swatchId->type != cJSON_Number){
+            cJSON_AddStringToObject(out,"error","swatchId not provided");
+            return;
+        }
+        
+        paletteDBDeleteSwatch(swatchId->valueint);
+    }
     else if(strcasecmp(paletteMethod->valuestring,"reorderSwatches") == 0){
         cJSON* swatchIdArr = cJSON_GetObjectItem(in,"swatchIdArr");
         if(!swatchIdArr || swatchIdArr->type != cJSON_Array)
@@ -268,63 +268,63 @@ void paletteRPCHandler(cJSON* in, cJSON* out){
         
         paletteDBReorderSwatches(nodeId->valueint, swatchIdArr);
     }
-	else if(strcasecmp(paletteMethod->valuestring,"activatePalette") == 0){
+    else if(strcasecmp(paletteMethod->valuestring,"activatePalette") == 0){
         cJSON* paletteId = cJSON_GetObjectItem(in,"paletteId");
         if(!paletteId || paletteId->type != cJSON_Number)
             return;
         
-		paletteDBActivatePalette(nodeId->valueint, paletteId->valueint);
-	}	
-	else if(strcasecmp(paletteMethod->valuestring,"setNumOut") == 0){
+        paletteDBActivatePalette(nodeId->valueint, paletteId->valueint);
+    }	
+    else if(strcasecmp(paletteMethod->valuestring,"setNumOut") == 0){
         cJSON* numOut = cJSON_GetObjectItem(in,"numOut");
         if(!numOut || numOut->type != cJSON_Number)
             return;
         
-		paletteDBSetNumOut(nodeId->valueint, numOut->valueint);
-	}	
-	else if(strcasecmp(paletteMethod->valuestring,"setSampleMode") == 0){
+        paletteDBSetNumOut(nodeId->valueint, numOut->valueint);
+    }	
+    else if(strcasecmp(paletteMethod->valuestring,"setSampleMode") == 0){
         cJSON* mode = cJSON_GetObjectItem(in,"mode");
         if(!mode || mode->type != cJSON_Number)
             return;
         
-		paletteDBSampleMode(nodeId->valueint, mode->valueint);
-	}	
-	else if(strcasecmp(paletteMethod->valuestring,"setSamplePos") == 0){
+        paletteDBSampleMode(nodeId->valueint, mode->valueint);
+    }	
+    else if(strcasecmp(paletteMethod->valuestring,"setSamplePos") == 0){
         cJSON* pos = cJSON_GetObjectItem(in,"pos");
         if(!pos || pos->type != cJSON_Number)
             return;
-		
-		cJSON* outId = cJSON_GetObjectItem(in,"outId");
-		if(!outId || outId->type != cJSON_Number)
-			return;
         
-		paletteDBManualSampleStopPos(nodeId->valueint, outId->valueint, pos->valuedouble);
-	}	
-	else if(strcasecmp(paletteMethod->valuestring,"setRepeatMode") == 0){
+        cJSON* outId = cJSON_GetObjectItem(in,"outId");
+        if(!outId || outId->type != cJSON_Number)
+            return;
+        
+        paletteDBManualSampleStopPos(nodeId->valueint, outId->valueint, pos->valuedouble);
+    }	
+    else if(strcasecmp(paletteMethod->valuestring,"setRepeatMode") == 0){
         cJSON* mode = cJSON_GetObjectItem(in,"mode");
         if(!mode || mode->type != cJSON_Number)
             return;
         
-		paletteDBRepeatMode(nodeId->valueint, mode->valueint);
-	}	
+        paletteDBRepeatMode(nodeId->valueint, mode->valueint);
+    }	
 }
 
 // Plugin handlers
 
 int palettePluginInit(struct LSD_ScenePlugin const * plugin){
-	palettePlugin = plugin;
-	rgbTypeId = core_getRGBTypeID();
-	intTypeId = core_getIntegerTypeID();
-	floatTypeId = core_getFloatTypeID();
-	
-	plugininit_registerNodeClass(plugin,&paletteSamplerClass,paletteSamplerMake,
+    palettePlugin = plugin;
+    rgbTypeId = core_getRGBTypeID();
+    intTypeId = core_getIntegerTypeID();
+    floatTypeId = core_getFloatTypeID();
+    
+    plugininit_registerNodeClass(plugin,&paletteSamplerClass,paletteSamplerMake,
                                  paletteSamplerRestore,paletteSamplerClean,
                                  paletteSamplerDelete, sizeof(struct PaletteSamplerInstData),
                                  "Palette Sampler","Desc",0,bfFuncs,bpFuncs);
     
     paletteSamplerDBInit(plugin);
-	
-	return 0;
+    
+    return 0;
 }
 
 void palettePluginClean(struct LSD_ScenePlugin const * plugin){}
@@ -336,7 +336,7 @@ void palettePluginClean(struct LSD_ScenePlugin const * plugin){}
 static const struct LSD_ScenePluginHEAD pluginHead = {
     palettePluginInit,
     palettePluginClean,
-	paletteRPCHandler
+    paletteRPCHandler
 };
 
 extern const struct LSD_ScenePluginHEAD* getPluginHead(){

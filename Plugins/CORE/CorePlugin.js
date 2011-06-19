@@ -20,7 +20,7 @@
 
 var CORE_theIntGen;
 function CORE_IntGenerator(nodeId,server){
-	CORE_theIntGen = this;
+    CORE_theIntGen = this;
     this.server = server;
     this.nodeId = nodeId;
     
@@ -44,7 +44,7 @@ function CORE_IntGenerator(nodeId,server){
 
 var CORE_theIntViewer;
 function CORE_IntViewer(nodeId,server){
-	CORE_theIntViewer = this;
+    CORE_theIntViewer = this;
     this.server = server;
     this.nodeId = nodeId;
     
@@ -63,7 +63,7 @@ function CORE_IntViewer(nodeId,server){
 
 var CORE_theFloatGen;
 function CORE_FloatGenerator(nodeId,server){
-	CORE_theFloatGen = this;
+    CORE_theFloatGen = this;
     this.server = server;
     this.nodeId = nodeId;
     
@@ -87,7 +87,7 @@ function CORE_FloatGenerator(nodeId,server){
 
 var CORE_theFloatViewer;
 function CORE_FloatViewer(nodeId,server){
-	CORE_theFloatViewer = this;
+    CORE_theFloatViewer = this;
     this.server = server;
     this.nodeId = nodeId;
     
@@ -130,7 +130,7 @@ function CORE_RGBGenerator(nodeId,server){
 
 var CORE_theRgbViewer;
 function CORE_RGBViewer(nodeId,server){
-	CORE_theRgbViewer = this;
+    CORE_theRgbViewer = this;
     
     this.nodeId = nodeId;
     this.server = server;
@@ -171,18 +171,18 @@ function CORE_TriggerGenerator(nodeId,server){
 
 
 function CORE_Conf(classIdx,nodeId,server){
-	if(classIdx == 1)
-		new CORE_IntGenerator(nodeId,server);
-	else if(classIdx == 2)
-		new CORE_IntViewer(nodeId,server);
+    if(classIdx == 1)
+        new CORE_IntGenerator(nodeId,server);
+    else if(classIdx == 2)
+        new CORE_IntViewer(nodeId,server);
     else if(classIdx == 3)
-		new CORE_FloatGenerator(nodeId,server);
+        new CORE_FloatGenerator(nodeId,server);
     else if(classIdx == 4)
-		new CORE_FloatViewer(nodeId,server);
+        new CORE_FloatViewer(nodeId,server);
     else if(classIdx == 5)
-		new CORE_RGBGenerator(nodeId,server);
+        new CORE_RGBGenerator(nodeId,server);
     else if(classIdx == 6)
-		new CORE_RGBViewer(nodeId,server);
+        new CORE_RGBViewer(nodeId,server);
     else if(classIdx == 7)
         new CORE_TriggerGenerator(nodeId,server);
 }

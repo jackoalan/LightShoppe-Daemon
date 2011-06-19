@@ -42,14 +42,14 @@ static double curTime;
 // Plug funcs
 
 void timeBufferOut(struct LSD_SceneNodeOutput const * output){
-	struct timeval tv;
-	gettimeofday(&tv,NULL);
-	curTime = (double)tv.tv_sec;
-	curTime += (double)tv.tv_usec / (double)1000000;
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    curTime = (double)tv.tv_sec;
+    curTime += (double)tv.tv_usec / (double)1000000;
 }
 
 void* timePointerOut(struct LSD_SceneNodeOutput const * output){
-	return &curTime;
+    return &curTime;
 }
 
 
@@ -65,9 +65,9 @@ static const bpFunc bpFuncs[] =
 // Node Init funcs
 
 int timeNodeMake(struct LSD_SceneNodeInst const * inst, void* instData){
-	plugininst_addInstOutput(inst,floatTypeId,"Time Float",0,0,NULL);
-	
-	return 0;
+    plugininst_addInstOutput(inst,floatTypeId,"Time Float",0,0,NULL);
+    
+    return 0;
 }
 
 int timeNodeRestore(struct LSD_SceneNodeInst const * inst, void* instData){
@@ -90,17 +90,17 @@ void timeRPCHandler(cJSON* in, cJSON* out){
 // Plugin init funcs
 
 int timePluginInit(struct LSD_ScenePlugin const * plugin){
-	
-	timePlugin = plugin;
-	
-	floatTypeId = core_getFloatTypeID();
-	
-	
+    
+    timePlugin = plugin;
+    
+    floatTypeId = core_getFloatTypeID();
+    
+    
     // Register Time class
     plugininit_registerNodeClass(plugin,&timeClass,timeNodeMake,timeNodeRestore,
-								 timeNodeClean,timeNodeDelete,0,
-								 "Epoch Time","Desc",0,bfFuncs,bpFuncs);
-	
+                                 timeNodeClean,timeNodeDelete,0,
+                                 "Epoch Time","Desc",0,bfFuncs,bpFuncs);
+    
     return 0;
 }
 
@@ -111,7 +111,7 @@ void timePluginClean(struct LSD_ScenePlugin const * plugin){
 static const struct LSD_ScenePluginHEAD pluginHead = {
     timePluginInit,
     timePluginClean,
-	timeRPCHandler
+    timeRPCHandler
 };
 
 extern const struct LSD_ScenePluginHEAD* getPluginHead(){
