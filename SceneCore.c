@@ -212,7 +212,7 @@ int lsdSceneEntry(){
         
         
         printf("Loading core plugin head\n");
-        if(lsddb_pluginHeadLoader(getCoreHead(),1,"CORE","0",NULL)<0){
+        if(lsddb_pluginHeadLoader(getCoreHead,1,"CORE","0",NULL)<0){
             fprintf(stderr,"Unable to properly load core plugin\n");
             return -1;
         }

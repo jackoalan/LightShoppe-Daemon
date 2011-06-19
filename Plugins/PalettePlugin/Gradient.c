@@ -206,27 +206,40 @@ int paletteGradientOut(struct LSD_SceneNodeInst const * inst, int outId){
     // Get sampler positions from inputs if parametric sampling is active
     if(instData->sampleMode == PARAM){
         for(i=0;i<instData->numOuts;++i){
-            double* samplePos = (double*)node_bufferOutput(instData->sampleStopInArr[i]->connection);
-            if(samplePos)
-                instData->outDataArr[i].samplePos = *samplePos;
-            else
-                instData->outDataArr[i].samplePos = 0.0;
+            if(instData->outDataArr[i].outId == outId){
+            
+                double* samplePos = (double*)node_bufferOutput(instData->sampleStopInArr[i]->connection);
+                if(samplePos)
+                    instData->outDataArr[i].samplePos = *samplePos;
+                else
+                    instData->outDataArr[i].samplePos = 0.0;
+                
+                break;
+                
+            }
         }
     }
     
     // Find result colour by clamping each out
     for(i=0;i<instData->numOuts;++i){
-        if(instData->sampleMode == MANUAL || instData->paramSampleRepeatMode == CLAMP){
-            paletteGradientClamp(&(instData->outDataArr[i].outVal),instData->swatchCount,
-                             instData->swatchArr,instData->outDataArr[i].samplePos);
-        }
-        else if(instData->paramSampleRepeatMode == AUTO_LOOP){
-            paletteGradientLoop(&(instData->outDataArr[i].outVal),instData->swatchCount,
-                                instData->swatchArr,instData->outDataArr[i].samplePos);
-        }
-        else if(instData->paramSampleRepeatMode == AUTO_BLACKOUT){
-            paletteGradientBlackout(&(instData->outDataArr[i].outVal),instData->swatchCount,
+        
+        if(instData->outDataArr[i].outId == outId){
+        
+            if(instData->sampleMode == MANUAL || instData->paramSampleRepeatMode == CLAMP){
+                paletteGradientClamp(&(instData->outDataArr[i].outVal),instData->swatchCount,
+                                 instData->swatchArr,instData->outDataArr[i].samplePos);
+            }
+            else if(instData->paramSampleRepeatMode == AUTO_LOOP){
+                paletteGradientLoop(&(instData->outDataArr[i].outVal),instData->swatchCount,
                                     instData->swatchArr,instData->outDataArr[i].samplePos);
+            }
+            else if(instData->paramSampleRepeatMode == AUTO_BLACKOUT){
+                paletteGradientBlackout(&(instData->outDataArr[i].outVal),instData->swatchCount,
+                                        instData->swatchArr,instData->outDataArr[i].samplePos);
+            }
+            
+            break;
+            
         }
     }
     

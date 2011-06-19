@@ -166,8 +166,13 @@ int lsddb_disablePlugin(int pluginId);
 
 int lsddb_enablePlugin(int pluginId);
 
-int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
-                           const char* parentDirectoryName, const char* pluginSha, void* dlObj);
+// This function type is defined to enable secure passing 
+// of a function to retreive the head, rather than the head
+// itself.
+typedef const struct LSD_ScenePluginHEAD* (*ghType)(void);
+
+int lsddb_pluginHeadLoader(ghType phGet, int enable, const char* parentDirectoryName, 
+                           const char* pluginSha, void* dlObj);
 
 int lsddb_resolvePluginFromNodeId(struct LSD_ScenePlugin** pluginBind, int nodeId);
 

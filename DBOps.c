@@ -200,14 +200,12 @@ int lsddb_closeDB(){
 }
 
 static const char INIT_QUERIES[] = 
-// Enable Foreign Key Constraints
-//"PRAGMA foreign_keys = ON;\n"
 
 // CREATE: ScenePlugin
 "CREATE TABLE IF NOT EXISTS ScenePlugin (id INTEGER PRIMARY KEY ASC,"
 "pluginDomain TEXT NOT NULL, pluginSha TEXT NOT NULL,"
 "arrayIdx INTEGER, loaded INTEGER NOT NULL,"
-"enabled INTEGER NOT NULL, seen INTEGER NOT NULL DEFAULT 0, codeSignature TEXT NULL);\n"
+"enabled INTEGER NOT NULL, seen INTEGER NOT NULL DEFAULT 0);\n"
 
 // Unload plugin status and reset data structure indicies
 "UPDATE ScenePlugin SET loaded=0;\n"
@@ -234,7 +232,6 @@ static const char INIT_QUERIES[] =
 
 // Reserve PatchSpace 0 for partition facade Nodes.
 // Note that the parentPatchSpace column is meaningless in this special patchSpace (so -1 will do)
-// because of its rooted nature.
 "REPLACE INTO ScenePatchSpace (id,name,parentPatchSpace) VALUES (0,'Partition Patch Space',-1);\n"
 
 // CREATE: SceneNodeInst
@@ -256,10 +253,6 @@ static const char INIT_QUERIES[] =
 "CREATE TABLE IF NOT EXISTS SceneDataType (id INTEGER PRIMARY KEY,"
 "pluginId INTEGER NOT NULL, name TEXT NOT NULL, desc TEXT NULL, "
 "FOREIGN KEY(pluginId) REFERENCES ScenePlugin(id));\n"
-
-// Reserve RGB[Array] type
-//"REPLACE INTO SceneDataType (id,pluginId,isArray,name,desc) "
-//"VALUES (0,0,1,'RGB Array','Array of RGB values, nothing more');\n"
 
 
 // CREATE: SceneNodeEdge
@@ -2208,10 +2201,10 @@ static const char PLUGIN_HEAD_LOADER_UPDIDX_LOAD[] =
 "UPDATE ScenePlugin SET arrayIdx=?1,loaded=1,seen=1 WHERE id=?2";
 static sqlite3_stmt* PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S;
 
-int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable, 
-                           const char* parentDirectoryName, const char* pluginSha, void* dlObj){
-    if(!ph || !ph->initFunc || !ph->cleanupFunc || !pluginSha){
-        fprintf(stderr,"Invalid PluginHEAD provided in pluginHeadLoader()\n");
+int lsddb_pluginHeadLoader(ghType phGet, int enable, const char* parentDirectoryName, 
+                           const char* pluginSha, void* dlObj){
+    if(!phGet || !pluginSha){
+        fprintf(stderr,"Invalid use of pluginHeadLoader()\n");
         return -1;
     }
     
@@ -2274,7 +2267,6 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable,
     }
     
     if(enabled || enable){ // Cleared to allocate plugin and execute it's init function.
-        //printf("Plugin enabled, loading...\n");
         size_t pluginArrIdx;
         struct LSD_ScenePlugin* scenePlugin;
         if(insertElem(getArr_lsdPluginArr(),&pluginArrIdx,(void**)&scenePlugin)<0){
@@ -2284,7 +2276,13 @@ int lsddb_pluginHeadLoader(const struct LSD_ScenePluginHEAD* ph, int enable,
         
         scenePlugin->dbId = pluginId;
         
-        if(ph->initFunc(scenePlugin)<0){ // Second argument for future JSON conf interface
+        const struct LSD_ScenePluginHEAD* ph = phGet();
+        if(!ph || !ph->initFunc || !ph->cleanupFunc){
+            fprintf(stderr,"Invalid Plugin HEAD extracted from %s\n",parentDirectoryName);
+            return -1;
+        }
+        
+        if(ph->initFunc(scenePlugin)<0){ 
             fprintf(stderr,"Plugin's own init failed within pluginHeadLoader()\n");
             return -1;
         }

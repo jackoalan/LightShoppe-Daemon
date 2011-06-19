@@ -32,8 +32,6 @@
 
 
 
-typedef const struct LSD_ScenePluginHEAD* (*ghType)(void);
-
 int checkAddPlugin(const char* pluginDir, const char* pluginFile){
 
     // First get the file's digest
@@ -50,7 +48,7 @@ int checkAddPlugin(const char* pluginDir, const char* pluginFile){
     printf("%s digest: %.40s\n",pluginDir,digest);
     
     // Now extract the head and load it!
-    const struct LSD_ScenePluginHEAD* ph;
+    //const struct LSD_ScenePluginHEAD* ph;
     
     void* librarySO = dlopen(pluginFile, RTLD_LAZY);
     if(!librarySO){
@@ -60,8 +58,7 @@ int checkAddPlugin(const char* pluginDir, const char* pluginFile){
     
     ghType getHead = dlsym(librarySO,"getPluginHead");
     if(getHead){
-        ph = getHead();
-        if( lsddb_pluginHeadLoader(ph,0,pluginDir,digest,librarySO) < 0 ){
+        if( lsddb_pluginHeadLoader(getHead,0,pluginDir,digest,librarySO) < 0 ){
             fprintf(stderr,"Error while loading PluginHead\n");
             dlclose(librarySO);
         }
