@@ -124,7 +124,7 @@ function PaletteDBEditor(paletteArr,server,parent){
     
     // List of swatches
     this.swatchUl = $(document.createElement('ul')).selectable();
-    this.swatchUl.addClass('dialogList').css('width','100%');
+    this.swatchUl.addClass('dialogList').addClass('Palette_SwatchList').css('width','100%');
     this.swatchUl.bind('selectablestop',this,this.procSwaSel);
     this.swatchUl.dblclick(this,this.swaEditClick);
     
@@ -163,6 +163,8 @@ function PaletteDBEditor(paletteArr,server,parent){
         item.data(paletteArr[i]);
         item.append(paletteArr[i].paletteId + ' - ' + paletteArr[i].paletteName);
         this.paletteUl.append(item);
+        if(i==this.parent.lastSelPal)
+            item.addClass('ui-selected');
     }
     
     this.procPalSel({data:this});
@@ -177,6 +179,7 @@ PaletteDBEditor.prototype = {
         var selSize = selected.size();
         
         if(selSize == 0){
+            event.data.parent.lastSelPal = null;
             event.data.palRemoveButton.button('disable');
             event.data.palActivateButton.button('disable');
             event.data.palEditButton.button('disable');
@@ -187,6 +190,7 @@ PaletteDBEditor.prototype = {
             event.data.swaEditButton.button('disable');
         }
         else if(selSize > 1){
+            event.data.parent.lastSelPal = null;
             event.data.palRemoveButton.button('enable');
             event.data.palActivateButton.button('disable');
             event.data.palEditButton.button('disable');
@@ -197,6 +201,7 @@ PaletteDBEditor.prototype = {
             event.data.swaEditButton.button('disable');
         }
         else{
+            event.data.parent.lastSelPal = selected.index();
             event.data.palRemoveButton.button('enable');
             event.data.palActivateButton.button('enable');
             event.data.palEditButton.button('enable');
@@ -358,6 +363,9 @@ function PaletteSamplerEditor(nodeId,server){
     thePaletteSamplerEditor = this;
     this.nodeId = nodeId;
     this.server = server;
+    
+    // Last selected palette
+    this.lastSelPal = null;
     
     this.numOuts = null;
     

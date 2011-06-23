@@ -3087,16 +3087,18 @@ int lsddb_rewireNodes(){
         
         if(srcOut >= 0){
             
-            struct LSD_SceneNodeInput* dest;
+            struct LSD_SceneNodeInput* dest = NULL;
             lsddb_traceInput(&dest,destIn,NULL,NULL);
-            struct LSD_SceneNodeOutput* src;
+            struct LSD_SceneNodeOutput* src = NULL;
             lsddb_traceOutput(&src,srcOut,NULL,NULL);
             
             if(dest && src){
                 dest->connection = src;
             }
-            else
+            else if(dest){
+                dest->connection = NULL;
                 fprintf(stderr,"Problem while rewiring nodes\n");
+            }
             
         }
     }

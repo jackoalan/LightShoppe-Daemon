@@ -97,6 +97,10 @@ function CORE_FloatViewer(nodeId,server){
     this.numberBox = $(document.createElement('input'));
     this.numberBox.addClass('CORE_numBox');
     this.numberBox.attr('readonly','readonly');
+    this.numberBox.click(this,function(event){
+                         event.data.server.customRPC(event.data.nodeId,{coreMethod:"getFloatViewVal"},function(data){
+                                                     CORE_theFloatViewer.numberBox.val(data.val);});
+                         });
     this.dialog.append('<span class="CORE_numLabel">Value:</span>');
     this.dialog.append(this.numberBox);
     

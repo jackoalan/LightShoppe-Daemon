@@ -68,7 +68,7 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
     if(apistate != STATE_PINIT)
         return -10;
     
-    if(!key || !ptrToBind || !nodeMakeFunc || !nodeRestoreFunc || !nodeCleanFunc || !nodeDeleteFunc || !name){
+    if(!key || !nodeMakeFunc || !nodeRestoreFunc || !nodeCleanFunc || !nodeDeleteFunc || !name){
         fprintf(stderr,"Improper use of registerNodeClass(), all args must be filled\n");
         return -1;
     }
@@ -90,7 +90,8 @@ int plugininit_registerNodeClass(struct LSD_ScenePlugin const * key,
     tempClass->bfFuncTbl = bfFuncTbl;
     tempClass->bpFuncTbl = bpFuncTbl;
     
-    *ptrToBind = tempClass;
+    if(ptrToBind)
+        *ptrToBind = tempClass;
     
     return 0;
 }
