@@ -29,7 +29,8 @@ int plugininst_addInstInput(struct LSD_SceneNodeInst const * inst,
                             const char* name,
                             int* inIdBind){
     
-    if(lsddb_addNodeInstInput(inst,typeId,name,NULL,inIdBind)<0){
+    struct LSD_SceneNodeInput* addedIn;
+    if(lsddb_addNodeInstInput(inst,typeId,name,&addedIn,inIdBind)<0){
         fprintf(stderr,"Problem adding inst input\n");
         return -1;
     }

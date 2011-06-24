@@ -21,8 +21,7 @@
 
 /*
  * PCMPipe is a small helper program that receives audio format data
- * as its execution arguments and raw PCM data via stdin. It is originally 
- * designed for a modified version of MPD's pipe plugin.
+ * as its execution arguments and raw PCM data via /tmp/mpd.conf.
  *
  * Samples are processed with a Fast-Fourier Wave Transform and compressed
  * into a small number of bands. These bands are then sent to LightShoppe's
