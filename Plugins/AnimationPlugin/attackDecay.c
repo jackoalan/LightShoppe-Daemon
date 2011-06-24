@@ -22,6 +22,8 @@
 
 #include "../../NodeInstAPI.h"
 
+#include "attackDecay.h"
+#include "db.h"
 
 static int floatTypeId;
 
@@ -82,9 +84,9 @@ int procAttackDecay(double* source, struct AttackDecayState* state){
 
 int attackDecayNodeMake(struct LSD_SceneNodeInst const * inst, void* instData){
     int inId;
-    int plugininst_addInstInput(inst,floatTypeId,"Source Float",&inId);
+    plugininst_addInstInput(inst,floatTypeId,"Source Float",&inId);
     
-    int plugininst_addInstOutput(inst,floatTypeId,"Output",0,0,NULL);
+    plugininst_addInstOutput(inst,floatTypeId,"Output",0,0,NULL);
     
     return createAttackDecay(inst->dbId, inId);
 }
@@ -98,6 +100,6 @@ void attackDecayNodeClean(struct LSD_SceneNodeInst const * inst, void* instData)
 }
 
 void attackDecayNodeDelete(struct LSD_SceneNodeInst const * inst, void* instData){
-    deleteAttackDecay(inst->dbId);
+    deleteAttackDecayDo(inst->dbId);
 }
 

@@ -18,10 +18,8 @@
  **    @author Jack Andersen <jackoalan@gmail.com>
  */
 
-/* 
- * From the scope of the plugin's directory, LightShoppe's 
- * development headers are accessed this way
- */
+#include <string.h>
+
 #include "../../PluginAPI.h"
 #include "../../cJSON.h"
 #include "../../CorePlugin.h"
@@ -91,31 +89,31 @@ void animationPluginRPC(cJSON* in, cJSON* out){
     
     cJSON* animationMethod = cJSON_GetObjectItem(in,"animationMethod");
     if(!animationMethod || animationMethod->type != cJSON_String){
-        cJSON_AddStringToObject(out,"error","animationMethod not provided")
+        cJSON_AddStringToObject(out,"error","animationMethod not provided");
         return;
     }
     
-    if(strcasecmp(animationMethod->valuesting,"getAttackDecay") == 0){
+    if(strcasecmp(animationMethod->valuestring,"getAttackDecay") == 0){
         double attack,decay;
         getAttackDecayVals(nodeId->valueint, &attack, &decay);
         cJSON_AddNumberToObject(out,"attackVal",attack);
         cJSON_AddNumberToObject(out,"decayVal",decay);
     }
-    else if(strcasecmp(animationMethod->valuesting,"updateAttack") == 0){
+    else if(strcasecmp(animationMethod->valuestring,"updateAttack") == 0){
         cJSON* attackAmt = cJSON_GetObjectItem(in,"attackAmt");
         if(!attackAmt || attackAmt->type != cJSON_Number){
             cJSON_AddStringToObject(out,"error","attackAmt not provided");
             return;
         }
-        updateAttackDecay_attack(nodeId->valueint, attackAmt->valuedouble);
+        updateAttackDecayAttack(nodeId->valueint, attackAmt->valuedouble);
     }
-    else if(strcasecmp(animationMethod->valuesting,"updateDecay") == 0){
+    else if(strcasecmp(animationMethod->valuestring,"updateDecay") == 0){
         cJSON* decayAmt = cJSON_GetObjectItem(in,"decayAmt");
         if(!decayAmt || decayAmt->type != cJSON_Number){
             cJSON_AddStringToObject(out,"error","decayAmt not provided");
             return;
         }
-        updateAttackDecay_decay(nodeId->valueint, decayAmt->valuedouble);
+        updateAttackDecayDecay(nodeId->valueint, decayAmt->valuedouble);
     }
     else{
         cJSON_AddStringToObject(out,"error","animationPlugin does not handle this method");

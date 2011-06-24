@@ -28,7 +28,7 @@ struct AttackDecayState {
     double decayRate;
     double lastVal;
     struct timeval lastTv;
-    struct LSD_SceneNodeInput* srcIn;
+    struct LSD_SceneNodeInput const * srcIn;
 };
 
 void ad_publishFloatId(int floatId);

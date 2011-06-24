@@ -26,13 +26,13 @@ int createAttackDecay(int nodeId, int inId);
 
 int getAttackDecayVals(int nodeId, double* attackBind, double* decayBind);
 
-int restoreAttackDecay(struct LSD_SceneNodeInst* inst);
+int restoreAttackDecay(struct LSD_SceneNodeInst const * inst);
 
-int updateAttackDecay_attack(int nodeId, double attackAmt);
+int updateAttackDecayAttack(int nodeId, double attackAmt);
 
-int updateAttackDecay_decay(int nodeId, double decayAmt);
+int updateAttackDecayDecay(int nodeId, double decayAmt);
 
-int deleteAttackDecay(int nodeId);
+int deleteAttackDecayDo(int nodeId);
 
 int initAnimDB(struct LSD_ScenePlugin const * plugin);
 

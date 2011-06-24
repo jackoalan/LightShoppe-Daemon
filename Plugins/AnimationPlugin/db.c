@@ -47,7 +47,7 @@ int createAttackDecay(int nodeId, int inId){
 
 int getAttackDecayVals(int nodeId, double* attackBind, double* decayBind){
     plugindb_reset(animationPlugin, selectAttackDecay);
-    plugindb_bind_int(animationPlugin, selectAttackDecay, 1, inst->dbId);
+    plugindb_bind_int(animationPlugin, selectAttackDecay, 1, nodeId);
     
     if(plugindb_step(animationPlugin, selectAttackDecay) == SQLITE_ROW){
         if(attackBind)
@@ -59,7 +59,7 @@ int getAttackDecayVals(int nodeId, double* attackBind, double* decayBind){
     return -1;
 }
 
-int restoreAttackDecay(struct LSD_SceneNodeInst* inst){
+int restoreAttackDecay(struct LSD_SceneNodeInst const * inst){
     if(!inst)
         return -1;
     
@@ -75,7 +75,7 @@ int restoreAttackDecay(struct LSD_SceneNodeInst* inst){
         gettimeofday(&(castData->lastTv),NULL);
         
         int inId = plugindb_column_int(animationPlugin, selectAttackDecay, 2);
-        struct LSD_SceneNodeInput* input;
+        struct LSD_SceneNodeInput const * input;
         plugininst_getInputStruct(inst, &input, inId);
         if(input)
             castData->srcIn = input;
@@ -88,37 +88,37 @@ int restoreAttackDecay(struct LSD_SceneNodeInst* inst){
     return -1;
 }
 
-int updateAttackDecay_attack(int nodeId, double attackAmt){
+int updateAttackDecayAttack(int nodeId, double attackAmt){
     plugindb_reset(animationPlugin, updateAttackDecay_attack);
     plugindb_bind_int(animationPlugin, updateAttackDecay_attack, 1, nodeId);
     plugindb_bind_double(animationPlugin, updateAttackDecay_attack, 2, attackAmt);
     if(plugindb_step(animationPlugin, updateAttackDecay_attack) == SQLITE_DONE){
         struct AttackDecayState* castData = NULL;
-        plugin_getInstById(animationPlugin,nodeId,&castData);
+        plugin_getInstById(animationPlugin,nodeId,(void**)&castData);
         if(castData){
             castData->attackRate = attackAmt;
-            return 0
+            return 0;
         }
     }
     return -1;
 }
 
-int updateAttackDecay_decay(int nodeId, double decayAmt){
+int updateAttackDecayDecay(int nodeId, double decayAmt){
     plugindb_reset(animationPlugin, updateAttackDecay_decay);
     plugindb_bind_int(animationPlugin, updateAttackDecay_decay, 1, nodeId);
     plugindb_bind_double(animationPlugin, updateAttackDecay_decay, 2, decayAmt);
     if(plugindb_step(animationPlugin, updateAttackDecay_decay) == SQLITE_DONE){
         struct AttackDecayState* castData = NULL;
-        plugin_getInstById(animationPlugin,nodeId,&castData);
+        plugin_getInstById(animationPlugin,nodeId,(void**)&castData);
         if(castData){
             castData->decayRate = decayAmt;
-            return 0
+            return 0;
         }
     }
     return -1;
 }
 
-int deleteAttackDecay(int nodeId){
+int deleteAttackDecayDo(int nodeId){
     plugindb_reset(animationPlugin, deleteAttackDecay);
     plugindb_bind_int(animationPlugin, deleteAttackDecay, 1, nodeId);
     if(plugindb_step(animationPlugin, deleteAttackDecay) == SQLITE_DONE)
@@ -149,6 +149,8 @@ int initAnimDB(struct LSD_ScenePlugin const * plugin){
     
     plugindb_prepDelete(plugin,&deleteAttackDecay,ATTACK_DECAY,
                         "nodeId=?1");
+    
+    return 0;
     
 }
 
