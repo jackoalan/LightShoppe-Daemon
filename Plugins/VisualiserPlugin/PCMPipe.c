@@ -140,7 +140,9 @@ int procSamples(){
         for(j=0;j<FREQS_PER_BAND;++j){
             accumulatedVal += outputReals[FREQS_PER_BAND*i+j];
         }
-        outputBands[i] = accumulatedVal / FREQS_PER_BAND / 40000;
+        // Calibration function derived using pink noise
+        double attVal = (NUM_BANDS / pow((i+1),4)) + 2;
+        outputBands[i] = accumulatedVal / FREQS_PER_BAND / 60000 / attVal;
     }
     
     return 0;

@@ -43,7 +43,7 @@ void destructAll(struct LSD_ArrayUnit* unit){
         for(i=0;i<unit->parent->mul;++i){
 
             
-            if(unit->unitIdx>=unit->parent->numUnits-1){ // Final Unit, destruct with caution
+            if(unit->unitIdx>=unit->parent->numUnits-1){
                 if(i>unit->parent->maxIdx%unit->parent->mul)
                     break;
             }
@@ -102,17 +102,17 @@ int recursiveResolve(struct LSD_ArrayUnit* curUnit, size_t targetUnitNum,
 
 int makeArray(struct LSD_ArrayHead* target, size_t arrMul, size_t elemSize, short elemDel,
               void(*destructor)(void* elem)){
-    if(!target){ // Idiotproofication
+    if(!target){
         fprintf(stderr,"No target pointer provided in makeArray()\n");
         return -1;
     }
     
-    if(elemSize<1){ // More Idiotproofication
+    if(elemSize<1){
         fprintf(stderr,"Invalid element size declaired in makeArray()\n");
         return -1;
     }
     
-    if(arrMul<1){ // More Idiotproofication
+    if(arrMul<1){
         fprintf(stderr,"Invalid array multiple declaired in makeArray()\n");
         return -1;
     }
@@ -140,7 +140,6 @@ int makeArray(struct LSD_ArrayHead* target, size_t arrMul, size_t elemSize, shor
     target->firstUnit = malloc(sizeof(struct LSD_ArrayUnit));
     
     target->lastUnit = target->firstUnit;
-    //printf("Set lastUnit to %d\n",target->lastUnit);
 
     
     if(!target->firstUnit){
@@ -160,7 +159,6 @@ int makeArray(struct LSD_ArrayHead* target, size_t arrMul, size_t elemSize, shor
     // Set Memory to zero to ensure proper behaviour (NULL is a skip condition for destructors)
     memset(target->firstUnit->buffer, 0, arrSize);
     
-    //printf("Made arrayHead at %d\n",target);
     return 0;
 }
 
@@ -177,7 +175,6 @@ int clearArray(struct LSD_ArrayHead* toclear){
         free(toclear->firstUnit);
         toclear->firstUnit = NULL;
         toclear->lastUnit = NULL;
-        //printf("Ran clear\n");
     }
     
     if(toclear->delStat == DEL_ID_ASSIGN){
@@ -346,7 +343,6 @@ int insertElem(struct LSD_ArrayHead* array, size_t* targetIdxBind, void** target
             fprintf(stderr,"WTF?! in arrayHead %d\n",(int)array);
         array->lastUnit->nextUnit = au;
         array->lastUnit = au;
-        //printf("Set lastUnit\n");
         au->unitIdx = array->numUnits;
         au->parent = array;
         au->nextUnit = NULL;
