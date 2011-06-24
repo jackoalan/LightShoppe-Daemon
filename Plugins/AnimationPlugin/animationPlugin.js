@@ -18,6 +18,7 @@
  **    @author Jack Andersen <jackoalan@gmail.com>
  */
 
+AnimationPlugin = {};
 AnimationPlugin.theAdConf = null;
 AnimationPlugin.adConf = function(nodeId,server){
     AnimationPlugin.theAdConf = this;
@@ -25,10 +26,10 @@ AnimationPlugin.adConf = function(nodeId,server){
     this.nodeId = nodeId;
     
     this.dialog = $(document.createElement('div'));
-    this.dialog.dialog({title:"Attack/Decay Conf", width:200, height:100, modal:true, resizable:false});
+    this.dialog.dialog({title:"Attack/Decay Conf", width:230, height:140, modal:true, resizable:false});
     this.dialog.bind('dialogclose',this,function(event){
                      var attackVal = parseFloat(event.data.attackBox.val());
-                     var decayVal = parseFloat(event.data.decayVal.val());
+                     var decayVal = parseFloat(event.data.decayBox.val());
 
                      if(!isNaN(attackVal)){
                      event.data.server.customRPC(event.data.nodeId,{animationMethod:"updateAttack",attackAmt:attackVal});
@@ -37,17 +38,19 @@ AnimationPlugin.adConf = function(nodeId,server){
                      if(!isNaN(decayVal)){
                      event.data.server.customRPC(event.data.nodeId,{animationMethod:"updateDecay",decayAmt:decayVal});
                      }
+                     
+                     event.data.dialog.remove();
                      });
     
-    var attackDiv = $(document.createElement('div'));
+    var attackDiv = $(document.createElement('div')).addClass('AnimationPlugin_valDiv').css('margin-top','0.5em');
     this.dialog.append(attackDiv);
     
     this.attackBox = $(document.createElement('input'));
     this.attackBox.addClass('AnimationPlugin_numBox');
     attackDiv.append('<span class="AnimationPlugin_numLabel">Attack:</span>');
-    attackDiv.append(this.numberBox);
+    attackDiv.append(this.attackBox);
     
-    var decayDiv = $(document.createElement('div'));
+    var decayDiv = $(document.createElement('div')).addClass('AnimationPlugin_valDiv');
     this.dialog.append(decayDiv);
     
     this.decayBox = $(document.createElement('input'));
@@ -58,14 +61,14 @@ AnimationPlugin.adConf = function(nodeId,server){
     this.server.customRPC(this.nodeId,{animationMethod:"getAttackDecay"},function(data){
                           AnimationPlugin.theAdConf.attackBox.val(data.attackVal);
                           AnimationPlugin.theAdConf.decayBox.val(data.decayVal);});
-}
+};
 
 
 
 AnimationPlugin.confFunc = function(classIdx,nodeId,server){
     if(classIdx == 0)
         new AnimationPlugin.adConf(nodeId,server);
-}
+};
 
 
 AnimationPlugin_CoreHead = {confFunc:AnimationPlugin.confFunc};

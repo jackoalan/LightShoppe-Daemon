@@ -19,6 +19,7 @@
  */
 
 #include <sys/time.h>
+#include <math.h>
 
 #include "../../NodeInstAPI.h"
 
@@ -57,14 +58,14 @@ int procAttackDecay(double* source, struct AttackDecayState* state){
     
     if(*source > state->lastVal){
         // Attack
-        double attackAmt = diffTime * state->attackRate;
+        double attackAmt = diffTime * fabs(state->attackRate);
         double attacked = state->lastVal + attackAmt;
 
         state->lastVal = (attacked > *source) ? *source : attacked;
     }
     else if(*source < state->lastVal){
         // Decay
-        double decayAmt = diffTime * state->decayRate;
+        double decayAmt = diffTime * fabs(state->decayRate);
         double decayed = state->lastVal - decayAmt;
         
         state->lastVal = (decayed < *source) ? *source : decayed;

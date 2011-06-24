@@ -18,18 +18,24 @@
 **    @author Jack Andersen <jackoalan@gmail.com>
 */
 
+.AnimationPlugin_valDiv{
+    float:left;
+    clear:both;
+    width:180px;
+    height:30px;
+    margin-top:1em;
+    position:relative;
+}
+
 .AnimationPlugin_numBox{
 	width:100px;
 	border-style:none;
     -webkit-border-radius:5px;
 	font-size:x-small;
     position:absolute;
-    right:2.5em;
-    top:1em;
+    left:4em;
 }
 
 .AnimationPlugin_numLabel{
-    position:absolute;
-    right:6em;
-    top:1.1em;
+    position:relative;
 }

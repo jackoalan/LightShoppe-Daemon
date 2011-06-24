@@ -140,7 +140,7 @@ int procSamples(){
         for(j=0;j<FREQS_PER_BAND;++j){
             accumulatedVal += outputReals[FREQS_PER_BAND*i+j];
         }
-        outputBands[i] = accumulatedVal / FREQS_PER_BAND / 30000;
+        outputBands[i] = accumulatedVal / FREQS_PER_BAND / 40000;
     }
     
     return 0;
