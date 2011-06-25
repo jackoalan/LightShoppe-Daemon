@@ -1,23 +1,24 @@
 /*
-**    This file is part of LightShoppe.
-**    Copyright 2011 Jack Andersen
-**
-**    LightShoppe is free software: you can redistribute it and/or modify
-**    it under the terms of the GNU General Public License as published by
-**    the Free Software Foundation, either version 3 of the License, or
-**    (at your option) any later version.
-**
-**    LightShoppe is distributed in the hope that it will be useful,
-**    but WITHOUT ANY WARRANTY; without even the implied warranty of
-**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**    GNU General Public License for more details.
-**
-**    You should have received a copy of the GNU General Public License
-**    along with LightShoppe.  If not, see <http://www.gnu.org/licenses/>.
-**
-**    @author Jack Andersen <jackoalan@gmail.com>
-*/
-
+ **    This file is part of LightShoppe. Copyright 2011 Jack Andersen
+ **
+ **    LightShoppe is free software: you can redistribute it
+ **    and/or modify it under the terms of the GNU General
+ **    Public License as published by the Free Software
+ **    Foundation, either version 3 of the License, or (at your
+ **    option) any later version.
+ **
+ **    LightShoppe is distributed in the hope that it will
+ **    be useful, but WITHOUT ANY WARRANTY; without even the
+ **    implied warranty of MERCHANTABILITY or FITNESS FOR A
+ **    PARTICULAR PURPOSE.  See the GNU General Public License
+ **    for more details.
+ **
+ **    You should have received a copy of the GNU General
+ **    Public License along with LightShoppe.  If not, see
+ **    <http://www.gnu.org/licenses/>.
+ **
+ **    @author Jack Andersen <jackoalan@gmail.com>
+ */
 
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -26,13 +27,15 @@
 
 struct LSD_ArrayUnit;
 
-enum LSD_ARRAY_DEL_STAT {
+enum LSD_ARRAY_DEL_STAT
+{
     NO_DEL_ALLOWED,
     DEL_ALLOWED,
     DEL_ID_ASSIGN
 };
 
-struct LSD_ArrayHead {
+struct LSD_ArrayHead
+{
     int dbId;
     size_t mul;
     enum LSD_ARRAY_DEL_STAT delStat;
@@ -43,26 +46,39 @@ struct LSD_ArrayHead {
     size_t maxIdx;
     struct LSD_ArrayUnit* firstUnit;
     struct LSD_ArrayUnit* lastUnit;
-	void(*destructor)(void* elem);
+    void ( *destructor )(void* elem);
 };
 
-struct LSD_ArrayUnit {
+struct LSD_ArrayUnit
+{
     struct LSD_ArrayHead* parent;
     size_t unitIdx;
     struct LSD_ArrayUnit* nextUnit;
     void* buffer;
 };
 
-int makeArray(struct LSD_ArrayHead* target, size_t arrMul, size_t elemSize, short elemDel,
-			  void(*destructor)(void* elem));
-int clearArray(struct LSD_ArrayHead* toclear);
-int pickIdx(struct LSD_ArrayHead* array, void** targetPtrBind, size_t idx);
-int delIdx(struct LSD_ArrayHead* array, size_t idx);
-int insertElem(struct LSD_ArrayHead* array, size_t* targetIdxBind, void** targetPtrBind);
+int makeArray (struct LSD_ArrayHead* target,
+               size_t arrMul,
+               size_t elemSize,
+               short elemDel,
+               void ( *destructor )(void* elem));
+int
+clearArray (struct LSD_ArrayHead* toclear);
 
-//Privates:
-//int recursiveClear(struct LSD_ArrayUnit* unit);
-//int recursiveResolve(struct LSD_ArrayUnit* curUnit, size_t targetUnitNum, 
-//                     struct LSD_ArrayUnit** targetPtrBind);
 
-#endif // ARRAY_H
+int
+pickIdx (struct LSD_ArrayHead* array, void** targetPtrBind, size_t idx);
+
+
+int
+delIdx (struct LSD_ArrayHead* array, size_t idx);
+
+
+int
+insertElem (struct LSD_ArrayHead* array,
+            size_t* targetIdxBind,
+            void** targetPtrBind);
+
+
+
+#endif /* ARRAY_H */
