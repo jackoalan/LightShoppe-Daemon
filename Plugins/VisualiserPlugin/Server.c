@@ -48,67 +48,122 @@
 #define NUM_BANDS 3
 
 /* IPC vars */
-static int semid;
-static struct sembuf sem[2];
-static int shmid;
-static void* shmAttach;
+static int msemid;
+static struct sembuf msem[2];
+static int mshmid;
+static void* mshmAttach;
 
-static pid_t pipeProc;
+static int asemid;
+static struct sembuf asem[2];
+static int ashmid;
+static void* ashmAttach;
+
+static pid_t mpipeProc;
+static pid_t apipeProc;
+
 
 /* Process-local storage buffer for band values */
-static double localBuffer[NUM_BANDS];
+static double mlocalBuffer[NUM_BANDS];
+static double alocalBuffer[NUM_BANDS];
+
 
 /* Float type */
 int floatTypeId;
 
 void
-localBufCopy (struct LSD_SceneNodeOutput const* output)
+mlocalBufCopy (struct LSD_SceneNodeOutput const* output)
 {
     /* Get semaphore */
-    sem[0].sem_op = 0;
-    sem[1].sem_op = 1;
-    if (semop (semid, sem, 2) < 0)
+    msem[0].sem_op = 0;
+    msem[1].sem_op = 1;
+    if (semop (msemid, msem, 2) < 0)
         return;
 
     /* Copy buffer */
-    double* shm = (double*)shmAttach;
+    double* shm = (double*)mshmAttach;
     int i;
     for (i = 0; i < NUM_BANDS; ++i)
-        localBuffer[i] = shm[i];
+        mlocalBuffer[i] = shm[i];
 
     /* Release semaphore */
-    sem[0].sem_op = -1;
-    semop (semid, sem, 1);
+    msem[0].sem_op = -1;
+    semop (msemid, msem, 1);
+}
+
+void
+alocalBufCopy (struct LSD_SceneNodeOutput const* output)
+{
+    /* Get semaphore */
+    asem[0].sem_op = 0;
+    asem[1].sem_op = 1;
+    if (semop (asemid, asem, 2) < 0)
+        return;
+    
+    /* Copy buffer */
+    double* shm = (double*)ashmAttach;
+    int i;
+    for (i = 0; i < NUM_BANDS; ++i)
+        alocalBuffer[i] = shm[i];
+    
+    /* Release semaphore */
+    asem[0].sem_op = -1;
+    semop (asemid, asem, 1);
 }
 
 
 void*
-getHigh (struct LSD_SceneNodeOutput const* output)
+mgetHigh (struct LSD_SceneNodeOutput const* output)
 {
-    return &( localBuffer[2] );
+    return &( mlocalBuffer[2] );
 }
 
 
 void*
-getMid (struct LSD_SceneNodeOutput const* output)
+mgetMid (struct LSD_SceneNodeOutput const* output)
 {
-    return &( localBuffer[1] );
+    return &( mlocalBuffer[1] );
 }
 
 
 void*
-getLow (struct LSD_SceneNodeOutput const* output)
+mgetLow (struct LSD_SceneNodeOutput const* output)
 {
-    return &( localBuffer[0] );
+    return &( mlocalBuffer[0] );
+}
+
+void*
+agetHigh (struct LSD_SceneNodeOutput const* output)
+{
+    return &( alocalBuffer[2] );
+}
+
+
+void*
+agetMid (struct LSD_SceneNodeOutput const* output)
+{
+    return &( alocalBuffer[1] );
+}
+
+
+void*
+agetLow (struct LSD_SceneNodeOutput const* output)
+{
+    return &( alocalBuffer[0] );
 }
 
 
 /* Buffer func tables */
-static const bfFunc bfFuncs[] =
-{localBufCopy};
+static const bfFunc mbfFuncs[] =
+{mlocalBufCopy};
 
-static const bpFunc bpFuncs[] =
-{getHigh, getMid, getLow};
+static const bpFunc mbpFuncs[] =
+{mgetHigh, mgetMid, mgetLow};
+
+static const bfFunc abfFuncs[] =
+{alocalBufCopy};
+
+static const bpFunc abpFuncs[] =
+{agetHigh, agetMid, agetLow};
 
 int
 makeNode (struct LSD_SceneNodeInst const* inst, void* instData)
@@ -140,7 +195,7 @@ deleteNode (struct LSD_SceneNodeInst const* inst, void* instData)
 
 
 int
-semInit ()
+msemInit ()
 {
     int ofile = open ("/tmp/lsdvis.ipc", O_CREAT | O_WRONLY, 0666);
     close (ofile);
@@ -157,37 +212,37 @@ semInit ()
     }
 
     /* Get semaphore */
-    semid = semget (semkey, 1, 0666 | IPC_CREAT | IPC_EXCL);
-    if (semid < 0)
+    msemid = semget (semkey, 1, 0666 | IPC_CREAT | IPC_EXCL);
+    if (msemid < 0)
     {
         fprintf (stderr, "Unable to create semaphore\n");
         return -1;
     }
 
-    if (semctl (semid, 0, SETVAL, 0) < 0)
+    if (semctl (msemid, 0, SETVAL, 0) < 0)
     {
         fprintf (stderr, "Unable to init semaphore\n");
         return -1;
     }
 
     /* Initialise sem operation buf */
-    sem[0].sem_num = 0;
-    sem[1].sem_num = 0;
-    sem[0].sem_flg = IPC_NOWAIT;
-    sem[1].sem_flg = IPC_NOWAIT;
+    msem[0].sem_num = 0;
+    msem[1].sem_num = 0;
+    msem[0].sem_flg = IPC_NOWAIT;
+    msem[1].sem_flg = IPC_NOWAIT;
 
     /* Get Shared Memory */
-    shmid = shmget (shmkey,
+    mshmid = shmget (shmkey,
                     sizeof( double ) * NUM_BANDS,
                     0666 | IPC_CREAT | IPC_EXCL);
-    if (shmid < 0)
+    if (mshmid < 0)
     {
         fprintf (stderr, "Unable to open shared memory\n");
         return -1;
     }
 
-    shmAttach = (void*)shmat (shmid, NULL, 0);
-    if (!shmAttach)
+    mshmAttach = (void*)shmat (mshmid, NULL, 0);
+    if (!mshmAttach)
     {
         fprintf (stderr, "No shared memory pointer produced\n");
         return -1;
@@ -196,17 +251,74 @@ semInit ()
     return 0;
 }
 
+int
+asemInit ()
+{
+    int ofile = open ("/tmp/lsdvis.ipc", O_CREAT | O_WRONLY, 0666);
+    close (ofile);
+    
+    /* Set up IPC semaphore */
+    key_t semkey, shmkey;
+    semkey = ftok ("/tmp/lsdvis.ipc", 654);
+    shmkey = ftok ("/tmp/lsdvis.ipc", 456);
+    
+    if (semkey == (key_t)-1 || shmkey == (key_t)-1)
+    {
+        fprintf (stderr, "Unable to get IPC key: %s\n", strerror (errno));
+        return -1;
+    }
+    
+    /* Get semaphore */
+    asemid = semget (semkey, 1, 0666 | IPC_CREAT | IPC_EXCL);
+    if (asemid < 0)
+    {
+        fprintf (stderr, "Unable to create semaphore\n");
+        return -1;
+    }
+    
+    if (semctl (asemid, 0, SETVAL, 0) < 0)
+    {
+        fprintf (stderr, "Unable to init semaphore\n");
+        return -1;
+    }
+    
+    /* Initialise sem operation buf */
+    asem[0].sem_num = 0;
+    asem[1].sem_num = 0;
+    asem[0].sem_flg = IPC_NOWAIT;
+    asem[1].sem_flg = IPC_NOWAIT;
+    
+    /* Get Shared Memory */
+    ashmid = shmget (shmkey,
+                     sizeof( double ) * NUM_BANDS,
+                     0666 | IPC_CREAT | IPC_EXCL);
+    if (ashmid < 0)
+    {
+        fprintf (stderr, "Unable to open shared memory\n");
+        return -1;
+    }
+    
+    ashmAttach = (void*)shmat (ashmid, NULL, 0);
+    if (!ashmAttach)
+    {
+        fprintf (stderr, "No shared memory pointer produced\n");
+        return -1;
+    }
+    
+    return 0;
+}
+
 
 int
-startPipeProcess ()
+mstartPipeProcess ()
 {
-    pipeProc = fork ();
-    if (pipeProc == 0)  /* Child */
+    mpipeProc = fork ();
+    if (mpipeProc == 0)  /* Child */
     {
-        PCMPipeEntry ();
+        PCMPipeEntryMpd ();
         _exit (0);
     }
-    else if (pipeProc > 0) /* Success */
+    else if (mpipeProc > 0) /* Success */
         return 0;
     else /* Failure */
         return -1;
@@ -215,9 +327,33 @@ startPipeProcess ()
 
 
 int
-stopPipeProcess ()
+mstopPipeProcess ()
 {
-    kill (pipeProc, SIGKILL);
+    kill (mpipeProc, SIGKILL);
+    return 0;
+}
+
+int
+astartPipeProcess ()
+{
+    apipeProc = fork ();
+    if (apipeProc == 0)  /* Child */
+    {
+        PCMPipeEntryAlsa ();
+        _exit (0);
+    }
+    else if (apipeProc > 0) /* Success */
+        return 0;
+    else /* Failure */
+        return -1;
+    return 0;
+}
+
+
+int
+astopPipeProcess ()
+{
+    kill (apipeProc, SIGKILL);
     return 0;
 }
 
@@ -226,12 +362,17 @@ int
 visPluginInit (struct LSD_ScenePlugin const* plugin)
 {
     floatTypeId = core_getFloatTypeID ();
-    localBuffer[0] = 0.0;
-    localBuffer[1] = 0.0;
-    localBuffer[2] = 0.0;
+    mlocalBuffer[0] = 0.0;
+    mlocalBuffer[1] = 0.0;
+    mlocalBuffer[2] = 0.0;
+    alocalBuffer[0] = 0.0;
+    alocalBuffer[1] = 0.0;
+    alocalBuffer[2] = 0.0;
 
-    semInit ();
-    startPipeProcess ();
+    msemInit ();
+    asemInit ();
+    mstartPipeProcess ();
+    astartPipeProcess ();
 
     plugininit_registerNodeClass (plugin,
                                   NULL,
@@ -243,8 +384,21 @@ visPluginInit (struct LSD_ScenePlugin const* plugin)
                                   "MPD Visualiser",
                                   "Desc",
                                   0,
-                                  bfFuncs,
-                                  bpFuncs);
+                                  mbfFuncs,
+                                  mbpFuncs);
+    
+    plugininit_registerNodeClass (plugin,
+                                  NULL,
+                                  makeNode,
+                                  restoreNode,
+                                  cleanNode,
+                                  deleteNode,
+                                  0,
+                                  "ALSA Visualiser",
+                                  "Desc",
+                                  1,
+                                  abfFuncs,
+                                  abpFuncs);
 
     return 0;
 }
@@ -255,11 +409,16 @@ visPluginClean (struct LSD_ScenePlugin const* plugin)
 {
     struct shmid_ds shmid_struct;
 
-    stopPipeProcess ();
+    mstopPipeProcess ();
+    astopPipeProcess ();
 
-    semctl ( semid, 0, IPC_RMID );
-    shmdt (shmAttach);
-    shmctl (shmid, IPC_RMID, &shmid_struct);
+    semctl ( msemid, 0, IPC_RMID );
+    shmdt (mshmAttach);
+    shmctl (mshmid, IPC_RMID, &shmid_struct);
+    
+    semctl ( asemid, 0, IPC_RMID );
+    shmdt (ashmAttach);
+    shmctl (ashmid, IPC_RMID, &shmid_struct);
 }
 
 

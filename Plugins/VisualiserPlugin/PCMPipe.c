@@ -49,6 +49,8 @@
 #include <sys/prctl.h>
 #endif
 
+#include <alsa/asoundlib.h>
+
 /* Transformational vars */
 #define NUM_SAMPLES 2048
 #define FFT_RESULTS ( NUM_SAMPLES / 2 + 1 )
@@ -71,13 +73,13 @@ static void* shmAttach;
 /* static FILE* logfile; */
 
 int
-shmInit ()
+shmInit (int prog) // 0 mpd; 1 alsa
 {
 
     /* Set up IPC semaphore */
     key_t semkey, shmkey;
-    semkey = ftok ("/tmp/lsdvis.ipc", 321);
-    shmkey = ftok ("/tmp/lsdvis.ipc", 123);
+    semkey = ftok ("/tmp/lsdvis.ipc", (prog)?654:321);
+    shmkey = ftok ("/tmp/lsdvis.ipc", (prog)?456:123);
 
     if (semkey == (key_t)-1 || shmkey == (key_t)-1)
         /* fprintf(logfile,"Unable to get IPC key\n"); */
@@ -218,61 +220,118 @@ sendBands ()
   * }
   */
 
-static FILE* audioPipe;
 
-void
-handleInterrupt (int sig)
+int
+PCMPipeEntryMpd ()
 {
+    int run = 1;
+    
+#ifdef __linux__
+    prctl (PR_SET_NAME, (const char*)"lsd_MPDPipe", 0, 0, 0);
+#endif
+    
+    
+    int canProc = 1;
+    if (fftInit () < 0)
+        canProc = 0;
+    
+    int connected = 1;
+    if (shmInit (0) < 0)
+        connected = 0;
+    
+    // MPD Pipe
+    static FILE* audioPipe;
+    
+    
+    audioPipe = fopen ("/tmp/mpd.fifo", "r");
+
+    
+    int16_t samples[2][NUM_SAMPLES];
+    size_t readSize;
+    while (run)
+    {
+        readSize = fread (samples, sizeof( int16_t ), NUM_SAMPLES, audioPipe);
+        if (readSize != NUM_SAMPLES){
+            break;
+        }
+        
+        /* Convert samples to floating point for
+         * transformation */
+        int i;
+        for (i = 0; i < NUM_SAMPLES; ++i)
+            inputBuf[i] = (samples[0][i] + samples[1][i]) / 2;
+        if (canProc)
+            procSamples ();
+        if (connected)
+            sendBands ();
+    }
+    
     fclose (audioPipe);
     fftw_cleanup ();
     shmdt (shmAttach);
-
-    _exit (0);
+    
+    return 0;
 }
 
 
 int
-PCMPipeEntry ()
+PCMPipeEntryAlsa ()
 {
     int run = 1;
 
 #ifdef __linux__
-    prctl (PR_SET_NAME, (const char*)"lsd_PCMPipe", 0, 0, 0);
+    prctl (PR_SET_NAME, (const char*)"lsd_ALSAPipe", 0, 0, 0);
 #endif
 
-    signal (SIGINT, handleInterrupt);
 
     int canProc = 1;
     if (fftInit () < 0)
         canProc = 0;
 
     int connected = 1;
-    if (shmInit () < 0)
+    if (shmInit (1) < 0)
         connected = 0;
 
+    
+    // ALSA Pipe
+    snd_pcm_t *handle;
 
-    audioPipe = fopen ("/tmp/mpd.fifo", "r");
 
-    int16_t samples[NUM_SAMPLES];
+    if(snd_pcm_open (&handle, "hw:0,0", SND_PCM_STREAM_CAPTURE, 0) < 0)
+        _exit(1);
+    
+    if(snd_pcm_set_params (handle,
+                           SND_PCM_FORMAT_S16_LE,
+                           SND_PCM_ACCESS_RW_INTERLEAVED,
+                           2,
+                           44100,
+                           1,
+                           500000) < 0)
+        _exit(1);
+    
+    if(snd_pcm_start (handle) < 0)
+        _exit(1);
+
+    int16_t samples[2][NUM_SAMPLES];
     size_t readSize;
     while (run)
     {
-        readSize = fread (samples, sizeof( int16_t ), NUM_SAMPLES, audioPipe);
-        if (readSize != NUM_SAMPLES)
+        readSize = snd_pcm_readi(handle, (void**)samples, NUM_SAMPLES);
+        if (readSize != NUM_SAMPLES){
             break;
+        }
 
         /* Convert samples to floating point for
          * transformation */
         int i;
         for (i = 0; i < NUM_SAMPLES; ++i)
-            inputBuf[i] = samples[i];
+            inputBuf[i] = (samples[0][i] + samples[1][i]) / 2;
         if (canProc)
             procSamples ();
         if (connected)
             sendBands ();
     }
 
-    fclose (audioPipe);
     fftw_cleanup ();
     shmdt (shmAttach);
 
@@ -281,5 +340,5 @@ PCMPipeEntry ()
 
 
 /*int main(int argc, char** argv){
-  *  return PCMPipeEntry();
-  * }*/
+    return PCMPipeEntryAlsa();
+}*/

@@ -24,7 +24,10 @@
 #define PCM_PIPE_H
 
 int
-PCMPipeEntry ();
+PCMPipeEntryMpd ();
+
+int
+PCMPipeEntryAlsa ();
 
 
 #endif /* PCM_PIPE_H */
