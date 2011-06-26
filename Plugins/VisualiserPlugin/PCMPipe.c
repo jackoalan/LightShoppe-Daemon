@@ -246,7 +246,7 @@ PCMPipeEntryMpd ()
     audioPipe = fopen ("/tmp/mpd.fifo", "r");
 
     
-    int16_t samples[2][NUM_SAMPLES];
+    int16_t samples[NUM_SAMPLES];
     size_t readSize;
     while (run)
     {
@@ -259,7 +259,7 @@ PCMPipeEntryMpd ()
          * transformation */
         int i;
         for (i = 0; i < NUM_SAMPLES; ++i)
-            inputBuf[i] = (samples[0][i] + samples[1][i]) / 2;
+            inputBuf[i] = samples[i];
         if (canProc)
             procSamples ();
         if (connected)
