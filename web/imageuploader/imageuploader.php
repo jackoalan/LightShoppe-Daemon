@@ -1,5 +1,7 @@
 <?php
 
+$UPLOAD_DIR = '/home/debian-lighting/.lsduploads/';
+    
 /**
  * Handle file uploads via XMLHttpRequest
  */
@@ -157,6 +159,6 @@ $allowedExtensions = array();
 $sizeLimit = 10 * 1024 * 1024;
 
 $uploader = new qqFileUploader($allowedExtensions, $sizeLimit);
-$result = $uploader->handleUpload('../uploads/',TRUE);
+$result = $uploader->handleUpload($UPLOAD_DIR,TRUE);
 // to pass data through iframe you will need to encode all html tags
 echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
