@@ -1252,7 +1252,7 @@ function LSDWire(leftin,rightin,wireId){
     this.svgPath = document.createElementNS('http://www.w3.org/2000/svg','path');
     this.svgPath.setAttribute('style','stroke:#f90;fill:none;stroke-width:3px');
     this.svgPath.setAttribute('d','M0 0 C100 0 100 200 200 200');
-    //this.svgPath.setAttribute('filter','url(#wireFilter)');
+    this.svgPath.setAttribute('pointer-events','none');
     
     
 }
