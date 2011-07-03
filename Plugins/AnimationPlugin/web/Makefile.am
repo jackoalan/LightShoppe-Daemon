@@ -1,0 +1,1 @@
+webinstall_DATA = animationPlugin.css animationPlugin.js Client.json

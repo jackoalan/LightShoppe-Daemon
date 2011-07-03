@@ -1,0 +1,83 @@
+
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+    
+    <head>
+        <title>Loading LightShoppe Client...</title>
+        <meta charset="utf-8"/>
+        
+        <meta name = "viewport" content = "user-scalable=no, initial-scale=1.0, width=device-width">
+            
+            <link rel="stylesheet" type="text/css" href="LSDClient.css" />
+            
+            <script type="text/javascript" src="/japis/jquery/jquery.min.js"></script>
+            <script type="text/javascript" src="LSDClientIF.js"></script>
+
+        <style type="text/css">
+            #canv{
+                margin:50px 0px; 
+                padding:0px;
+                text-align:center;
+                width:100%;
+                height:100%;
+            }
+            .note{
+                text-align:center;
+                padding:15px;
+                background-color:rgba(0,0,0,0.3);
+                -webkit-border-radius:5px;
+                -moz-border-radius:5px;
+                color:white;
+                width:320px;
+                position:relative;
+                top:50%;
+                left:50%;
+                margin-top:-50px;
+                margin-left:-160px;
+            }
+            .note p{
+                margin:0;
+                padding:0;
+            }
+        </style>
+            
+    </head>
+    
+    <body>
+        
+        <div id="bg"></div>
+        <div id="canv">
+            <script type="text/javascript">
+                function handleResp(){
+                    $('#canv').empty().append('<div class="note" style="width:120px; margin-left:-60px;"><p>Redirecting...</p></div>');
+                    window.location.replace('main/');
+                }
+                
+                function handleTimeout(){
+                    $('#canv').empty().append('<div class="note" style="width:200px; margin-left:-100px;"><p>Server Not Responding</p></div>');
+                }
+                
+                function checkServer(){
+                    $('#canv').append('<div class="note"><p>Testing for LightShoppe Connectivity...</p></div>');
+                    var server = new LSDServer('main/rpc');
+                    server.getLibrary(handleResp);
+                    setTimeout("handleTimeout()",3000);
+                }
+                
+                $(document).ready(function(){checkServer();});
+            </script>
+            <noscript>
+                <div class="note" style="width:500px; margin-left:-250px; margin-top:-100px;">
+                    <p>JavaScript must be enabled in order to use LightShoppe</p>
+                    <p style="margin-top:1em;">Please enable JavaScript or add an exception to your script blocker if you're using one</p>
+                </div>
+            </noscript>
+        </div>
+         
+        
+        
+    </body>
+    
+</html>

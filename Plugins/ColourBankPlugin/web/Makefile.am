@@ -1,0 +1,1 @@
+webinstall_DATA = ColourBankClient.js ColourBankClient.css Client.json

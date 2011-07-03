@@ -1,0 +1,29 @@
+.PaletteEditor h3{
+	font-size:0.8em;
+	margin:0;
+	padding:0;
+	padding-top:1em;
+	float:left;
+}
+
+.PaletteEditor .dialogList{
+	margin-top:0.2em;
+}
+
+.PaletteMarker{
+	background-image:url('marker.png');
+	width:17px;
+	height:17px;
+	position:absolute;
+	color:#222;
+	text-align:center;
+	font-size:0.5em;
+	padding-top:1em;
+	top:25px;
+	float:left;
+	cursor:pointer;
+}
+
+.Palette_SwatchList .ui-selected{
+    border-color:#9f9;
+}

@@ -1,0 +1,1 @@
+webinstall_DATA = marker.png PalettePlugin.css PalettePlugin.js Client.json

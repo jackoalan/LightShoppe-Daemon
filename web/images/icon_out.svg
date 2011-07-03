@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="25" width="25" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g transform="matrix(0.51342391,0,0,0.51342391,0.09139534,-515.95081)">
+  <g stroke-dasharray="none" stroke-miterlimit="4" transform="matrix(0.98512907,0,0,0.98512907,0.71389253,15.546655)">
+   <path stroke-linejoin="miter" d="m29.707,1021.8c-0.69857-1.1571-4.2616-8.2247-13.724-8.2247-8.6712,0-14.517,7.6002-14.517,14.843,0,7.7389,6.103,15.006,14.913,15.006,8.8102,0,12.412-6.3114,13.332-8.2467" stroke="#404040" stroke-linecap="butt" stroke-width="4" fill="none"/>
+   <path stroke-linejoin="miter" d="m29.707,1021.8c-0.69857-1.1571-4.2616-8.2247-13.724-8.2247-8.6712,0-14.517,7.6002-14.517,14.843,0,7.7389,6.103,15.006,14.913,15.006,8.8102,0,12.412-6.3114,13.332-8.2467" stroke="#FFF" stroke-linecap="butt" stroke-width="2.9000001" fill="none"/>
+   <path d="m13.545,1024.8,0,7.2633,21.32-0.094,0,6.5566,12.941-10.087-12.915-10.218,0,6.7944z" stroke="#404040" stroke-width="0.40000001" fill="#FFF"/>
+  </g>
+ </g>
+</svg>

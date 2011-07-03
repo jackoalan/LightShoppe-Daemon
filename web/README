@@ -1,0 +1,57 @@
+         ********** WORK IN PROGRESS SOFTWARE!!! **********
+
+This is the web-based frontend for LightShoppe-Daemon.
+It utilises HTML5, JavaScript, and SVG to provide a graphical representation
+and UI for manipulating the state of a LightShoppe server using its JSON
+RPC.
+
+By default, LightShoppe-Daemon accepts connections on port 9196. The static
+HTML, JavaScript, and image files are served independently of the Daemon.
+Currently, the Daemon will only honour requests made with the absolute path
+"/lsdnew". This may be changed in CoreRPC.c, but will be made 
+user-configurable eventually. 
+
+In order to set up a server to run the LightShoppe web client, a web server
+is required with proxy support. Apache's or Lighttpd's mod_proxy both will
+work. Place the contents of LightShoppe-web somewhere readable by the web
+server's user and use its path in the server's configuration as shown below.
+
+
+
+
+I use Lighttpd with a configuration like the following:
+
+alias.url += ( "/lsdnew/plugins" => "<PATH TO LIGHTSHOPPE-DAEMON'S PLUGINS DIRECTORY>" )
+
+$HTTP["url"] =~ "^/lsdnew" {
+  alias.url += ( "/lsdnew" => "<PATH TO LIGHTSHOPPE-WEB>" )
+
+  auth.backend = "htdigest"
+  auth.backend.htdigest.userfile = "<PATH TO HTDIGEST>"
+  auth.require = (
+    "" => (
+      "method"  => "digest",
+      "realm"   => "Light Server",
+      "require" => "valid-user"
+    )
+  )
+
+
+  proxy.server = (
+    "/lsdnew/main/" => (
+      (
+        "host" => "127.0.0.1",
+        "port" => 9196
+      )
+    )
+  )
+}
+
+
+
+
+You may remove the auth entries if you don't need HTTP authentication.
+
+Apache instructions coming soon!
+
+

@@ -1,0 +1,1 @@
+SUBDIRS = AnimationPlugin ColourBankPlugin PalettePlugin TimePlugin VisualiserPlugin
