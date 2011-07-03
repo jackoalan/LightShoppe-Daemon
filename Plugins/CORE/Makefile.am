@@ -1,1 +1,0 @@
-coreweb_DATA = CorePlugin.css CorePlugin.js Client.json
