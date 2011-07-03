@@ -23,7 +23,7 @@
 #ifndef PALETTE_SAMPLER_H
 #define PALETTE_SAMPLER_H
 
-#include "../../CorePlugin.h"
+#include "../../src/CorePlugin.h"
 
 struct PaletteSamplerOutputData
 {

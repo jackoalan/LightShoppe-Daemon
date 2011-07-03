@@ -25,10 +25,10 @@
   * From the scope of the plugin's directory, LightShoppe's
   *development headers are accessed this way
   */
-#include "../../PluginAPI.h"
-#include "../../cJSON.h"
-#include "../../NodeInstAPI.h"
-#include "../../CorePlugin.h"
+#include "../../src/PluginAPI.h"
+#include "../../src/cJSON.h"
+#include "../../src/NodeInstAPI.h"
+#include "../../src/CorePlugin.h"
 
 #include <stdio.h>
 #include <string.h>

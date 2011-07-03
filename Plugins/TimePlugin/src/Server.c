@@ -25,10 +25,10 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "../../PluginAPI.h"
-#include "../../NodeInstAPI.h"
-#include "../../CorePlugin.h"
-#include "../../cJSON.h"
+#include "../../src/PluginAPI.h"
+#include "../../src/NodeInstAPI.h"
+#include "../../src/CorePlugin.h"
+#include "../../src/cJSON.h"
 
 /** SYMBOL ALIAS FOR LIBTOOL **/
 #define getPluginHead  TimePlugin_LTX_getPluginHead

@@ -23,7 +23,7 @@
 #include <sys/time.h>
 #include <math.h>
 
-#include "../../NodeInstAPI.h"
+#include "../../src/NodeInstAPI.h"
 
 #include "attackDecay.h"
 #include "db.h"

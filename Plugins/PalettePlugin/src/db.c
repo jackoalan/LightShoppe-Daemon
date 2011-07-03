@@ -29,8 +29,8 @@
 
 #include "db.h"
 #include "PaletteSampler.h"
-#include "../../NodeInstAPI.h"
-#include "../../CorePlugin.h"
+#include "../../src/NodeInstAPI.h"
+#include "../../src/CorePlugin.h"
 
 /* Forward Decls */
 int

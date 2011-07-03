@@ -22,10 +22,10 @@
 
 #include <string.h>
 
-#include "../../PluginAPI.h"
-#include "../../cJSON.h"
-#include "../../CorePlugin.h"
-#include "../../Node.h"
+#include "../../src/PluginAPI.h"
+#include "../../src/cJSON.h"
+#include "../../src/CorePlugin.h"
+#include "../../src/Node.h"
 
 #include "attackDecay.h"
 #include "db.h"

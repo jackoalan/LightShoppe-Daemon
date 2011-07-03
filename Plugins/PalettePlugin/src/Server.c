@@ -95,10 +95,10 @@
 #include <string.h>
 #include <sqlite3.h> /* For constants */
 
-#include "../../PluginAPI.h"
-#include "../../NodeInstAPI.h"
-#include "../../CorePlugin.h"
-#include "../../cJSON.h"
+#include "../../src/PluginAPI.h"
+#include "../../src/NodeInstAPI.h"
+#include "../../src/CorePlugin.h"
+#include "../../src/cJSON.h"
 
 #include "db.h"
 #include "PaletteSampler.h"

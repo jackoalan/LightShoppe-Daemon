@@ -23,8 +23,8 @@
 #ifndef PALETTE_SAMPLE_DB_H
 #define PALETTE_SAMPLE_DB_H
 
-#include "../../cJSON.h"
-#include "../../Node.h"
+#include "../../src/cJSON.h"
+#include "../../src/Node.h"
 #include "PaletteSampler.h"
 
 /* RPC methods */

@@ -21,7 +21,7 @@
  */
 
 #include <sqlite3.h> /* For constants */
-#include "../../NodeInstAPI.h"
+#include "../../src/NodeInstAPI.h"
 
 #include "attackDecay.h"
 

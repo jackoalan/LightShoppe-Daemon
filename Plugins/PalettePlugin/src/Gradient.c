@@ -24,7 +24,7 @@
 
 #include "PaletteSampler.h"
 #include "db.h"
-#include "../../Node.h"
+#include "../../src/Node.h"
 
 #include <stdio.h>
 
