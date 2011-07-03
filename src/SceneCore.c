@@ -22,7 +22,6 @@
 
 #include "SceneCore.h"
 #include <stdio.h>
-//#include <dlfcn.h>
 #include <ltdl.h>
 #include "PluginAPI.h"
 #include "PluginAPICore.h"
@@ -38,9 +37,12 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #include "DBOps.h"
 #include "cJSON.h"
+
 
 /* Basic runtime configuration stuff */
 static int verbose;
@@ -78,6 +80,24 @@ static struct event* updEv;
 
 /* Absolute timeval indicating when last update began */
 static struct timeval lastUpdLi;
+
+/* Generates the default path to save the database */
+char const * 
+getHomeDBPath ()
+{
+    struct passwd *pw = getpwuid(getuid());
+    if(!pw)
+        return NULL;
+    
+    char* path = malloc (256*sizeof(char));
+    if (path)
+    {
+        snprintf (path, 256, "%s/.lsd.db", pw->pw_dir);
+        return path;
+    }
+    else
+        return NULL;
+}
 
 /* Function which handles the calculation of remaining time */
 /* to next processing interval and updates an event to
@@ -147,14 +167,18 @@ handleReload (int ont, short int two, void* three)
 int
 lsdSceneEntry ()
 {
-
+    char const * HOME_DB = getHomeDBPath ();
+    
     if (!dbfile)
     {
-        printf ("Establishing empty DB.\n");
-        if (lsddb_emptyDB () < 0)
-        {
-            fprintf (stderr, "\nError while opening DB\n");
-            return -1;
+        printf ("Checking for DB in home.\n");
+        if (lsddb_openDB (HOME_DB) < 0){
+            printf ("Establishing empty DB.\n");
+            if (lsddb_emptyDB () < 0)
+            {
+                fprintf (stderr, "\nError while opening DB\n");
+                return -1;
+            }
         }
     }
     else
@@ -239,7 +263,7 @@ lsdSceneEntry ()
         if(lt_dlinit ())
             fprintf(stderr, "Unable to init ltdl: %s\n", lt_dlerror());
         else
-            iteratePluginsDirectory ("Plugins");
+            loadPluginsDirectory ();
 
 
         /** STRUCT PARTITION ARRAY **/
@@ -314,17 +338,19 @@ lsdSceneEntry ()
     /* Done with libevent */
     event_base_free (ebMain);
 
-    /* Save if necessary */
+    /* Save */
+    printf ("Saving DB to file\n");
     if (dbfile)
-    {
-        printf ("Saving DB to file\n");
         lsddb_saveDB (dbpath);
-    }
+    else /* Save In Home Directory */
+        lsddb_saveDB (HOME_DB);
 
     /* Finialise DB */
     printf ("Cleaning up DB\n");
     lsddb_closeDB ();
 
+    free(HOME_DB);
+    
     return 0;
 }
 

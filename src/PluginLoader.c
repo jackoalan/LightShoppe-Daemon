@@ -37,8 +37,18 @@
 #define LSD_DIRSEP_CHAR '/'
 #endif
 
+#if defined(PLUGIN_DIR)
+static const char PLUGIN_PATH[] = PLUGIN_DIR;
+#endif
+
+#if defined(WEB_PLUGIN_DIR)
+static const char WEB_PLUGIN_PATH[] = WEB_PLUGIN_DIR;
+#endif
+
+
 int
-checkAddPlugin (const char* pluginDir, const char* pluginFile)
+checkAddPlugin (const char* pluginFile, const char* pluginName, 
+                lt_dlhandle pluginHandle)
 {
 
     /* First get the file's digest */
@@ -52,35 +62,25 @@ checkAddPlugin (const char* pluginDir, const char* pluginFile)
 
     pclose (shaStream);
 
-    printf ("%s digest: %.40s\n", pluginDir, digest);
+    printf ("%s digest: %.40s\n", pluginName, digest);
 
     /* Now extract the head and load it! */
-
-    lt_dlhandle pluginSo;
-    pluginSo = lt_dlopen (pluginFile);
-    
-    if (!pluginSo)
-    {
-        fprintf (stderr, "Error while loading %s: %s\n", pluginDir, lt_dlerror());
-        return -1;
-    }
-    
-    ghType getHead = lt_dlsym (pluginSo, "getPluginHead");
+    ghType getHead = lt_dlsym (pluginHandle, "getPluginHead");
     if (getHead)
     {
-        if ( lsddb_pluginHeadLoader (getHead, 0, pluginDir, digest,
-                                     pluginSo) < 0 )
+        if ( lsddb_pluginHeadLoader (getHead, 0, pluginName, digest,
+                                     pluginHandle) < 0 )
         {
             fprintf (stderr, "Unable to validate plugin HEAD\n");
-            lt_dlclose (pluginSo);
+            lt_dlclose (pluginHandle);
             return -1;
         }
     }
     else
     {
-        printf ("Error while loading HEAD of %s:\n", pluginFile);
-        printf ("%s\n", lt_dlerror());
-        lt_dlclose (pluginSo);
+        fprintf (stderr, "Error while loading HEAD of %s:\n", pluginName);
+        fprintf (stderr, "%s\n", lt_dlerror());
+        lt_dlclose (pluginHandle);
         return -1;
     }
     
@@ -89,56 +89,47 @@ checkAddPlugin (const char* pluginDir, const char* pluginFile)
 }
 
 
-/* Pulls server library out of plugin folder and uses
- * libmagic to verify */
+/* Pulls server library out of plugin folder */
 int
-scrapePlugin (const char* pluginsPath, const char* pluginDirName)
+scrapePlugin (const char *filename, void * data)
 {
+    lt_dlhandle pluginHandle = lt_dlopenext (filename);
+    if (!pluginHandle)
+    {
+        fprintf (stderr, "Unable to link %s\nDetails: %s\n", filename, lt_dlerror());
+        return 0;
+    }
     
-    DIR* pluginDir;
-    struct dirent* pluginDirItem;
-
-    /* String to keep a single plugin's path for scraping */
-    char pluginFile[256];
-
-    snprintf (pluginFile, 256, "%s%c%s%c%s.la", pluginsPath, LSD_DIRSEP_CHAR, 
-              pluginDirName, LSD_DIRSEP_CHAR, pluginDirName);
+    /* Get Info for loaded Plugin */
+    lt_dlinfo const * pluginInfo = lt_dlgetinfo (pluginHandle);
+    if (!pluginInfo)
+    {
+        fprintf (stderr, "Unable to get plugin SO info for %s\nDetails: %s\n", filename, lt_dlerror());
+        return 0;
+    }
     
-    printf ("%s: Loading\n", pluginDirName);
-    return checkAddPlugin (pluginDirName, pluginFile);
+    /* Continue Loading Plugin */
+    printf ("Found %s\n", pluginInfo->name);
+    checkAddPlugin (pluginInfo->filename, pluginInfo->name, pluginHandle);
     
+    return 0;
 }
 
 
 /* Opens the plugins directory provided and calls
  * scrapePlugin for the name */
 int
-iteratePluginsDirectory (const char* pluginsDirPath)
+loadPluginsDirectory ()
 {
-    DIR* pluginsDir;
-    struct dirent* pluginsDirItem;
+    /* Plugin directory is set by autotools using user-defined prefix */
+#ifndef PLUGIN_DIR
+    fprintf (stderr, "Plugin Directory not provided at compile time\n");
+    return -1;
+#endif
+    
 
-    pluginsDir = opendir (pluginsDirPath);
-    if (!pluginsDir)
-    {
-        fprintf (stderr, "Unable to open plugins directory\n");
-        return -1;
-    }
-
-    pluginsDirItem = readdir (pluginsDir);
-    while (pluginsDirItem)
-    {
-        /* We're only interested in directories */
-        if (pluginsDirItem->d_type == DT_DIR)
-            if (pluginsDirItem->d_name[0] != '.') /* Filter
-                                                   * out dot
-                                                   * files */
-                scrapePlugin (pluginsDirPath, pluginsDirItem->d_name);
-
-        pluginsDirItem = readdir (pluginsDir);
-    }
-
-    return closedir (pluginsDir);
+    return lt_dlforeachfile (PLUGIN_PATH, scrapePlugin, NULL);
+    
 }
 
 
@@ -149,20 +140,24 @@ iteratePluginsDirectory (const char* pluginsDirPath)
   */
 int
 getPluginWebIncludes (struct evbuffer* target,
-                      const char* pluginsDirPath,
                       const char* pluginDirName)
 {
-    if (!target || !pluginsDirPath || !pluginDirName)
+    if (!target || !pluginDirName)
     {
         fprintf (stderr, "Invalid use of getPluginWebIncludes()\n");
         return -1;
     }
+    
+#ifndef WEB_PLUGIN_DIR
+    fprintf (stderr, "Web Plugin Directory not provided at compile time\n");
+    return -1;
+#endif
 
     char pluginIncludePath[256];
     snprintf (pluginIncludePath,
               256,
               "%s/%s/Client.json",
-              pluginsDirPath,
+              WEB_PLUGIN_PATH,
               pluginDirName);
 
     FILE* includeFile = fopen (pluginIncludePath, "rb");

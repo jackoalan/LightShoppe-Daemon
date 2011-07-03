@@ -251,7 +251,7 @@ lsddb_addFacadeNodeInst (int childPatchSpaceId,
 
 
 int
-lsddb_indexHtmlGen (const char* pluginsDir, struct evbuffer* target);
+lsddb_indexHtmlGen (struct evbuffer* target);
 
 
 int

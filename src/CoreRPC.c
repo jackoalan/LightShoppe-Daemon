@@ -1087,7 +1087,7 @@ void
 srvIndexCB (struct evhttp_request* req, void* arg)
 {
     struct evbuffer* repBuf = evbuffer_new ();
-    if (lsddb_indexHtmlGen ("Plugins", repBuf) < 0)
+    if (lsddb_indexHtmlGen (repBuf) < 0)
         evbuffer_add_printf (repBuf, "Error while generating index\n");
     evhttp_add_header (evhttp_request_get_output_headers (
                            req), "Content-Type", "text/html");

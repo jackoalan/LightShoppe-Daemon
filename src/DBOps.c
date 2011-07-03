@@ -30,7 +30,6 @@
 
 #include <stdio.h>
 #include <string.h>
-//#include <dlfcn.h>
 #include <ltdl.h>
 
 /* Forward-decl for statement compilation and cleanup */
@@ -2474,7 +2473,7 @@ static const char INDEX_HTML_FOOT[] =
     "</html>\n";
 
 int
-lsddb_indexHtmlGen (const char* pluginsDir, struct evbuffer* target)
+lsddb_indexHtmlGen (struct evbuffer* target)
 {
     if (!target)
         return -1;
@@ -2493,7 +2492,6 @@ lsddb_indexHtmlGen (const char* pluginsDir, struct evbuffer* target)
         if (pluginDirName)
         {
             getPluginWebIncludes (target,
-                                  pluginsDir,
                                   (const char*)pluginDirName);
             evbuffer_add_printf (
                 target,
@@ -2663,7 +2661,7 @@ lsddb_pluginHeadLoader (ghType phGet,
                                                                         * by
                                                                         * name */
     {
-        printf ("Found already\n");
+        printf ("Already in DB\n");
         pluginId = sqlite3_column_int (PLUGIN_HEAD_LOADER_CHECK_NAME_S, 0);
         enabled = sqlite3_column_int (PLUGIN_HEAD_LOADER_CHECK_NAME_S, 1);
 
@@ -2713,7 +2711,7 @@ lsddb_pluginHeadLoader (ghType phGet,
     }
     else  /* We must add new plugin record to DB */
     {
-        printf ("Not Found\n");
+        printf ("Adding %s to DB\n", parentDirectoryName);
         sqlite3_reset (PLUGIN_HEAD_LOADER_INSERT_S);
         sqlite3_bind_text (PLUGIN_HEAD_LOADER_INSERT_S,
                            1,

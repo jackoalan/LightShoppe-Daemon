@@ -23,10 +23,9 @@
 #include <evhttp.h>
 
 int
-iteratePluginsDirectory (const char* pluginsDirPath);
+loadPluginsDirectory ();
 
 
 int
 getPluginWebIncludes (struct evbuffer* target,
-                      const char* pluginsDirPath,
                       const char* pluginDirName);
