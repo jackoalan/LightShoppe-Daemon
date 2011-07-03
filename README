@@ -4,15 +4,46 @@ Thanks for obtaining LightShoppe! This project aims to be a general-purpose
 software solution for the control of theatrical and architectural grade
 lighting hardware; granting a wide degree of flexibility.
 
-To get straight to the point, there is currently no `make` system in
-LightShoppe. Instead, here are some simple scripts that perform the entire
-build in one go:
+To get straight to the point, LightShoppe uses Autotools to manage build
+and installation. A simple ./configure; make; make install is all that's
+necessary to build and install LightShoppe.
 
-	* Execute ./buildp.sh to build a compiler optomised binary (./lsd)
-	* Execute ./build.sh to build a non-optomised binary with debug
-	  symbols, ideal for running with valgrind
-	* Execute ./clean.sh to remove all files created by either of the
-	  above scripts
+Windows support is desired, but impossible to achieve at the moment due
+to Open Lighting Architecture's lack of Windows support. Linux 2.6.39 and 
+Mac OS 10.6 have been successfully tested for general use. 
+
+The following packages must be installed for LightShoppe to successfully 
+build:
+
+* build-essential
+* lidltdl-dev
+* libtool
+* automake
+* autoconf
+* libevent-dev
+* libsqlite3-dev
+* libprotobuf-dev
+* Open Lighting Architecture (Not in Debian nor Ubuntu's repos; Must 
+  build this from source as well.)
+
+A web server like lighttpd is also required to host static web files and 
+proxy RPCs to LightShoppe.
+
+To Build, run:
+
+* $ ./configure, or of you would like it installed privately,
+  $ ./configure --prefix=/home/<you>/.lsd
+* $ make
+* # make install
+
+To Run:
+* $ lsd
+This will remain in the foreground. Background is achieved with:
+* $ lsd > /dev/null 2>&1 &
+And stopped by
+* $ killall -s2 lsd
+
+The database is saved to ~/.lsd.db
 
 LightShoppe is still very much in its early stages of development and there
 is no formal documentation at the time of this writing. This file provides
@@ -41,7 +72,7 @@ provided that the types all match. Nodes themselves follow the basic
 principles of object-oriented design. Node developers design and write a
 "Node Class" which contains everything necessary to establish and run a
 "Node Instance" at the user's command. A "Class Library" is presented
-through the client to allow easy browsing and instantisation of these
+through the client to allow easy browsing and instantiation of these
 classes.
 
 Networks of nodes are contained within hierarchical units called
@@ -52,7 +83,7 @@ outward embodiment of the Patch Space. It appears and behaves like a
 regular node to the user, except that the user is able to arbitrarily 
 define and name it's plugs. Upon definition, these plugs appear within
 the Patch Space and allow the user to create a complex network within a
-single entity, making complex configurations more comprehendable.
+single entity, making complex configurations more comprehensible.
 
 The data network culminates in a macro-object called a "Partition".
 The Partition is a low-level object binding lighting universe channels
