@@ -1,9 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
 nobase_web_DATA = \
-COREPlugin/Client.json \
-COREPlugin/CorePlugin.css \
-COREPlugin/CorePlugin.js \
 farbtastic/farbtastic.css \
 farbtastic/farbtastic.js \
 farbtastic/marker.png \

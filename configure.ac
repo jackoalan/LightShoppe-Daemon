@@ -46,5 +46,8 @@ m4_include([Plugins/plugininclude.m4])
 # Web directory
 AC_SUBST([webdir], ['${datadir}/lsd/www'])
 
+# CORE Plugin
+AC_SUBST([corewebdir], ['${webplugindir}/CORE'])
+
 # Do
 AC_OUTPUT
