@@ -6,4 +6,4 @@ OLAWrapper.cpp DMX.c PluginLoader.c SceneCore.c
 
 lsd_LDADD = -lola -lprotobuf
 
-AM_CPPFLAGS = -DPLUGIN_DIR='"$(plugindir)"' -DWEB_PLUGIN_DIR='"$(webplugindir)"'
+AM_CPPFLAGS = -rdynamic -DPLUGIN_DIR='"$(plugindir)"' -DWEB_PLUGIN_DIR='"$(webplugindir)"'
