@@ -49,7 +49,11 @@
 #include <sys/prctl.h>
 #endif
 
+#include "../config.h"
+
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 #include <alsa/asoundlib.h>
+#endif
 
 /* Transformational vars */
 #define NUM_SAMPLES 2048
@@ -273,7 +277,7 @@ PCMPipeEntryMpd ()
     return 0;
 }
 
-
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 int
 PCMPipeEntryAlsa ()
 {
@@ -337,6 +341,7 @@ PCMPipeEntryAlsa ()
 
     return 0;
 }
+#endif
 
 
 /*int main(int argc, char** argv){

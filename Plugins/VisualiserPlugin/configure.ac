@@ -21,11 +21,13 @@ AC_SUBST([webinstalldir], ['${webplugindir}/VisualiserPlugin'])
 AC_PROG_CC
 
 # Checks for libraries.
-AC_SEARCH_LIBS([fftw_plan_dft_r2c_1d], [fftw3])
-AC_SEARCH_LIBS([snd_pcm_open], [asound])
+AC_SEARCH_LIBS([fftw_plan_dft_r2c_1d], [fftw3], [], [AC_MSG_ERROR([LIBFFTW3 not found. Unable to Make Visualiser plugin])])
+AC_SEARCH_LIBS([snd_pcm_open], [asound], [], [AC_MSG_RESULT([ALSA's library not found. Building without ALSA support])])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h string.h unistd.h])
+AC_CHECK_HEADERS([fftw3.h], [], [AC_MSG_ERROR([FFTW3's headers not found. Unable to make Visualiser plugin])])
+AC_CHECK_HEADERS([alsa/asoundlib.h], [], [AC_MSG_RESULT([ALSA's headers not found. Building without ALSA support])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT16_T

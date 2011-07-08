@@ -17,10 +17,10 @@ AC_PROG_CXX
 AC_PROG_CC
 
 # Checks for libraries.
-AC_SEARCH_LIBS([lt_dlinit], [ltdl])
+AC_SEARCH_LIBS([lt_dlinit], [ltdl],[],[AC_MSG_ERROR([Libltdl not found. Please install libltdl])])
 AC_SEARCH_LIBS([pow], [m])
-AC_SEARCH_LIBS([sqlite3_open], [sqlite3])
-AC_SEARCH_LIBS([event_base_new], [event])
+AC_SEARCH_LIBS([sqlite3_open], [sqlite3],[],[AC_MSG_ERROR([libsqlite3 not found. Please install libsqlite3])])
+AC_SEARCH_LIBS([event_base_new], [event],[],[AC_MSG_ERROR([Libevent not found. Please install libevent])])
 
 # Checks for header files.
 AC_CHECK_HEADERS([float.h limits.h stdint.h stdlib.h string.h unistd.h])

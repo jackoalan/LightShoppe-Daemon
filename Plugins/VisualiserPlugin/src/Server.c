@@ -44,6 +44,8 @@
 
 #include "PCMPipe.h"
 
+#include "../config.h"
+
 /** SYMBOL ALIAS FOR LIBTOOL **/
 #define getPluginHead  VisualiserPlugin_LTX_getPluginHead
 
@@ -360,22 +362,15 @@ astopPipeProcess ()
     return 0;
 }
 
-
 int
-visPluginInit (struct LSD_ScenePlugin const* plugin)
+visPluginMPDInit (struct LSD_ScenePlugin const* plugin)
 {
-    floatTypeId = core_getFloatTypeID ();
     mlocalBuffer[0] = 0.0;
     mlocalBuffer[1] = 0.0;
     mlocalBuffer[2] = 0.0;
-    alocalBuffer[0] = 0.0;
-    alocalBuffer[1] = 0.0;
-    alocalBuffer[2] = 0.0;
-
+    
     msemInit ();
-    asemInit ();
     mstartPipeProcess ();
-    astartPipeProcess ();
 
     plugininit_registerNodeClass (plugin,
                                   NULL,
@@ -390,6 +385,21 @@ visPluginInit (struct LSD_ScenePlugin const* plugin)
                                   mbfFuncs,
                                   mbpFuncs);
     
+    return 0;
+}
+
+int
+visPluginALSAInit (struct LSD_ScenePlugin const* plugin)
+{
+    alocalBuffer[0] = 0.0;
+    alocalBuffer[1] = 0.0;
+    alocalBuffer[2] = 0.0;
+    
+    asemInit ();
+    astartPipeProcess ();
+    
+    
+    
     plugininit_registerNodeClass (plugin,
                                   NULL,
                                   makeNode,
@@ -402,7 +412,21 @@ visPluginInit (struct LSD_ScenePlugin const* plugin)
                                   1,
                                   abfFuncs,
                                   abpFuncs);
+    
+    return 0;
+}
 
+int
+visPluginInit (struct LSD_ScenePlugin const* plugin)
+{
+    
+    floatTypeId = core_getFloatTypeID ();
+    
+    visPluginMPDInit (plugin);
+#ifdef HAVE_ALSA_ASOUNDLIB_H
+    visPluginALSAInit (plugin);
+#endif
+    
     return 0;
 }
 
@@ -413,15 +437,16 @@ visPluginClean (struct LSD_ScenePlugin const* plugin)
     struct shmid_ds shmid_struct;
 
     mstopPipeProcess ();
-    astopPipeProcess ();
-
     semctl ( msemid, 0, IPC_RMID );
     shmdt (mshmAttach);
     shmctl (mshmid, IPC_RMID, &shmid_struct);
     
+#ifdef HAVE_ALSA_ASOUNDLIB_H
+    astopPipeProcess ();
     semctl ( asemid, 0, IPC_RMID );
     shmdt (ashmAttach);
     shmctl (ashmid, IPC_RMID, &shmid_struct);
+#endif
 }
 
 
