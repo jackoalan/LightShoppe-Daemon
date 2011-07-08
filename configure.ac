@@ -24,6 +24,10 @@ AC_SEARCH_LIBS([event_base_new], [event])
 
 # Checks for header files.
 AC_CHECK_HEADERS([float.h limits.h stdint.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([event.h evhttp.h],[],[AC_MSG_ERROR([Libevent's headers not found. Please install libevent-dev])])
+AC_CHECK_HEADERS([ltdl.h],[],[AC_MSG_ERROR([libltdl's header not found. Please install libltdl-dev])])
+AC_CHECK_HEADERS([ola/StreamingClient.h],[],[AC_MSG_ERROR([OLA's header not found. Please install OLA])])
+AC_CHECK_HEADERS([sqlite3.h],[],[AC_MSG_ERROR([libsqlite3's header not found. Please install libsqlite3-dev])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
@@ -51,3 +55,4 @@ AC_SUBST([corewebdir], ['${webplugindir}/CORE'])
 
 # Do
 AC_OUTPUT
+
