@@ -368,7 +368,7 @@ main (int argc, const char** argv)
         {
             if (strcmp (argv[i], "-h") == 0)
             {
-                printf ("Usage: lsd [-hvf] [-d dbfile]\n");
+                printf ("Usage: lsd [-hv] [-d dbfile]\n");
                 return 0;
             }
             if (strcmp (argv[i], "-v") == 0)
@@ -378,11 +378,7 @@ main (int argc, const char** argv)
                 strncpy (dbpath, argv[i + 1], 256);
                 dbfile = 1;
             }
-            if (strcmp (argv[i], "-f") == 0)
-                if (daemon (0, 0) < 0)
-                {
-                    printf ("Unable to fork into BG\n"); exit (-1);
-                }
+
         }
 
     /* Start LSD! */

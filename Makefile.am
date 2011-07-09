@@ -1,3 +1,3 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = src Plugins web
+SUBDIRS = Plugins src web
