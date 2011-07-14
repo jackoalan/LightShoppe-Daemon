@@ -303,6 +303,15 @@ static const char INIT_QUERIES[] =
     "panX INTEGER DEFAULT 0, panY INTEGER DEFAULT 0, scale REAL DEFAULT 1.0, "
     "colourR REAL DEFAULT 0, colourG REAL DEFAULT 1, colourB REAL DEFAULT 0);\n"
 
+/* CREATE: ScenePatchSpaceWidget */
+/* For any patchSpace, this table records up to four nodes which provide
+/* a widget. A value of -1 for nodeId means 'no widget' */
+    "CREATE TABLE IF NOT EXISTS ScenePatchSpaceWidget (psId INTEGER NOT NULL, "
+    "psSlot INTEGER NOT NULL, nodeId INTEGER NOT NULL DEFAULT -1);\n"
+
+    "CREATE INDEX IF NOT EXISTS ScenePatchSpaceWidgetIdx ON ScenePatchSpaceWidget "
+    "(psId, psSlot);\n"
+
 /* Reserve PatchSpace 0 for partition facade Nodes. */
 /* Note that the parentPatchSpace column is meaningless in
  * this special patchSpace (so -1 will do) */

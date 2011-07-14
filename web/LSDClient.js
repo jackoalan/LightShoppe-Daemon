@@ -935,7 +935,7 @@ function LSDFacadeIns(assps,insArr){
     
     // add clip rect path
     var clipPath = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
-    clipPath.setAttribute('id','clipRectFac_'+this.assps.psId);
+    clipPath.setAttribute('id','clipRectFacIns_'+this.assps.psId);
     this.nodeSvg.appendChild(clipPath);
     
     // add rect for above clip path
@@ -956,7 +956,7 @@ function LSDFacadeIns(assps,insArr){
     
     // Add fill rect colour and clip it
     this.fillRectCol = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    this.fillRectCol.setAttribute('clip-path','url(#clipRectFac_'+this.assps.psId+')');
+    this.fillRectCol.setAttribute('clip-path','url(#clipRectFacIns_'+this.assps.psId+')');
     this.fillRectCol.setAttribute('style','fill:#00f');
     this.fillRectCol.setAttribute('width','100');
     this.fillRectCol.setAttribute('height','200');
@@ -964,7 +964,7 @@ function LSDFacadeIns(assps,insArr){
     
     // Add fill rect shad and clip it
     this.fillRectShad = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    this.fillRectShad.setAttribute('clip-path','url(#clipRectFac_'+this.assps.psId+')');
+    this.fillRectShad.setAttribute('clip-path','url(#clipRectFacIns_'+this.assps.psId+')');
     this.fillRectShad.setAttribute('style','fill:url(#nodeBgGrad)');
     this.fillRectShad.setAttribute('width','100');
     this.fillRectShad.setAttribute('height','200');
@@ -974,7 +974,7 @@ function LSDFacadeIns(assps,insArr){
     
     // Add bevel shading
     this.bevelShader = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    this.bevelShader.setAttribute('clip-path','url(#clipRectFac_'+this.assps.psId+')');
+    this.bevelShader.setAttribute('clip-path','url(#clipRectFacIns_'+this.assps.psId+')');
     this.bevelShader.setAttribute('style','fill:url(#outBevelGrad)');
     this.bevelShader.setAttribute('width','100');
     this.bevelShader.setAttribute('height','200');
@@ -985,7 +985,7 @@ function LSDFacadeIns(assps,insArr){
     this.wave.setAttribute('id','nodeWavePath');
     this.wave.setAttribute('d','m -26.75085,102.36218 c 0,0 81.123575,28.30275 186.75085,0 105.62724,-28.302694 187.64436,8.93544 187.64436,8.93544 l 0,-113.4801638 -376.182309,0 z');
     this.wave.setAttribute('style','fill:url(#nodeWaveGrad);stroke:none;');
-    this.wave.setAttribute('clip-path','url(#clipRectFac_'+this.assps.psId+')');
+    this.wave.setAttribute('clip-path','url(#clipRectFacIns_'+this.assps.psId+')');
     rectGroup.appendChild(this.wave);
     
     
@@ -1100,7 +1100,7 @@ function LSDFacadeOuts(assps,outsArr){
     
     // add clip rect path
     var clipPath = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
-    clipPath.setAttribute('id','clipRectFac_'+this.assps.psId);
+    clipPath.setAttribute('id','clipRectFacOuts_'+this.assps.psId);
     this.nodeSvg.appendChild(clipPath);
     
     // add rect for above clip path
@@ -1121,7 +1121,7 @@ function LSDFacadeOuts(assps,outsArr){
     
     // Add fill rect colour and clip it
     this.fillRectCol = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    this.fillRectCol.setAttribute('clip-path','url(#clipRectFac_'+this.assps.psId+')');
+    this.fillRectCol.setAttribute('clip-path','url(#clipRectFacOuts_'+this.assps.psId+')');
     this.fillRectCol.setAttribute('style','fill:#00f');
     this.fillRectCol.setAttribute('width','100');
     this.fillRectCol.setAttribute('height','200');
@@ -1129,7 +1129,7 @@ function LSDFacadeOuts(assps,outsArr){
     
     // Add fill rect shad and clip it
     this.fillRectShad = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    this.fillRectShad.setAttribute('clip-path','url(#clipRectFac_'+this.assps.psId+')');
+    this.fillRectShad.setAttribute('clip-path','url(#clipRectFacOuts_'+this.assps.psId+')');
     this.fillRectShad.setAttribute('style','fill:url(#nodeBgGrad)');
     this.fillRectShad.setAttribute('width','100');
     this.fillRectShad.setAttribute('height','200');
@@ -1139,7 +1139,7 @@ function LSDFacadeOuts(assps,outsArr){
     
     // Add bevel shading
     this.bevelShader = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    this.bevelShader.setAttribute('clip-path','url(#clipRectFac_'+this.assps.psId+')');
+    this.bevelShader.setAttribute('clip-path','url(#clipRectFacOuts_'+this.assps.psId+')');
     this.bevelShader.setAttribute('style','fill:url(#outBevelGrad)');
     this.bevelShader.setAttribute('width','100');
     this.bevelShader.setAttribute('height','200');
@@ -1150,7 +1150,7 @@ function LSDFacadeOuts(assps,outsArr){
     this.wave.setAttribute('id','nodeWavePath');
     this.wave.setAttribute('d','m -26.75085,102.36218 c 0,0 81.123575,28.30275 186.75085,0 105.62724,-28.302694 187.64436,8.93544 187.64436,8.93544 l 0,-113.4801638 -376.182309,0 z');
     this.wave.setAttribute('style','fill:url(#nodeWaveGrad);stroke:none;');
-    this.wave.setAttribute('clip-path','url(#clipRectFac_'+this.assps.psId+')');
+    this.wave.setAttribute('clip-path','url(#clipRectFacOuts_'+this.assps.psId+')');
     rectGroup.appendChild(this.wave);
     
     // Add icon
