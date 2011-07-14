@@ -22,4 +22,5 @@ imageuploader/loading.gif \
 index.html \
 LSDClient.css \
 LSDClient.js \
-LSDClientIF.js
+LSDClientIF.js \
+favicon.ico
