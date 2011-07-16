@@ -26,10 +26,18 @@
 
 #include "GarbageCollector.h"
 #include "DBArrOps.h"
+#include "Logging.h"
 
 #include "Array.h"
 
 #include "DBArr.h"
+
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+/* Name of this component for logging */
+static const char LOG_COMP[] = "Array.c";
 
 /* Private function to run destructor on entire unit using
  * head data */
@@ -65,7 +73,7 @@ recursiveClear (struct LSD_ArrayUnit* unit)
 
     if (!unit)
     {
-        fprintf (stderr, "Unit is NULL in recursiveClear()\n");
+        doLog (ERROR, LOG_COMP, _("Unit is NULL in recursiveClear()."));
         return -1;
     }
 
@@ -95,7 +103,7 @@ recursiveResolve (struct LSD_ArrayUnit* curUnit, size_t targetUnitNum,
 {
     if (!curUnit)
     {
-        fprintf (stderr, "curUnit is NULL in recursiveResolve()\n");
+        doLog (ERROR, LOG_COMP, _("curUnit is NULL in recursiveResolve()."));
         return -1;
     }
 
@@ -111,8 +119,7 @@ recursiveResolve (struct LSD_ArrayUnit* curUnit, size_t targetUnitNum,
                                  targetPtrBind);
     else
     {
-        fprintf (stderr,
-                 "Error while linking to ArrayUnit: Unit index %d not found.\n",
+        doLog (ERROR, LOG_COMP, _("Error while linking to ArrayUnit: Unit index %d not found."),
                  (int)targetUnitNum);
         return -1;
     }
@@ -128,19 +135,19 @@ makeArray (struct LSD_ArrayHead* target,
 {
     if (!target)
     {
-        fprintf (stderr, "No target pointer provided in makeArray()\n");
+        doLog (ERROR, LOG_COMP, _("No target pointer provided in makeArray()."));
         return -1;
     }
 
     if (elemSize < 1)
     {
-        fprintf (stderr, "Invalid element size declaired in makeArray()\n");
+        doLog (ERROR, LOG_COMP, _("Invalid element size declared in makeArray()."));
         return -1;
     }
 
     if (arrMul < 1)
     {
-        fprintf (stderr, "Invalid array multiple declaired in makeArray()\n");
+        doLog (ERROR, LOG_COMP, _("Invalid array multiple declared in makeArray()."));
         return -1;
     }
 
@@ -169,8 +176,7 @@ makeArray (struct LSD_ArrayHead* target,
 
     if (!target->firstUnit)
     {
-        fprintf (stderr,
-                 "Error occured while allocating first ArrayUnit for array\n");
+        doLog (ERROR, LOG_COMP, _("Error occurred while allocating first ArrayUnit for array."));
         return -1;
     }
 
@@ -181,9 +187,7 @@ makeArray (struct LSD_ArrayHead* target,
     target->firstUnit->buffer = malloc (arrSize);
     if (!target->firstUnit->buffer)
     {
-        fprintf (
-            stderr,
-            "Error occured while allocating array block for first ArrayUnit\n");
+        doLog (ERROR, LOG_COMP, _("Error occurred while allocating array block for first ArrayUnit."));
         return -1;
     }
     /* Set Memory to zero to ensure proper behaviour (NULL
@@ -199,7 +203,7 @@ clearArray (struct LSD_ArrayHead* toclear)
 {
     if (!toclear)
     {
-        fprintf (stderr, "No arrayHead provided for clearArray()\n");
+        doLog (ERROR, LOG_COMP, _("No arrayHead provided for clearArray()."));
         return -1;
     }
 
@@ -234,19 +238,19 @@ pickIdx (struct LSD_ArrayHead* array, void** targetPtrBind, size_t idx)
 
     if (!array)
     {
-        fprintf (stderr, "array is NULL int pickIdx()\n");
+        doLog (ERROR, LOG_COMP, _("Array is NULL in pickIdx()."));
         return -1;
     }
 
     if (idx < 0)
     {
-        fprintf (stderr, "Invalid value for idx in pickIdx()\n");
+        doLog (ERROR, LOG_COMP, _("Invalid value for idx in pickIdx()."));
         return -1;
     }
 
     if (idx > array->maxIdx)
     {
-        fprintf (stderr, "Index %d out of bounds in pickIdx()\n", idx);
+        doLog (ERROR, LOG_COMP, _("Index %d out of bounds in pickIdx()."), idx);
         return -1;
     }
 
@@ -264,7 +268,7 @@ pickIdx (struct LSD_ArrayHead* array, void** targetPtrBind, size_t idx)
     }
     else
     {
-        fprintf (stderr, "Cannot resolve array idx %d.\n", (int)idx);
+        doLog (ERROR, LOG_COMP, _("Cannot resolve array idx %d."), (int)idx);
         return -1;
     }
 }
@@ -286,7 +290,7 @@ zeroIdx (struct LSD_ArrayHead* array, size_t idx)
                 array->elemSize);
         return 0;
     }
-    fprintf (stderr, "Unable to zero memory for delIdx()\n");
+    doLog (ERROR, LOG_COMP, _("Unable to zero memory for delIdx()."));
     return -1;
 }
 
@@ -296,25 +300,25 @@ delIdx (struct LSD_ArrayHead* array, size_t idx)
 {
     if (!array)
     {
-        fprintf (stderr, "array is NULL for delIdx()\n");
+        doLog (ERROR, LOG_COMP, _("array is NULL for delIdx()."));
         return -1;
     }
 
     if (idx < 0)
     {
-        fprintf (stderr, "Invalid value for idx in pickIdx()\n");
+        doLog (ERROR, LOG_COMP, _("Invalid value for idx in pickIdx()."));
         return -1;
     }
 
     if (idx > array->maxIdx)
     {
-        fprintf (stderr, "Error in delIdx(): index %d out of bounds\n", idx);
+        doLog (ERROR, LOG_COMP, _("Error in delIdx(): index %d out of bounds."), idx);
         return -2;
     }
 
     if (array->delStat == NO_DEL_ALLOWED)
     {
-        fprintf (stderr, "Delete is explicitly not allowed on this array\n");
+        doLog (ERROR, LOG_COMP, _("Delete is explicitly not allowed on this array."));
         return -1;
     }
 
@@ -333,7 +337,7 @@ delIdx (struct LSD_ArrayHead* array, size_t idx)
         lsdgc_getNewArrayId (&arrId);
         if (lsdgc_setArrMark (arrId, idx) < 0)
         {
-            fprintf (stderr, "Error setting initial array mark in DB\n");
+            doLog (ERROR, LOG_COMP, _("Error setting initial array mark in DB."));
             return -1;
         }
         --array->numElems;
@@ -344,7 +348,7 @@ delIdx (struct LSD_ArrayHead* array, size_t idx)
     {
         if (lsdgc_setArrMark (array->dbId, idx) < 0)
         {
-            fprintf (stderr, "Error setting array mark in DB\n");
+            doLog (ERROR, LOG_COMP, _("Error setting array mark in DB."));
             return -1;
         }
         --array->numElems;
@@ -361,7 +365,7 @@ insertElem (struct LSD_ArrayHead* array,
 {
     if (!array)
     {
-        fprintf (stderr, "array is NULL for insertElem()\n");
+        doLog (ERROR, LOG_COMP, _("array is NULL for insertElem()."));
         return -1;
     }
 
@@ -376,13 +380,13 @@ insertElem (struct LSD_ArrayHead* array,
                 *targetIdxBind = idxBind;
             if (lsdgc_unsetArrMark (array->dbId, idxBind) < 0)
             {
-                fprintf (stderr, "Unable to unset array mark after discovery\n");
+                doLog (ERROR, LOG_COMP, _("Unable to unset array mark after discovery."));
                 return -1;
             }
 
             if (pickIdx (array, &targetPtr, idxBind) < 0)
             {
-                fprintf (stderr, "Unable to resolve pointer after insertion\n");
+                doLog (ERROR, LOG_COMP, _("Unable to resolve pointer after insertion."));
                 return -1;
             }
             if (targetPtrBind)
@@ -401,21 +405,20 @@ insertElem (struct LSD_ArrayHead* array,
         struct LSD_ArrayUnit* au = malloc (sizeof( struct LSD_ArrayUnit ));
         if (!au)
         {
-            fprintf (stderr, "Cannot allocate memory for new ArrayUnit\n");
+            doLog (ERROR, LOG_COMP, _("Cannot allocate memory for new ArrayUnit."));
             return -1;
         }
         size_t arraySize = array->elemSize * array->mul;
         au->buffer = malloc (arraySize);
         if (!au->buffer)
         {
-            fprintf (stderr,
-                     "Unable to allocate memory for new ArrayUnit's buffer\n");
+            doLog (ERROR, LOG_COMP, _("Unable to allocate memory for new ArrayUnit's buffer."));
             return -1;
         }
         memset (au->buffer, 0, arraySize);
 
         if (!array->lastUnit)
-            fprintf (stderr, "WTF?! in arrayHead %d\n", (int)array);
+            doLog (ERROR, LOG_COMP, _("No lastUnit in arrayHead %d."), (int)array);
         array->lastUnit->nextUnit = au;
         array->lastUnit = au;
         au->unitIdx = array->numUnits;
@@ -430,7 +433,7 @@ insertElem (struct LSD_ArrayHead* array,
 
     if (pickIdx (array, &targetPtr, newIdx) < 0)
     {
-        fprintf (stderr, "Unable to resolve pointer using maxIdx\n");
+        doLog (ERROR, LOG_COMP, _("Unable to resolve pointer using maxIdx."));
         return -1;
     }
 

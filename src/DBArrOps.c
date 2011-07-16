@@ -29,6 +29,14 @@
 #include "Node.h"
 #include "PluginAPI.h"
 #include "SceneCore.h"
+#include "Logging.h"
+
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+/* Name of this component for logging */
+static const char LOG_COMP[] = "DBArrOps.c";
 
 static const int STDMUL = 50;
 
@@ -37,7 +45,7 @@ static const int STDMUL = 50;
                                  STDMUL, \
                                  sizeof( struct structure ), delete, \
                                  destructor) < 0) \
-    {fprintf (stderr, "Error while establishing array: %d\n", num); return -1; }
+    {doLog (ERROR, LOG_COMP, _("Error while establishing array: %d."), num); return -1; }
 
 int
 initLsdArrays ()
@@ -57,7 +65,7 @@ initLsdArrays ()
 
 
 #define CLEAR(array) if (clearArray (getArr_ ## array ()) < 0) \
-    {fprintf (stderr, "Error while clearing array\n"); problem = -1; }
+    {doLog (WARNING, LOG_COMP, _("Error while clearing array.")); problem = -1; }
 
 int
 clearLsdArrays ()

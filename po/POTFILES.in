@@ -1,1 +1,11 @@
+src/Array.c
+src/CorePlugin.c
+src/CoreRPC.c
+src/DBArrOps.c
+src/DBOps.c
+src/DMX.c
+src/GarbageCollector.c
+src/NodeInstAPI.c
+src/PluginAPI.c
+src/PluginLoader.c
 src/SceneCore.c

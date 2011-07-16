@@ -35,6 +35,14 @@
 #include "CorePlugin.h"
 #include "cJSON.h"
 #include "Node.h"
+#include "Logging.h"
+
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+/* Name of this component for logging */
+static const char LOG_COMP[] = "CorePlugin.c";
 
 static struct LSD_ScenePlugin const* corePlugin;
 
@@ -915,7 +923,7 @@ rpcHandler (cJSON* in, cJSON* out)
         if (plugindb_step (corePlugin, intGenUpdateStmt) == SQLITE_DONE)
             cJSON_AddStringToObject (out, "success", "success");
         else
-            cJSON_AddStringToObject (out, "error", "Unable to update val");
+            cJSON_AddStringToObject (out, "error", _("Unable to update val"));
 
         int* intGenInt = NULL;
         plugin_getInstById (corePlugin, nodeId->valueint, (void**)&intGenInt);
@@ -933,7 +941,7 @@ rpcHandler (cJSON* in, cJSON* out)
                                      plugindb_column_int (corePlugin,
                                                           intGenSelectStmt, 0));
         else
-            cJSON_AddStringToObject (out, "error", "Unable to get val");
+            cJSON_AddStringToObject (out, "error", _("Unable to get val"));
 
     }
     else if (strcasecmp (coreMethod->valuestring, "getIntViewVal") == 0)
@@ -947,7 +955,7 @@ rpcHandler (cJSON* in, cJSON* out)
         {
             cJSON_AddStringToObject (out,
                                      "error",
-                                     "Unable to find nodeInst in DB");
+                                     _("Unable to find nodeInst in DB"));
             return;
         }
 
@@ -968,7 +976,7 @@ rpcHandler (cJSON* in, cJSON* out)
         else
             cJSON_AddStringToObject (out,
                                      "error",
-                                     "Unable to resolve viewer's connection");
+                                     _("Unable to resolve viewer's connection"));
     }
     else if (strcasecmp (coreMethod->valuestring, "setFloatGenVal") == 0)
     {
@@ -985,7 +993,7 @@ rpcHandler (cJSON* in, cJSON* out)
         if (plugindb_step (corePlugin, floatGenUpdateStmt) == SQLITE_DONE)
             cJSON_AddStringToObject (out, "success", "success");
         else
-            cJSON_AddStringToObject (out, "error", "Unable to update val");
+            cJSON_AddStringToObject (out, "error", _("Unable to update val"));
 
         double* floatGenDbl = NULL;
         plugin_getInstById (corePlugin, nodeId->valueint, (void**)&floatGenDbl);
@@ -1004,7 +1012,7 @@ rpcHandler (cJSON* in, cJSON* out)
                                                              floatGenSelectStmt,
                                                              0));
         else
-            cJSON_AddStringToObject (out, "error", "Unable to get val");
+            cJSON_AddStringToObject (out, "error", _("Unable to get val"));
 
     }
     else if (strcasecmp (coreMethod->valuestring, "getFloatViewVal") == 0)
@@ -1018,7 +1026,7 @@ rpcHandler (cJSON* in, cJSON* out)
         {
             cJSON_AddStringToObject (out,
                                      "error",
-                                     "Unable to find nodeInst in DB");
+                                     _("Unable to find nodeInst in DB"));
             return;
         }
 
@@ -1039,7 +1047,7 @@ rpcHandler (cJSON* in, cJSON* out)
         else
             cJSON_AddStringToObject (out,
                                      "error",
-                                     "Unable to resolve viewer's connection");
+                                     _("Unable to resolve viewer's connection"));
     }
     else if (strcasecmp (coreMethod->valuestring, "setRgbGenVal") == 0)
     {
@@ -1077,7 +1085,7 @@ rpcHandler (cJSON* in, cJSON* out)
         if (plugindb_step (corePlugin, rgbGenUpdateStmt) == SQLITE_DONE)
             cJSON_AddStringToObject (out, "success", "success");
         else
-            cJSON_AddStringToObject (out, "error", "Unable to update val");
+            cJSON_AddStringToObject (out, "error", _("Unable to update val"));
 
         struct RGB_TYPE* rgbGenObj = NULL;
         plugin_getInstById (corePlugin, nodeId->valueint, (void**)&rgbGenObj);
@@ -1111,7 +1119,7 @@ rpcHandler (cJSON* in, cJSON* out)
             cJSON_AddItemToObject (out, "val", rgbObj);
         }
         else
-            cJSON_AddStringToObject (out, "error", "Unable to get val");
+            cJSON_AddStringToObject (out, "error", _("Unable to get val"));
 
     }
     else if (strcasecmp (coreMethod->valuestring, "getRgbViewVal") == 0)
@@ -1125,7 +1133,7 @@ rpcHandler (cJSON* in, cJSON* out)
         {
             cJSON_AddStringToObject (out,
                                      "error",
-                                     "Unable to find nodeInst in DB");
+                                     _("Unable to find nodeInst in DB"));
             return;
         }
 
@@ -1153,7 +1161,7 @@ rpcHandler (cJSON* in, cJSON* out)
         else
             cJSON_AddStringToObject (out,
                                      "error",
-                                     "Unable to resolve viewer's connection");
+                                     _("Unable to resolve viewer's connection"));
     }
     else if (strcasecmp (coreMethod->valuestring, "triggerGen") == 0)
     {

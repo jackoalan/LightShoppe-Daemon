@@ -27,10 +27,18 @@
 #include "SceneCore.h"
 #include "PluginAPI.h"
 #include "PluginLoader.h"
+#include "Logging.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <ltdl.h>
+
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+/* Name of this component for logging */
+static const char LOG_COMP[] = "DBOps.c";
 
 /* Forward-decl for statement compilation and cleanup */
 int
@@ -88,19 +96,17 @@ lsddb_emptyDB ()
         memdb = memory;
         if (lsddb_initDB () < 0)
         {
-            fprintf (stderr, "There was a problem initing DB\n");
+            doLog (ERROR, LOG_COMP, _("There was a problem initing DB."));
             return -1;
         }
         if (lsddb_prepStmts () < 0)
         {
-            fprintf (
-                stderr,
-                "There was a problem preparing DB statements while opening DB\n");
+            doLog (ERROR, LOG_COMP, _("There was a problem preparing DB statements while opening DB."));
             return -1;
         }
         return 0;
     }
-    fprintf (stderr, "Unable to open empty DB\n");
+    doLog (ERROR, LOG_COMP, _("Unable to open empty DB."));
     return -1;
 }
 
@@ -133,14 +139,12 @@ lsddb_openDB (const char* path)
                 memdb = memory;
                 if (lsddb_initDB () < 0)
                 {
-                    fprintf (stderr, "There was a problem initing DB at open\n");
+                    doLog (ERROR, LOG_COMP, _("There was a problem initing DB at open."));
                     return -1;
                 }
                 if (lsddb_prepStmts () < 0)
                 {
-                    fprintf (
-                        stderr,
-                        "There was a problem preparing DB statements while opening DB\n");
+                    doLog (ERROR, LOG_COMP, _("There was a problem preparing DB statements while opening DB."));
                     return -1;
                 }
                 return 0;
@@ -148,8 +152,7 @@ lsddb_openDB (const char* path)
             }
             else  /* No Memory DB */
             {
-                fprintf (stderr,
-                         "Error while opening memory DB: %s\n",
+                doLog (ERROR, LOG_COMP, _("Error while opening memory DB: %s"),
                          sqlite3_errmsg (memory));
                 sqlite3_close (file);
                 return -1;
@@ -158,8 +161,7 @@ lsddb_openDB (const char* path)
         }
         else  /* No File DB */
         {
-            fprintf (stderr,
-                     "Error while opening file DB: %s\n",
+            doLog (ERROR, LOG_COMP, _("Error while opening file DB: %s"),
                      sqlite3_errmsg (file));
             sqlite3_close (file);
             return -1;
@@ -168,7 +170,7 @@ lsddb_openDB (const char* path)
     }
     else  /* Path NULL */
     {
-        fprintf (stderr, "Error while opening DB: Path not specified\n");
+        doLog (ERROR, LOG_COMP, _("Error while opening DB: Path not specified."));
         return -1;
     }
 
@@ -198,8 +200,7 @@ lsddb_saveDB (const char* origPath)
         }
         else
         {
-            fprintf (stderr,
-                     "Error while opening file DB for saving:\n%s\n",
+            doLog (ERROR, LOG_COMP, _("Error while opening file DB for saving:\n%s"),
                      sqlite3_errmsg (file));
             sqlite3_close (file);
             return -1;
@@ -207,8 +208,7 @@ lsddb_saveDB (const char* origPath)
     }
     else  /* Path NULL */
     {
-        fprintf (stderr,
-                 "Error while saving DB: No path AND memdb specified.\n");
+        doLog (ERROR, LOG_COMP, _("Error while saving DB: path AND memdb must not be NULL."));
         return -1;
     }
 
@@ -226,7 +226,7 @@ lsddb_autoSaveDB (const char* origPath)
     int pathlen = strlen (origPath);
     if (pathlen > 250)
     {
-        fprintf (stderr, "Error while autosaving DB, pathname too long.\n");
+        doLog (ERROR, LOG_COMP, _("Error while autosaving DB: pathname too long."));
         return -1;
     }
     strcat (newpath, origPath);
@@ -248,8 +248,7 @@ lsddb_autoSaveDB (const char* origPath)
         }
         else
         {
-            fprintf (stderr,
-                     "Error while opening file DB for saving:\n%s\n",
+            doLog (ERROR, LOG_COMP, _("Error while opening file DB for saving:\n%s"),
                      sqlite3_errmsg (file));
             sqlite3_close (file);
             return -1;
@@ -257,8 +256,7 @@ lsddb_autoSaveDB (const char* origPath)
     }
     else  /* Path NULL */
     {
-        fprintf (stderr,
-                 "Error while saving DB: No path AND memdb specified.\n");
+        doLog (ERROR, LOG_COMP, _("Error while saving DB: path AND memdb must not be NULL."));
         return -1;
     }
 
@@ -420,7 +418,7 @@ lsddb_initDB ()
 
     if (errMsg)
     {
-        fprintf (stderr, "Error during DB init:\n%s\n", errMsg);
+        doLog (ERROR, LOG_COMP, _("Error during DB init:\n%s"), errMsg);
         sqlite3_free (errMsg);
     }
     return rc;
@@ -466,7 +464,7 @@ lsddb_resetDB ()
 
     if (errMsg)
     {
-        fprintf (stderr, "Error during DB reset:\n%s\n", errMsg);
+        doLog (ERROR, LOG_COMP, _("Error during DB reset:\n%s"), errMsg);
         sqlite3_free (errMsg);
     }
     return rc;
@@ -488,9 +486,7 @@ lsddb_createPatchSpace (const char* name, int* idBinding, int parentPatchSpace)
     sqlite3_bind_int (CREATE_PATCH_SPACE_S, 2, parentPatchSpace);
     if (sqlite3_step (CREATE_PATCH_SPACE_S) != SQLITE_DONE)
     {
-        fprintf (
-            stderr,
-            "There was an error executing initial DB insertion for createPatchSpace()\n");
+        doLog (ERROR, LOG_COMP, _("There was an error executing initial DB insertion for createPatchSpace()."));
         return -1;
     }
 
@@ -567,8 +563,7 @@ lsddb_removePatchSpace (int psid)
     sqlite3_bind_int (REMOVE_PATCH_SPACE_S, 1, psid);
     if (sqlite3_step (REMOVE_PATCH_SPACE_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while removing patch space from DB\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Error while removing patch space from DB.\nDetails: %s"), sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -592,7 +587,7 @@ lsddb_updatePatchSpaceName (int psId, const char* name)
 
     if (sqlite3_step (UPDATE_PATCH_SPACE_NAME_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while updating patch space name\n");
+        doLog (ERROR, LOG_COMP, _("Error while updating patch space name."));
         return -1;
     }
 
@@ -645,8 +640,7 @@ lsddb_createPatchSpaceIn (int patchSpaceId, const char* name, int* idBinding)
 
     if (sqlite3_step (CREATE_PATCH_SPACE_IN_S) != SQLITE_DONE)
     {
-        fprintf (stderr,
-                 "Unable to insert Patch Space Input in createPatchSpaceIn()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert Patch Space Input in createPatchSpaceIn()."));
         return -1;
     }
 
@@ -671,10 +665,8 @@ lsddb_createPatchSpaceOut (int patchSpaceId, const char* name, int* idBinding)
 
     if (sqlite3_step (CREATE_PATCH_SPACE_OUT_S) != SQLITE_DONE)
     {
-        fprintf (
-            stderr,
-            "Unable to insert Patch Space Output in createPatchSpaceOut()\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Unable to insert Patch Space Output in createPatchSpaceOut()\nDetails: %s"), 
+               sqlite3_errmsg (memdb));
 
         return -1;
     }
@@ -701,7 +693,7 @@ lsddb_removePatchSpaceOut (int outId)
     sqlite3_bind_int (REMOVE_PATCH_SPACE_OUT_S, 1, outId);
     if (sqlite3_step (REMOVE_PATCH_SPACE_OUT_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while removing patch space output\n");
+        doLog (ERROR, LOG_COMP, _("Error while removing patch space output."));
         return -1;
     }
     return 0;
@@ -715,7 +707,7 @@ lsddb_removePatchSpaceIn (int inId)
     sqlite3_bind_int (REMOVE_PATCH_SPACE_IN_S, 1, inId);
     if (sqlite3_step (REMOVE_PATCH_SPACE_IN_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while removing patch space input\n");
+        doLog (ERROR, LOG_COMP, _("Error while removing patch space input."));
         return -1;
     }
     return 0;
@@ -742,7 +734,7 @@ lsddb_updatePatchSpaceInName (int inId, const char* name)
 
     if (sqlite3_step (UPDATE_PATCH_SPACE_IN_NAME_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to update PS in name\n");
+        doLog (ERROR, LOG_COMP, _("Unable to update PatchSpace input name."));
         return -1;
     }
 
@@ -762,7 +754,7 @@ lsddb_updatePatchSpaceOutName (int outId, const char* name)
 
     if (sqlite3_step (UPDATE_PATCH_SPACE_OUT_NAME_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to update PS out name\n");
+        doLog (ERROR, LOG_COMP, _("Unable to update PatchSpace output name."));
         return -1;
     }
 
@@ -780,12 +772,12 @@ lsddb_createPartition (const char* name, int* idBinding)
 
     if (!name)
     {
-        fprintf (stderr, "Name must not be NULL in createPartition()\n");
+        doLog (ERROR, LOG_COMP, _("Name must not be NULL in createPartition()."));
         return -1;
     }
     if (strlen (name) > 200)
     {
-        fprintf (stderr, "Name is too long in createPartition()\n");
+        doLog (ERROR, LOG_COMP, _("Name is too long in createPartition()."));
         return -1;
     }
 
@@ -811,7 +803,7 @@ lsddb_createPartition (const char* name, int* idBinding)
     int psId;
     if (lsddb_createPatchSpace (name, &psId, 0) < 0)
     {
-        fprintf (stderr, "createPatchSpace failed in createPartition()\n");
+        doLog (ERROR, LOG_COMP, _("createPatchSpace failed in createPartition()."));
         return -1;
     }
 
@@ -822,8 +814,7 @@ lsddb_createPartition (const char* name, int* idBinding)
 
     if (sqlite3_step (CREATE_PARTITION_S) != SQLITE_DONE)
     {
-        fprintf (stderr,
-                 "Error inserting partition into DB in createPartition()\n");
+        doLog (ERROR, LOG_COMP, _("Error inserting partition into DB in createPartition()."));
         return -1;
     }
 
@@ -853,8 +844,8 @@ lsddb_updatePartitionImage (int partId, const char* imageUrl)
 
     if (sqlite3_step (SET_PARTITION_IMAGE_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to set image in setPartitionImage()\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Unable to set image in setPartitionImage()\nDetails: %s"), 
+                                  sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -886,14 +877,12 @@ lsddb_removePartition (int partId)
         psId = sqlite3_column_int (GET_PARTITON_PATCHSPACE_S, 0);
     else
     {
-        fprintf (stderr, "Requested partition to be removed does not exist\n");
+        doLog (ERROR, LOG_COMP, _("Requested partition to be removed does not exist."));
         return -1;
     }
 
     if (lsddb_removePatchSpace (psId) < 0)
-        fprintf (
-            stderr,
-            "There was a problem while removing partition's patchSpace in removePartition()\n");
+        doLog (ERROR, LOG_COMP, _("There was a problem while removing partition's patchSpace in removePartition()."));
 
     /* Remove partition's channels */
     sqlite3_reset (REMOVE_PARTITON_GET_CHANNELS_S);
@@ -910,10 +899,8 @@ lsddb_removePartition (int partId)
 
     if (sqlite3_step (REMOVE_PARTITON_S) != SQLITE_DONE)
     {
-        fprintf (
-            stderr,
-            "Problem while removing partition from DB in removePartition()\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Problem while removing partition from DB in removePartition()\nDetails: %s"), 
+               sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -941,7 +928,7 @@ lsddb_updatePartitionName (int partId, const char* name)
 
     if (sqlite3_step (UPDATE_PARTITON_NAME_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Ubable to Update Name in updatePartitionName()\n");
+        doLog (ERROR, LOG_COMP, _("Ubable to Update Name in updatePartitionName()."));
         return -1;
     }
 
@@ -953,7 +940,7 @@ lsddb_updatePartitionName (int partId, const char* name)
         psId = sqlite3_column_int (GET_PARTITON_PATCHSPACE_S, 0);
     else
     {
-        fprintf (stderr, "Unable to get psId in updatePartitionName()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to get psId in updatePartitionName()."));
         return -1;
     }
 
@@ -961,9 +948,7 @@ lsddb_updatePartitionName (int partId, const char* name)
     sqlite3_bind_int (UPDATE_PARTITON_PS_NAME_S, 1, psId);
     sqlite3_bind_text (UPDATE_PARTITON_PS_NAME_S, 2, name, -1, NULL);
     if (sqlite3_step (UPDATE_PARTITON_PS_NAME_S) != SQLITE_DONE)
-        fprintf (
-            stderr,
-            "Unable to update patchSpace's name in updatePartitionName()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to update patchSpace's name in updatePartitionName()."));
 
     return 0;
 }
@@ -1002,14 +987,12 @@ lsddb_addNodeClass (struct LSD_SceneNodeClass** ptrToBind,
 {
     if (!name)
     {
-        fprintf (stderr, "Name not provided in addNodeClass()\n");
+        doLog (ERROR, LOG_COMP, _("Name not provided in addNodeClass()."));
         return -1;
     }
     if (!ptrToBind)
     {
-        fprintf (
-            stderr,
-            "Binding ptr not provided in addNodeClass(), unable to do anything useful\n");
+        doLog (ERROR, LOG_COMP, _("Binding ptr not provided in addNodeClass(), unable to do anything useful."));
         return -1;
     }
 
@@ -1021,12 +1004,7 @@ lsddb_addNodeClass (struct LSD_SceneNodeClass** ptrToBind,
     sqlite3_bind_text (ADD_NODE_CLASS_CHECK_S, 2, name, -1, NULL);
 
     int classId;
-    if (sqlite3_step (ADD_NODE_CLASS_CHECK_S) == SQLITE_ROW)  /*
-                                                               * IN
-                                                               * DB;
-                                                               * check
-                                                               * array
-                                                               * idx */
+    if (sqlite3_step (ADD_NODE_CLASS_CHECK_S) == SQLITE_ROW)
     {
         int arrIdx = sqlite3_column_int (ADD_NODE_CLASS_CHECK_S, 0);
         classId = sqlite3_column_int (ADD_NODE_CLASS_CHECK_S, 1);
@@ -1036,15 +1014,13 @@ lsddb_addNodeClass (struct LSD_SceneNodeClass** ptrToBind,
             if (pickIdx (getArr_lsdNodeClassArr (), (void**)&classBind,
                          arrIdx) < 0)
             {
-                fprintf (stderr,
-                         "Unable to resolve array entry %d in addNodeClass()\n",
+                doLog (ERROR, LOG_COMP, _("Unable to resolve array entry %d in addNodeClass()."),
                          arrIdx);
                 return -1;
             }
             if (classBind->dbId != classId)
             {
-                fprintf (stderr,
-                         "Picked class failed sanity check in addNodeClass()\n");
+                doLog (ERROR, LOG_COMP, _("Picked class failed sanity check in addNodeClass()."));
                 return -1;
             }
             *ptrToBind = classBind;
@@ -1052,7 +1028,7 @@ lsddb_addNodeClass (struct LSD_SceneNodeClass** ptrToBind,
         }
 
         /* Struct record instead */
-        printf ("Structing existing Class\n");
+        doLog (NOTICE, LOG_COMP, _("Structing existing Class."));
     }
     else  /* NOT in DB; insert it and clear plugs */
     {
@@ -1065,33 +1041,11 @@ lsddb_addNodeClass (struct LSD_SceneNodeClass** ptrToBind,
 
         if (sqlite3_step (ADD_NODE_CLASS_INSERT_S) != SQLITE_DONE)
         {
-            fprintf (
-                stderr,
-                "Unable to insert new class entry into DB in addNodeClass()\n");
-            fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+            doLog (ERROR, LOG_COMP, _("Unable to insert new class entry into DB in addNodeClass()\nDetails: %s"),
+                   sqlite3_errmsg (memdb));
             return -1;
         }
         classId = sqlite3_last_insert_rowid (memdb);
-
-        /* Clear Plugs */
-
-
-        /*
-          * sqlite3_reset(ADD_NODE_CLASS_DELIN_S);
-          * sqlite3_bind_int(ADD_NODE_CLASS_DELIN_S,1,classId);
-          * if(sqlite3_step(ADD_NODE_CLASS_DELIN_S)!=SQLITE_DONE){
-          *  fprintf(stderr,"Unable to delete inputs of
-          * replaced class in addNodeClass()\n");
-          *  //return -1;
-          * }
-          *
-          * sqlite3_reset(ADD_NODE_CLASS_DELOUT_S);
-          * sqlite3_bind_int(ADD_NODE_CLASS_DELOUT_S,1,classId);
-          * if(sqlite3_step(ADD_NODE_CLASS_DELOUT_S)!=SQLITE_DONE){
-          *  fprintf(stderr,"Unable to delete outputs of
-          * replaced class in addNodeClass()\n");
-          *  //return -1;
-          * }*/
 
     }
 
@@ -1101,8 +1055,7 @@ lsddb_addNodeClass (struct LSD_SceneNodeClass** ptrToBind,
     if (insertElem (getArr_lsdNodeClassArr (), &insertedIdx,
                     (void**)&insertedClass) < 0)
     {
-        fprintf (stderr,
-                 "Unable to insert class into array in addNodeClass()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert class into array in addNodeClass()."));
         return -1;
     }
 
@@ -1116,7 +1069,7 @@ lsddb_addNodeClass (struct LSD_SceneNodeClass** ptrToBind,
 
     if (sqlite3_step (ADD_NODE_CLASS_UPDIDX_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to update arrIdx in addNodeClass()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to update arrIdx in addNodeClass()."));
         return -1;
     }
 
@@ -1139,14 +1092,12 @@ lsddb_addDataType (int* ptrToBind, int pluginId, const char* name,
 {
     if (!name)
     {
-        fprintf (stderr, "Name not provided in addDataType()\n");
+        doLog (ERROR, LOG_COMP, _("Name not provided in addDataType()."));
         return -1;
     }
     if (!ptrToBind)
     {
-        fprintf (
-            stderr,
-            "Binding ptr not provided in addDataType(), unable to do anything useful\n");
+        doLog (ERROR, LOG_COMP, _("Binding ptr not provided in addDataType(), unable to do anything useful."));
         return -1;
     }
 
@@ -1158,12 +1109,7 @@ lsddb_addDataType (int* ptrToBind, int pluginId, const char* name,
     sqlite3_bind_text (ADD_DATA_TYPE_CHECK_S, 2, name, -1, NULL);
 
     int typeId;
-    if (sqlite3_step (ADD_DATA_TYPE_CHECK_S) == SQLITE_ROW) /*
-                                                             * in
-                                                             * db;
-                                                             * check
-                                                             * array
-                                                             * idx */
+    if (sqlite3_step (ADD_DATA_TYPE_CHECK_S) == SQLITE_ROW)
         typeId = sqlite3_column_int (ADD_DATA_TYPE_CHECK_S, 0);
     else  /* Not in DB; insert it */
     {
@@ -1175,10 +1121,8 @@ lsddb_addDataType (int* ptrToBind, int pluginId, const char* name,
 
         if (sqlite3_step (ADD_DATA_TYPE_INSERT_S) != SQLITE_DONE)
         {
-            fprintf (
-                stderr,
-                "Unable to insert new class entry into DB in addDataType()\n");
-            fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+            doLog (ERROR, LOG_COMP, _("Unable to insert new class entry into DB in addDataType()\nDetails: %s"),
+                   sqlite3_errmsg (memdb));
             return -1;
         }
         typeId = sqlite3_last_insert_rowid (memdb);
@@ -1205,8 +1149,7 @@ lsddb_structNodeInstOutputArr (struct LSD_SceneNodeInst* nodeInst)
 {
     if (!nodeInst)
     {
-        fprintf (stderr,
-                 "nodeInst may not be null in structNodeInstOutputArr()\n");
+        doLog (ERROR, LOG_COMP, _("nodeInst may not be null in structNodeInstOutputArr()."));
         return -1;
     }
 
@@ -1227,9 +1170,7 @@ lsddb_structNodeInstOutputArr (struct LSD_SceneNodeInst* nodeInst)
         if (insertElem (getArr_lsdNodeOutputArr (), &outArrIdx,
                         (void**)&nodeOut) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to insert inst output into array in structNodeInstOutputArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to insert inst output into array in structNodeInstOutputArr()."));
             return -1;
         }
 
@@ -1251,15 +1192,13 @@ lsddb_structNodeInstOutputArr (struct LSD_SceneNodeInst* nodeInst)
 
         if (sqlite3_step (STRUCT_NODE_INST_OUTPUT_ARR_UPDIDX_S) != SQLITE_DONE)
         {
-            fprintf (
-                stderr,
-                "Unable to update node output's array index in structNodeInstOutputArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to update node output's array index in structNodeInstOutputArr()."));
             return -1;
         }
     }
     if (errcode != SQLITE_DONE)
     {
-        fprintf (stderr, "structNodeInstOutputArr did not loop cleanly\n");
+        doLog (ERROR, LOG_COMP, _("structNodeInstOutputArr did not loop cleanly."));
         return -1;
     }
     return 0;
@@ -1282,8 +1221,7 @@ lsddb_structNodeInstInputArr (struct LSD_SceneNodeInst* nodeInst)
 {
     if (!nodeInst)
     {
-        fprintf (stderr,
-                 "nodeInst may not be null in structNodeInstInputArr()\n");
+        doLog (ERROR, LOG_COMP, _("nodeInst may not be null in structNodeInstInputArr()."));
         return -1;
     }
 
@@ -1302,9 +1240,7 @@ lsddb_structNodeInstInputArr (struct LSD_SceneNodeInst* nodeInst)
         if (insertElem (getArr_lsdNodeInputArr (), &inArrIdx,
                         (void**)&nodeIn) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to insert inst output in array in structNodeInstInputArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to insert inst output in array in structNodeInstInputArr()."));
             return -1;
         }
 
@@ -1319,15 +1255,13 @@ lsddb_structNodeInstInputArr (struct LSD_SceneNodeInst* nodeInst)
 
         if (sqlite3_step (STRUCT_NODE_INST_INPUT_ARR_UPDIDX_S) != SQLITE_DONE)
         {
-            fprintf (
-                stderr,
-                "Unable to update node input's array index in structNodeInstInputArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to update node input's array index in structNodeInstInputArr()."));
             return -1;
         }
     }
     if (errcode != SQLITE_DONE)
     {
-        fprintf (stderr, "structNodeInstInputArr did not loop cleanly\n");
+        doLog (ERROR, LOG_COMP, _("structNodeInstInputArr did not loop cleanly."));
         return -1;
     }
     return 0;
@@ -1437,9 +1371,7 @@ lsddb_structNodeInstArr (int patchSpaceId)
             if (insertElem (getArr_lsdNodeInstArr (), &targetIdx,
                             (void**)&nodeInst) < 0)
             {
-                fprintf (
-                    stderr,
-                    "Unable to insert array element in structNodeInstArr()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to insert array element in structNodeInstArr()."));
                 return -1;
             }
             /* printf("Structed Node Inst from patchSpace
@@ -1450,8 +1382,7 @@ lsddb_structNodeInstArr (int patchSpaceId)
             /* Reconnect node's class */
             if (lsddb_resolveClassFromId (&( nodeInst->nodeClass ),
                                           classId) < 0)
-                fprintf (stderr,
-                         "Unable to resolve node's class while restructing\n");
+                doLog (ERROR, LOG_COMP, _("Unable to resolve node's class while restructing."));
 
 
             sqlite3_reset (STRUCT_NODE_INST_ARR_UPDIDX_S);
@@ -1460,25 +1391,19 @@ lsddb_structNodeInstArr (int patchSpaceId)
 
             if (sqlite3_step (STRUCT_NODE_INST_ARR_UPDIDX_S) != SQLITE_DONE)
             {
-                fprintf (
-                    stderr,
-                    "Error while updating node inst arr idx in structNodeInstArr()\n");
+                doLog (ERROR, LOG_COMP, _("Error while updating node inst arr idx in structNodeInstArr()."));
                 return -1;
             }
 
             /* Struct this instance's inputs and outputs */
             if (lsddb_structNodeInstInputArr (nodeInst) < 0)
             {
-                fprintf (
-                    stderr,
-                    "Unable to struct node's inputs in structNodeInstArr()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to struct node's inputs in structNodeInstArr()."));
                 return -1;
             }
             if (lsddb_structNodeInstOutputArr (nodeInst) < 0)
             {
-                fprintf (
-                    stderr,
-                    "Unable to struct node's outputs in structNodeInstArr()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to struct node's outputs in structNodeInstArr()."));
                 return -1;
             }
 
@@ -1489,9 +1414,7 @@ lsddb_structNodeInstArr (int patchSpaceId)
 
                 if (!nodeInst->data)
                 {
-                    fprintf (
-                        stderr,
-                        "Unable to allocate memory for node inst data in structNodeInstArr()\n");
+                    doLog (ERROR, LOG_COMP, _("Unable to allocate memory for node inst data in structNodeInstArr()."));
                     return -1;
                 }
             }
@@ -1503,7 +1426,7 @@ lsddb_structNodeInstArr (int patchSpaceId)
     }
     if (errcode != SQLITE_DONE)
     {
-        fprintf (stderr, "structNodeInstArr() did not loop cleanly\n");
+        doLog (ERROR, LOG_COMP, _("structNodeInstArr() did not loop cleanly."));
         return -1;
     }
     return 0;
@@ -1539,8 +1462,7 @@ lsddb_structUnivArr ()
         if (insertElem (getArr_lsdUnivArr (), &univArrIdx,
                         (void**)&univPtr) < 0)
         {
-            fprintf (stderr,
-                     "Unable to allocate array space in structUnivArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to allocate array space in structUnivArr()."));
             return -1;
         }
 
@@ -1550,9 +1472,7 @@ lsddb_structUnivArr ()
 
         if (sqlite3_step (STRUCT_UNIV_ARR_UPDIDX_S) != SQLITE_DONE)
         {
-            fprintf (
-                stderr,
-                "structUnivArr() was unable to update an instance's arrayIdx\n");
+            doLog (ERROR, LOG_COMP, _("structUnivArr() was unable to update an instance's arrayIdx."));
             return -1;
         }
 
@@ -1570,26 +1490,19 @@ lsddb_structUnivArr ()
         univPtr->maxIdx = maxIdx;
         if (maxIdx >= 0)
         {
-            uint8_t* univBuf = malloc (sizeof( uint8_t ) * ( maxIdx + 2 )); /*
-                                                                             * Add
-                                                                             * 2
-                                                                             * to
-                                                                             * accomodate
-                                                                             * 16
-                                                                             * bit
-                                                                             * mode */
+            uint8_t* univBuf = malloc (sizeof( uint8_t ) * ( maxIdx + 2 ));
             if (univBuf)
                 univPtr->buffer = univBuf;
             else
             {
-                fprintf (stderr, "Unable to allocate memory for DMX buffer\n");
+                doLog (ERROR, LOG_COMP, _("Unable to allocate memory for DMX buffer."));
                 return -1;
             }
         }
     }
     if (errcode != SQLITE_DONE)
     {
-        fprintf (stderr, "structUnivArr() did not loop cleanly\n");
+        doLog (ERROR, LOG_COMP, _("structUnivArr() did not loop cleanly."));
         return -1;
     }
     return 0;
@@ -1607,7 +1520,7 @@ lsddb_structChannelArrAddr (struct LSD_Addr* addr, int addrId)
 {
     if (!addr)
     {
-        fprintf (stderr, "addr is NULL in structChannelArrAddr()\n");
+        doLog (ERROR, LOG_COMP, _("addr is NULL in structChannelArrAddr()."));
         return -1;
     }
 
@@ -1624,17 +1537,13 @@ lsddb_structChannelArrAddr (struct LSD_Addr* addr, int addrId)
         struct LSD_Univ* univPtr;
         if (pickIdx (getArr_lsdUnivArr (), (void**)&univPtr, univIdx) < 0)
         {
-            fprintf (
-                stderr,
-                "There was a problem while picking universe in structChannelArr()\n");
+            doLog (ERROR, LOG_COMP, _("There was a problem while picking universe in structChannelArr()."));
             return -1;
         }
 
         if (lightAddr > univPtr->maxIdx)
         {
-            fprintf (
-                stderr,
-                "Light address is outside bounds of its universe structure\n");
+            doLog (ERROR, LOG_COMP, _("Light address is outside bounds of its universe structure."));
             return -1;
         }
 
@@ -1645,9 +1554,7 @@ lsddb_structChannelArrAddr (struct LSD_Addr* addr, int addrId)
 
         return 0;
     }
-    fprintf (
-        stderr,
-        "Unable to find DB record for requested address in structChannelArrAddr\n");
+    doLog (ERROR, LOG_COMP, _("Unable to find DB record for requested address in structChannelArrAddr."));
     return -1;
 }
 
@@ -1681,9 +1588,7 @@ lsddb_structChannelArr ()
         if (insertElem (getArr_lsdChannelArr (), &channelIdx,
                         (void**)&chanBind) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to insert channel into array in structChannelArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to insert channel into array in structChannelArr()."));
             return -1;
         }
 
@@ -1694,8 +1599,7 @@ lsddb_structChannelArr ()
             chanBind->single = 1;
             if (lsddb_structChannelArrAddr (&( chanBind->rAddr ), chanRa) < 0)
             {
-                fprintf (stderr,
-                         "Unable to struct single addr in structChannelArr()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to struct single addr in structChannelArr()."));
                 return -1;
             }
         }
@@ -1704,20 +1608,17 @@ lsddb_structChannelArr ()
             chanBind->single = 0;
             if (lsddb_structChannelArrAddr (&( chanBind->rAddr ), chanRa) < 0)
             {
-                fprintf (stderr,
-                         "Unable to struct red addr in structChannelArr()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to struct red addr in structChannelArr()."));
                 return -1;
             }
             if (lsddb_structChannelArrAddr (&( chanBind->gAddr ), chanGa) < 0)
             {
-                fprintf (stderr,
-                         "Unable to struct green addr in structChannelArr()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to struct green addr in structChannelArr()."));
                 return -1;
             }
             if (lsddb_structChannelArrAddr (&( chanBind->bAddr ), chanBa) < 0)
             {
-                fprintf (stderr,
-                         "Unable to struct blue addr in structChannelArr()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to struct blue addr in structChannelArr()."));
                 return -1;
             }
         }
@@ -1727,7 +1628,7 @@ lsddb_structChannelArr ()
         chanBind->output = NULL;
         lsddb_traceOutput (&( chanBind->output ), facadeOutId, NULL, NULL);
         if (chanBind->output)
-            printf ("structChannelArr() output id %d\n", chanBind->output->dbId);
+            doLog (NOTICE, LOG_COMP, _("structChannelArr() output id %d."), chanBind->output->dbId);
 
         /* Update Channel's ArrIdx */
         sqlite3_reset (STRUCT_CHANNEL_ARR_UPDIDX_S);
@@ -1735,16 +1636,14 @@ lsddb_structChannelArr ()
         sqlite3_bind_int (STRUCT_CHANNEL_ARR_UPDIDX_S, 2, channelIdx);
         if (sqlite3_step (STRUCT_CHANNEL_ARR_UPDIDX_S) != SQLITE_DONE)
         {
-            fprintf (
-                stderr,
-                "Unable to update channel's arrIdx in structChannelArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to update channel's arrIdx in structChannelArr()."));
             return -1;
         }
 
     }
     if (errcode != SQLITE_DONE)
     {
-        fprintf (stderr, "structChannelArr() did not loop cleanly\n");
+        doLog (ERROR, LOG_COMP, _("structChannelArr() did not loop cleanly."));
         return -1;
     }
     return 0;
@@ -1792,9 +1691,7 @@ lsddb_structPartitionArr ()
     /* First insert partition facade nodes */
     if (lsddb_structNodeInstArr (0) < 0)
     {
-        fprintf (
-            stderr,
-            "Unable to struct partition facade nodes in structPartitionArr()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to struct partition facade nodes in structPartitionArr()."));
         return -1;
     }
 
@@ -1805,8 +1702,6 @@ lsddb_structPartitionArr ()
     {
         /* Collect partition's data from DB */
         int partId = sqlite3_column_int (STRUCT_PARTITION_ARR_S, 0);
-        /* const unsigned char* partName =
-         * sqlite3_column_text(STRUCT_PARTITION_ARR_S,1); */
         int patchSpaceId = sqlite3_column_int (STRUCT_PARTITION_ARR_S, 1);
 
         /* Insert corresponding partition structure */
@@ -1815,9 +1710,7 @@ lsddb_structPartitionArr ()
         if (insertElem (getArr_lsdPartitionArr (), &partArrIdx,
                         (void**)&partArrPtr) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to insert Partition into array in createPartition()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to insert Partition into array in createPartition()."));
             return -1;
         }
 
@@ -1825,9 +1718,7 @@ lsddb_structPartitionArr ()
          * patchSpace */
         if (lsddb_structNodeInstArr (patchSpaceId) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to insert nodes contained within partition's patch space in structPartitionArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to insert nodes contained within partition's patch space in structPartitionArr()."));
             return -1;
         }
 
@@ -1848,8 +1739,8 @@ lsddb_structPartitionArr ()
 
         if (sqlite3_step (STRUCT_PARTITION_ARR_UPDIDX_S) != SQLITE_DONE)
         {
-            fprintf (stderr, "There was a problem updating the partition "
-                     "arr idx in structPartitionArr()\n");
+            doLog (ERROR, LOG_COMP, _("There was a problem updating the partition "
+                     "arr idx in structPartitionArr()."));
             return -1;
         }
 
@@ -1859,7 +1750,7 @@ lsddb_structPartitionArr ()
     }
     if (errcode != SQLITE_DONE)
     {
-        fprintf (stderr, "structPartitionArr() did not loop cleanly\n");
+        doLog (ERROR, LOG_COMP, _("structPartitionArr() did not loop cleanly."));
         return -1;
     }
 
@@ -1887,7 +1778,7 @@ lsddb_addNodeInstInput (struct LSD_SceneNodeInst const* node,
 {
     if (!name)
     {
-        fprintf (stderr, "Improper arguments passed to addNodeInstInput()\n");
+        doLog (ERROR, LOG_COMP, _("Improper arguments passed to addNodeInstInput()."));
         return -1;
     }
 
@@ -1898,7 +1789,7 @@ lsddb_addNodeInstInput (struct LSD_SceneNodeInst const* node,
 
     if (sqlite3_step (ADD_NODE_INST_INPUT_INSERT_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while inserting input into DB\n");
+        doLog (ERROR, LOG_COMP, _("Error while inserting input into DB."));
         return -1;
     }
 
@@ -1909,8 +1800,7 @@ lsddb_addNodeInstInput (struct LSD_SceneNodeInst const* node,
     struct LSD_SceneNodeInput* input;
     if (insertElem (getArr_lsdNodeInputArr (), &arrIdx, (void**)&input) < 0)
     {
-        fprintf (stderr,
-                 "Unable to insert input into array in addNodeInstInput()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert input into array in addNodeInstInput()."));
         return -1;
     }
 
@@ -1921,7 +1811,7 @@ lsddb_addNodeInstInput (struct LSD_SceneNodeInst const* node,
 
     if (sqlite3_step (ADD_NODE_INST_INPUT_UPDIDX_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to update arrIdx in addNodeInstInput()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to update arrIdx in addNodeInstInput()."));
         return -1;
     }
 
@@ -1960,7 +1850,7 @@ lsddb_addNodeInstOutput (struct LSD_SceneNodeInst const* node,
 {
     if (!name)
     {
-        fprintf (stderr, "Improper arguments passed to addNodeInstOutput()\n");
+        doLog (ERROR, LOG_COMP, _("Improper arguments passed to addNodeInstOutput()."));
         return -1;
     }
 
@@ -1973,7 +1863,7 @@ lsddb_addNodeInstOutput (struct LSD_SceneNodeInst const* node,
 
     if (sqlite3_step (ADD_NODE_INST_OUTPUT_INSERT_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while inserting output into DB\n");
+        doLog (ERROR, LOG_COMP, _("Error while inserting output into DB."));
         return -1;
     }
 
@@ -1984,8 +1874,7 @@ lsddb_addNodeInstOutput (struct LSD_SceneNodeInst const* node,
     struct LSD_SceneNodeOutput* output;
     if (insertElem (getArr_lsdNodeOutputArr (), &arrIdx, (void**)&output) < 0)
     {
-        fprintf (stderr,
-                 "Unable to insert output into array in addNodeInstOutput()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert output into array in addNodeInstOutput()."));
         return -1;
     }
 
@@ -1996,7 +1885,7 @@ lsddb_addNodeInstOutput (struct LSD_SceneNodeInst const* node,
 
     if (sqlite3_step (ADD_NODE_INST_OUTPUT_UPDIDX_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to update arrIdx in addNodeInstOutput()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to update arrIdx in addNodeInstOutput()."));
         return -1;
     }
 
@@ -2048,17 +1937,14 @@ lsddb_removeNodeInstInput (int inputId)
         arrIdx = sqlite3_column_int (REMOVE_NODE_INST_INPUT_ARRIDX_S, 0);
     else
     {
-        fprintf (stderr,
-                 "Unable to resolve array index in removeNodeInstInput()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to resolve array index in removeNodeInstInput()."));
         return -1;
     }
 
     if (arrIdx >= 0)
         if (delIdx (getArr_lsdNodeInputArr (), arrIdx) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to remove input from array in removeNodeInstInput()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to remove input from array in removeNodeInstInput()."));
             return -1;
         }
 
@@ -2068,7 +1954,7 @@ lsddb_removeNodeInstInput (int inputId)
 
     if (sqlite3_step (REMOVE_NODE_INST_INPUT_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to remove input from DB\n");
+        doLog (ERROR, LOG_COMP, _("Unable to remove input from DB."));
         return -1;
     }
 
@@ -2110,17 +1996,14 @@ lsddb_removeNodeInstOutput (int outputId)
         arrIdx = sqlite3_column_int (REMOVE_NODE_INST_OUTPUT_ARRIDX_S, 0);
     else
     {
-        fprintf (stderr,
-                 "Unable to resolve array index in removeNodeInstOutput()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to resolve array index in removeNodeInstOutput()."));
         return -1;
     }
 
     if (arrIdx >= 0)
         if (delIdx (getArr_lsdNodeOutputArr (), arrIdx) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to remove output from array in removeNodeInstOutput()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to remove output from array in removeNodeInstOutput()."));
             return -1;
         }
 
@@ -2130,7 +2013,7 @@ lsddb_removeNodeInstOutput (int outputId)
 
     if (sqlite3_step (REMOVE_NODE_INST_OUTPUT_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to remove output from DB\n");
+        doLog (ERROR, LOG_COMP, _("Unable to remove output from DB."));
         return -1;
     }
 
@@ -2157,9 +2040,9 @@ lsddb_addNodeInst (int patchSpaceId, struct LSD_SceneNodeClass* nc,
 {
     if (!nc || nc->dbId == 0)
     {
-        fprintf (stderr, "Invalid NodeClass used in addNodeInst()\n");
+        doLog (ERROR, LOG_COMP, _("Invalid NodeClass used in addNodeInst()."));
         if (!nc)
-            fprintf (stderr, "NULL NodeClass\n");
+            doLog (ERROR, LOG_COMP, _("NULL NodeClass\n"));
         return -1;
     }
 
@@ -2170,8 +2053,7 @@ lsddb_addNodeInst (int patchSpaceId, struct LSD_SceneNodeClass* nc,
     if (insertElem (getArr_lsdNodeInstArr (), &targetIdx,
                     (void**)&targetPtr) < 0)
     {
-        fprintf (stderr,
-                 "Unable to insert node instance into array in addNodeInst()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert node instance into array in addNodeInst()."));
         return -1;
     }
 
@@ -2195,8 +2077,8 @@ lsddb_addNodeInst (int patchSpaceId, struct LSD_SceneNodeClass* nc,
 
     if (sqlite3_step (ADD_NODE_INST_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error inserting element into DB in addNodeInst()\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Error inserting element into DB in addNodeInst()\nDetails: %s"),
+               sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -2213,9 +2095,7 @@ lsddb_addNodeInst (int patchSpaceId, struct LSD_SceneNodeClass* nc,
 
         if (!targetPtr->data)
         {
-            fprintf (
-                stderr,
-                "Unable to allocate memory for node inst data in addNodeInst()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to allocate memory for node inst data in addNodeInst()."));
             return -1;
         }
     }
@@ -2225,11 +2105,11 @@ lsddb_addNodeInst (int patchSpaceId, struct LSD_SceneNodeClass* nc,
 
     if (nc->nodeMakeFunc)
         if (nc->nodeMakeFunc (targetPtr, targetPtr->data) < 0)
-            fprintf (stderr, "Node Make failer!\n");
+            doLog (ERROR, LOG_COMP, _("Plugin's Make function returned failure."));
 
     if (nc->nodeRestoreFunc)
         if (nc->nodeRestoreFunc (targetPtr, targetPtr->data) < 0)
-            fprintf (stderr, "Node Restore failer!\n");
+            doLog (ERROR, LOG_COMP, _("Plugin's Restore function returned failure."));
 
     return 0;
 }
@@ -2270,8 +2150,7 @@ lsddb_removeNodeInst (int nodeId)
         if (pickIdx (getArr_lsdNodeInstArr (), (void**)&condemnedNode,
                      arrIdx) < 0)
         {
-            fprintf (stderr,
-                     "Unable to pick inst from array in removeNodeInst()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick inst from array in removeNodeInst()."));
             return -1;
         }
 
@@ -2280,8 +2159,7 @@ lsddb_removeNodeInst (int nodeId)
                                                       condemnedNode->data);
 
         if (delIdx (getArr_lsdNodeInstArr (), arrIdx) < 0)
-            fprintf (stderr,
-                     "Unable to remove node from array in removeNodeInst()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to remove node from array in removeNodeInst()."));
 
         /* Remove each inst input */
         sqlite3_reset (REMOVE_NODE_INST_GET_INS_S);
@@ -2308,14 +2186,14 @@ lsddb_removeNodeInst (int nodeId)
         sqlite3_bind_int (REMOVE_NODE_INST_DELETE_S, 1, nodeId);
         if (sqlite3_step (REMOVE_NODE_INST_DELETE_S) != SQLITE_DONE)
         {
-            fprintf (stderr, "Unable to remove node from DB\n");
+            doLog (ERROR, LOG_COMP, _("Unable to remove node from DB."));
             return -1;
         }
 
     }
     else
     {
-        fprintf (stderr, "Node inst non-existant in removeNodeInst()\n");
+        doLog (ERROR, LOG_COMP, _("Node inst non-existent in removeNodeInst()."));
         return -1;
     }
 
@@ -2339,7 +2217,7 @@ lsddb_updateNodeName (int nodeId, const char* name)
 
     if (sqlite3_step (UPDATE_NODE_NAME_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "error while updating node instance name\n");
+        doLog (ERROR, LOG_COMP, _("error while updating node instance name."));
         return -1;
     }
 
@@ -2393,7 +2271,7 @@ lsddb_nodeInstPos (int nodeId, int xVal, int yVal)
 
     if (sqlite3_step (NODE_INST_POS_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while updating node position values\n");
+        doLog (ERROR, LOG_COMP, _("Error while updating node position values."));
         return -1;
     }
 
@@ -2415,7 +2293,7 @@ lsddb_facadeInstPos (int nodeId, int xVal, int yVal)
 
     if (sqlite3_step (FACADE_INST_POS_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while updating facade position values\n");
+        doLog (ERROR, LOG_COMP, _("Error while updating facade position values."));
         return -1;
     }
 
@@ -2653,7 +2531,7 @@ lsddb_pluginHeadLoader (ghType phGet,
 {
     if (!phGet || !pluginSha)
     {
-        fprintf (stderr, "Invalid use of pluginHeadLoader()\n");
+        doLog (ERROR, LOG_COMP, _("Invalid use of pluginHeadLoader()."));
         return -1;
     }
 
@@ -2663,7 +2541,7 @@ lsddb_pluginHeadLoader (ghType phGet,
                        parentDirectoryName,
                        -1,
                        NULL);
-    printf ("Checking %s\n", parentDirectoryName);
+    doLog (NOTICE, LOG_COMP, _("Checking %s."), parentDirectoryName);
 
     int pluginId;
     int enabled = 0;
@@ -2672,7 +2550,7 @@ lsddb_pluginHeadLoader (ghType phGet,
                                                                         * by
                                                                         * name */
     {
-        printf ("Already in DB\n");
+        doLog (NOTICE, LOG_COMP, _("Already in DB."));
         pluginId = sqlite3_column_int (PLUGIN_HEAD_LOADER_CHECK_NAME_S, 0);
         enabled = sqlite3_column_int (PLUGIN_HEAD_LOADER_CHECK_NAME_S, 1);
 
@@ -2706,7 +2584,7 @@ lsddb_pluginHeadLoader (ghType phGet,
                                    NULL);
                 if (sqlite3_step (PLUGIN_HEAD_LOADER_UPDATE_SHA_S) !=
                     SQLITE_DONE)
-                    fprintf (stderr, "Error while updating plugin SHA1\n");
+                    doLog (ERROR, LOG_COMP, _("Error while updating plugin SHA1."));
             }
         }
 
@@ -2715,14 +2593,13 @@ lsddb_pluginHeadLoader (ghType phGet,
 
         if (sqlite3_step (PLUGIN_HEAD_LOADER_SEEN_S) != SQLITE_DONE)
         {
-            fprintf (stderr,
-                     "Unable to mark plugin seen in pluginHeadLoader()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to mark plugin seen in pluginHeadLoader()."));
             return -1;
         }
     }
     else  /* We must add new plugin record to DB */
     {
-        printf ("Adding %s to DB\n", parentDirectoryName);
+        doLog (NOTICE, LOG_COMP, _("Adding %s to DB."), parentDirectoryName);
         sqlite3_reset (PLUGIN_HEAD_LOADER_INSERT_S);
         sqlite3_bind_text (PLUGIN_HEAD_LOADER_INSERT_S,
                            1,
@@ -2733,10 +2610,8 @@ lsddb_pluginHeadLoader (ghType phGet,
 
         if (sqlite3_step (PLUGIN_HEAD_LOADER_INSERT_S) != SQLITE_DONE)
         {
-            fprintf (
-                stderr,
-                "Unable to insert newfound plugin into DB in pluginHeadLoader()\n");
-            fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+            doLog (ERROR, LOG_COMP, _("Unable to insert newfound plugin into DB in pluginHeadLoader()\nDetails: %s"),
+                   sqlite3_errmsg (memdb));
             return -1;
         }
         if (enable)
@@ -2756,9 +2631,7 @@ lsddb_pluginHeadLoader (ghType phGet,
         if (insertElem (getArr_lsdPluginArr (), &pluginArrIdx,
                         (void**)&scenePlugin) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to insert plugin into array in pluginHeadLoader()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to insert plugin into array in pluginHeadLoader()."));
             return -1;
         }
 
@@ -2767,16 +2640,14 @@ lsddb_pluginHeadLoader (ghType phGet,
         const struct LSD_ScenePluginHEAD* ph = phGet ();
         if (!ph || !ph->initFunc || !ph->cleanupFunc)
         {
-            fprintf (stderr,
-                     "Invalid Plugin HEAD extracted from %s\n",
+            doLog (ERROR, LOG_COMP, _("Invalid Plugin HEAD extracted from %s."),
                      parentDirectoryName);
             return -1;
         }
 
         if (ph->initFunc (scenePlugin) < 0)
         {
-            fprintf (stderr,
-                     "Plugin's own init failed within pluginHeadLoader()\n");
+            doLog (ERROR, LOG_COMP, _("Plugin's own init failed within pluginHeadLoader()."));
             return -1;
         }
 
@@ -2796,9 +2667,7 @@ lsddb_pluginHeadLoader (ghType phGet,
 
         if (sqlite3_step (PLUGIN_HEAD_LOADER_UPDIDX_LOAD_S) != SQLITE_DONE)
         {
-            fprintf (
-                stderr,
-                "Error updating plugin's status in DB in pluginHeadLoader()\n");
+            doLog (ERROR, LOG_COMP, _("Error updating plugin's status in DB in pluginHeadLoader()."));
             return -1;
         }
 
@@ -2830,16 +2699,13 @@ lsddb_resolvePluginFromNodeId (struct LSD_ScenePlugin** pluginBind, int nodeId)
         if (pickIdx (getArr_lsdPluginArr (), (void**)pluginBind,
                      pluginArrayIdx) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to pick plugin from array in resolvePluginFromNodeId()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick plugin from array in resolvePluginFromNodeId()."));
             return -1;
         }
     }
     else
     {
-        fprintf (stderr,
-                 "Unable to resolve plugin id in resolvePluginFromNodeId()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to resolve plugin id in resolvePluginFromNodeId()."));
         return -1;
     }
 
@@ -2873,8 +2739,8 @@ lsddb_traceInput (struct LSD_SceneNodeInput** ptrToBind,
         }
         else
         {
-            fprintf (stderr, "Unable to traceInput %d()\n", inputId);
-            fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+            doLog (ERROR, LOG_COMP, _("Unable to traceInput %d()\nDetails: %s"), 
+                   inputId, sqlite3_errmsg (memdb));
             return -1;
         }
     }
@@ -2882,9 +2748,7 @@ lsddb_traceInput (struct LSD_SceneNodeInput** ptrToBind,
     int arrIdx = sqlite3_column_int (TRACE_INPUT_S, 2);
     if (arrIdx == -1)
     {
-        fprintf (
-            stderr,
-            "Input is not constructed in memory; its plugin may be disabled\n");
+        doLog (WARNING, LOG_COMP, _("Input is not constructed in memory; its plugin may be disabled."));
         return -1;
     }
 
@@ -2901,7 +2765,7 @@ lsddb_traceInput (struct LSD_SceneNodeInput** ptrToBind,
     struct LSD_SceneNodeInput* inputObj;
     if (pickIdx (getArr_lsdNodeInputArr (), (void**)&inputObj, arrIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick Input in traceInput()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to pick Input in traceInput()."));
         return -1;
     }
 
@@ -2943,9 +2807,7 @@ lsddb_traceOutput (struct LSD_SceneNodeOutput** ptrToBind,
     int arrIdx = sqlite3_column_int (TRACE_OUTPUT_S, 2);
     if (arrIdx == -1)
     {
-        fprintf (
-            stderr,
-            "Output is not constructed in memory; its plugin may be disabled\n");
+        doLog (WARNING, LOG_COMP, _("Output is not constructed in memory; its plugin may be disabled."));
         return -1;
     }
 
@@ -2962,7 +2824,7 @@ lsddb_traceOutput (struct LSD_SceneNodeOutput** ptrToBind,
     struct LSD_SceneNodeOutput* outputObj;
     if (pickIdx (getArr_lsdNodeOutputArr (), (void**)&outputObj, arrIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick Output in traceOutput()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to pick Output in traceOutput()."));
         return -1;
     }
 
@@ -3015,9 +2877,7 @@ lsddb_checkChannelWiring (int facadeOutId, int srcOut)
                 if (pickIdx (getArr_lsdChannelArr (), (void**)&chan,
                              chanArrIdx) < 0)
                 {
-                    fprintf (
-                        stderr,
-                        "Unable to pick channel from array in checkChannelWiring()\n");
+                    doLog (ERROR, LOG_COMP, _("Unable to pick channel from array in checkChannelWiring()."));
                     return -1;
                 }
 
@@ -3028,9 +2888,7 @@ lsddb_checkChannelWiring (int facadeOutId, int srcOut)
             }
             else
             {
-                fprintf (
-                    stderr,
-                    "Couldn't resolve arrIdx from facadeOut on root patchSpace\n");
+                doLog (ERROR, LOG_COMP, _("Couldn't resolve arrIdx from facadeOut on root patchSpace."));
                 return -1;
             }
 
@@ -3038,7 +2896,7 @@ lsddb_checkChannelWiring (int facadeOutId, int srcOut)
     }
     else
     {
-        fprintf (stderr, "Unable to retrieve parentPatchSpace from facadeOut\n");
+        doLog (ERROR, LOG_COMP, _("Unable to retrieve parentPatchSpace from facadeOut."));
         return -1;
     }
     return 0;
@@ -3074,9 +2932,7 @@ lsddb_checkChannelUnwiring (int facadeOutId)
                 if (pickIdx (getArr_lsdChannelArr (), (void**)&chan,
                              chanArrIdx) < 0)
                 {
-                    fprintf (
-                        stderr,
-                        "Unable to pick channel from array in checkChannelUnwiring()\n");
+                    doLog (ERROR, LOG_COMP, _("Unable to pick channel from array in checkChannelUnwiring()."));
                     return -1;
                 }
 
@@ -3086,9 +2942,7 @@ lsddb_checkChannelUnwiring (int facadeOutId)
             }
             else
             {
-                fprintf (
-                    stderr,
-                    "Couldn't resolve arrIdx from facadeOut on root patchSpace\n");
+                doLog (ERROR, LOG_COMP, _("Couldn't resolve arrIdx from facadeOut on root patchSpace."));
                 return -1;
             }
 
@@ -3096,7 +2950,7 @@ lsddb_checkChannelUnwiring (int facadeOutId)
     }
     else
     {
-        fprintf (stderr, "Unable to retrieve parentPatchSpace from facadeOut\n");
+        doLog (ERROR, LOG_COMP, _("Unable to retrieve parentPatchSpace from facadeOut."));
         return -1;
     }
     return 0;
@@ -3168,7 +3022,7 @@ lsddb_wireNodes (int srcFacadeInt,
     /* Redundant and disallowed to avoid recursion bugs */
     if (srcFacadeInt && destFacadeInt)
     {
-        fprintf (stderr, "Redundant connections not allowed\n");
+        doLog (ERROR, LOG_COMP, _("Redundant connections not allowed."));
         return -1;
     }
 
@@ -3181,9 +3035,7 @@ lsddb_wireNodes (int srcFacadeInt,
         sqlite3_bind_int (WIRE_NODES_CHECK_FACADE_INT_OUT_S, 1, destId);
         if (sqlite3_step (WIRE_NODES_CHECK_FACADE_INT_OUT_S) == SQLITE_ROW)
         {
-            fprintf (
-                stderr,
-                "Attempting to connect wire to already connected facade interior out\n");
+            doLog (ERROR, LOG_COMP, _("Attempting to connect wire to already connected facade interior out."));
             return -1;
         }
     }
@@ -3195,9 +3047,7 @@ lsddb_wireNodes (int srcFacadeInt,
         sqlite3_bind_int (REMOVE_NODE_INST_INPUT_GET_WIRES_S, 1, destId);
         if (sqlite3_step (REMOVE_NODE_INST_INPUT_GET_WIRES_S) == SQLITE_ROW)
         {
-            fprintf (
-                stderr,
-                "Attempting to connect a wire to an already connected input\n");
+            doLog (ERROR, LOG_COMP, _("Attempting to connect a wire to an already connected input."));
             return -1;
         }
     }
@@ -3226,7 +3076,7 @@ lsddb_wireNodes (int srcFacadeInt,
             srcPS = sqlite3_column_int (WIRE_NODES_GET_FACADE_IN_CPS_S, 0);
         else
         {
-            fprintf (stderr, "Unable to verify facade input's patch space\n");
+            doLog (ERROR, LOG_COMP, _("Unable to verify facade input's patch space."));
             return -1;
         }
 
@@ -3240,21 +3090,19 @@ lsddb_wireNodes (int srcFacadeInt,
         }
         else
         {
-            fprintf (stderr, "Unable to verify node input's patch space 1\n");
+            doLog (ERROR, LOG_COMP, _("Unable to verify node input's patch space."));
             return -1;
         }
 
         if (srcPS != destPS)
         {
-            fprintf (stderr, "Patch Spaces Do not match in wireNodes()\n");
+            doLog (ERROR, LOG_COMP, _("Patch Spaces Do not match in wireNodes()."));
             return -1;
         }
 
         if (!lsddb_checkClassEnabled (destClass))
         {
-            fprintf (
-                stderr,
-                "Unable to connect wire's destination; destination class disabled\n");
+            doLog (ERROR, LOG_COMP, _("Unable to connect wire's destination; destination class disabled."));
             return -1;
         }
 
@@ -3267,9 +3115,7 @@ lsddb_wireNodes (int srcFacadeInt,
             checkFacadeBool = sqlite3_column_int (WIRE_NODES_CHECK_DEST_IN_S, 1);
         if (!checkFacadeBool)
         {
-            fprintf (
-                stderr,
-                "Wire source does not check to be a facade plug as claimed in wireNodes()\n");
+            doLog (ERROR, LOG_COMP, _("Wire source does not check to be a facade plug as claimed in wireNodes()."));
             return -1;
         }
 
@@ -3286,8 +3132,7 @@ lsddb_wireNodes (int srcFacadeInt,
 
             if (typeId < 0)
             {
-                fprintf (stderr,
-                         "Facade Plug not internally connected on input %d\n",
+                doLog (ERROR, LOG_COMP, _("Facade Plug not internally connected on input %d."),
                          destId);
                 return -1;
             }
@@ -3301,16 +3146,14 @@ lsddb_wireNodes (int srcFacadeInt,
 
             if (sqlite3_step (WIRE_NODES_SET_FACADE_IN_DATA_S) != SQLITE_DONE)
             {
-                fprintf (
-                    stderr,
-                    "Unable to update facade plug data after internal connection in wireNodes()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to update facade plug data after internal connection in wireNodes()."));
                 return -1;
             }
 
         }
         else
         {
-            fprintf (stderr, "Dest Input non-existant\n");
+            doLog (ERROR, LOG_COMP, _("Dest Input non-existent."));
             return -1;
         }
 
@@ -3324,7 +3167,7 @@ lsddb_wireNodes (int srcFacadeInt,
 
         if (sqlite3_step (WIRE_NODES_S) != SQLITE_DONE)
         {
-            fprintf (stderr, "Unable to insert wire into DB in wireNodes()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to insert wire into DB in wireNodes()."));
             return -1;
         }
 
@@ -3366,8 +3209,7 @@ lsddb_wireNodes (int srcFacadeInt,
             }
             else
             {
-                fprintf (stderr,
-                         "Unable to verify node output's patch space 1\n");
+                doLog (ERROR, LOG_COMP, _("Unable to verify node output's patch space."));
                 return -1;
             }
 
@@ -3380,13 +3222,13 @@ lsddb_wireNodes (int srcFacadeInt,
             destPS = sqlite3_column_int (WIRE_NODES_GET_FACADE_OUT_CPS_S, 0);
         else
         {
-            fprintf (stderr, "Unable to verify facade output's patch space\n");
+            doLog (ERROR, LOG_COMP, _("Unable to verify facade output's patch space."));
             return -1;
         }
 
         if (srcPS != destPS)
         {
-            fprintf (stderr, "Patch Spaces Do not match in wireNodes()\n");
+            doLog (ERROR, LOG_COMP, _("Patch Spaces Do not match in wireNodes()."));
             return -1;
         }
 
@@ -3399,16 +3241,13 @@ lsddb_wireNodes (int srcFacadeInt,
                 aliasedOut = sqlite3_column_int (WIRE_NODES_CHECK_SRC_OUT_S, 2);
             if (aliasedOut <= 0)
             {
-                fprintf (
-                    stderr,
-                    "Unable to connect wire's source; not internally connected\n");
+                doLog (ERROR, LOG_COMP, _("Unable to connect wire's source; not internally connected."));
                 return -1;
             }
         }
         else if (!lsddb_checkClassEnabled (srcClass))
         {
-            fprintf (stderr,
-                     "Unable to connect wire's source; source class disabled\n");
+            doLog (ERROR, LOG_COMP, _("Unable to connect wire's source; source class disabled."));
             return -1;
         }
 
@@ -3421,9 +3260,7 @@ lsddb_wireNodes (int srcFacadeInt,
             checkFacadeBool = sqlite3_column_int (WIRE_NODES_CHECK_SRC_OUT_S, 1);
         if (!checkFacadeBool)
         {
-            fprintf (
-                stderr,
-                "Wire source does not check to be a facade plug as claimed in wireNodes()\n");
+            doLog (ERROR, LOG_COMP, _("Wire source does not check to be a facade plug as claimed in wireNodes()."));
             return -1;
         }
 
@@ -3440,8 +3277,7 @@ lsddb_wireNodes (int srcFacadeInt,
 
             if (typeId < 0)
             {
-                fprintf (stderr,
-                         "Facade Plug not internally connected on output %d\n",
+                doLog (ERROR, LOG_COMP, _("Facade Plug not internally connected on output %d."),
                          destId);
                 return -1;
             }
@@ -3455,9 +3291,7 @@ lsddb_wireNodes (int srcFacadeInt,
 
             if (sqlite3_step (WIRE_NODES_SET_FACADE_OUT_DATA_S) != SQLITE_DONE)
             {
-                fprintf (
-                    stderr,
-                    "Unable to update facade plug data after internal connection in wireNodes()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to update facade plug data after internal connection in wireNodes()."));
                 return -1;
             }
 
@@ -3470,7 +3304,7 @@ lsddb_wireNodes (int srcFacadeInt,
         }
         else
         {
-            fprintf (stderr, "Dest Output non-existant\n");
+            doLog (ERROR, LOG_COMP, _("Dest Output non-existent."));
             return -1;
         }
 
@@ -3484,7 +3318,7 @@ lsddb_wireNodes (int srcFacadeInt,
 
         if (sqlite3_step (WIRE_NODES_S) != SQLITE_DONE)
         {
-            fprintf (stderr, "Unable to insert wire into DB in wireNodes()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to insert wire into DB in wireNodes()."));
             return -1;
         }
 
@@ -3532,7 +3366,7 @@ lsddb_wireNodes (int srcFacadeInt,
         }
         else
         {
-            fprintf (stderr, "Unable to verify node output's patch space 2\n");
+            doLog (ERROR, LOG_COMP, _("Unable to verify node output's patch space."));
             return -1;
         }
     }
@@ -3564,37 +3398,33 @@ lsddb_wireNodes (int srcFacadeInt,
         }
         else
         {
-            fprintf (stderr, "Unable to verify node input's patch space 2\n");
+            doLog (ERROR, LOG_COMP, _("Unable to verify node input's patch space."));
             return -1;
         }
     }
 
     if (srcPS != destPS)
     {
-        fprintf (stderr, "Patch Spaces Do not match in wireNodes()\n");
+        doLog (ERROR, LOG_COMP, _("Patch Spaces Do not match in wireNodes()."));
         return -1;
     }
 
     if (srcType != destType)
     {
-        fprintf (stderr, "Types do not match in wireNodes()\n");
+        doLog (ERROR, LOG_COMP, _("Types do not match in wireNodes()."));
         return -1;
     }
 
     if (!lsddb_checkClassEnabled (srcClass))
     {
-        fprintf (stderr,
-                 "Unable to connect wire's source; source class disabled\n");
+        doLog (ERROR, LOG_COMP, _("Unable to connect wire's source; source class disabled."));
         return -1;
     }
 
     if (!lsddb_checkClassEnabled (destClass))
     {
-        fprintf (
-            stderr,
-            "Unable to connect wire's destination; destination class %d,%d disabled\n",
-            destId,
-            destClass);
+        doLog (ERROR, LOG_COMP, _("Unable to connect wire's destination; destination class %d,%d disabled."),
+            destId, destClass);
         return -1;
     }
 
@@ -3618,7 +3448,7 @@ lsddb_wireNodes (int srcFacadeInt,
 
     if (sqlite3_step (WIRE_NODES_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to insert wire into DB in wireNodes()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert wire into DB in wireNodes()."));
         return -1;
     }
 
@@ -3724,9 +3554,7 @@ lsddb_unwireNodes (int wireId)
 
             if (lsddb_traceInput (&dest, destIn, NULL, NULL) < 0)
             {
-                fprintf (
-                    stderr,
-                    "Unable to trace input for node disconnection in unwireNodes()\n");
+                doLog (ERROR, LOG_COMP, _("Unable to trace input for node disconnection in unwireNodes()."));
                 return -1;
             }
 
@@ -3739,7 +3567,7 @@ lsddb_unwireNodes (int wireId)
         sqlite3_bind_int (UNWIRE_NODES_DELETE_EDGE_S, 1, wireId);
         if (sqlite3_step (UNWIRE_NODES_DELETE_EDGE_S) != SQLITE_DONE)
         {
-            fprintf (stderr, "Unable to remove wire in unwireNodes()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to remove wire in unwireNodes()."));
             return -1;
         }
 
@@ -3796,7 +3624,7 @@ lsddb_rewireNodes ()
             else if (dest)
             {
                 dest->connection = NULL;
-                fprintf (stderr, "Problem while rewiring nodes\n");
+                doLog (ERROR, LOG_COMP, _("Problem while rewiring nodes."));
             }
 
         }
@@ -3815,7 +3643,7 @@ lsddb_jsonClassLibrary (cJSON* target)
 {
     if (!target)
     {
-        fprintf (stderr, "target may not be null in jsonClassLibrary()\n");
+        doLog (ERROR, LOG_COMP, _("target may not be null in jsonClassLibrary()."));
         return -1;
     }
 
@@ -3924,7 +3752,7 @@ lsddb_jsonParts (cJSON* target)
 {
     if (!target)
     {
-        fprintf (stderr, "target may not be null in jsonParts()\n");
+        doLog (ERROR, LOG_COMP, _("target may not be null in jsonParts()."));
         return -1;
     }
 
@@ -3993,8 +3821,7 @@ lsddb_jsonInsertClassObject (cJSON* target, int classId)
 
         return 0;
     }
-    fprintf (stderr,
-             "Unable to resolve class from DB in jsonInsertClassObject()\n");
+    doLog (ERROR, LOG_COMP, _("Unable to resolve class from DB in jsonInsertClassObject()."));
     return -1;
 }
 
@@ -4297,7 +4124,7 @@ lsddb_jsonPatchSpace (int patchSpaceId, cJSON* resp)
     }
     else
     {
-        cJSON_AddStringToObject (resp, "error", "Patch Space Non-existant");
+        cJSON_AddStringToObject (resp, "error", _("Patch Space Non-existent"));
         return -1;
     }
 
@@ -4324,17 +4151,13 @@ lsddb_resolveClassFromId (struct LSD_SceneNodeClass** ptrToBind, int classId)
         if (pickIdx (getArr_lsdNodeClassArr (), (void**)&pickedClass,
                      arrIdx) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to pick class from array in resolveClassFromId()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick class from array in resolveClassFromId()."));
             return -1;
         }
     }
     else
     {
-        fprintf (
-            stderr,
-            "Class could not be resolved or its plugin is disabled in resolveClassFromId()\n");
+        doLog (ERROR, LOG_COMP, _("Class could not be resolved or its plugin is disabled in resolveClassFromId()."));
         return -1;
     }
 
@@ -4368,15 +4191,13 @@ lsddb_resolveInstFromId (struct LSD_SceneNodeInst const** target,
 
         if (pickIdx (getArr_lsdNodeInstArr (), (void**)&pickedInst, arrIdx) < 0)
         {
-            fprintf (stderr,
-                     "Unable to pick inst from array in resolveInstFromId()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick inst from array in resolveInstFromId()."));
             return -1;
         }
     }
     else
     {
-        fprintf (stderr,
-                 "Inst could not be resolved in DB in resolveInstFromId()\n");
+        doLog (ERROR, LOG_COMP, _("Inst could not be resolved in DB in resolveInstFromId()."));
         return -1;
     }
 
@@ -4412,16 +4233,13 @@ lsddb_resolveInstFromInId (struct LSD_SceneNodeInst const** target, int inId)
 
         if (pickIdx (getArr_lsdNodeInstArr (), (void**)&pickedInst, arrIdx) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to pick inst from array in resolveInstFromInId()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick inst from array in resolveInstFromInId()."));
             return -1;
         }
     }
     else
     {
-        fprintf (stderr,
-                 "Inst could not be resolved in DB in resolveInstFromInId()\n");
+        doLog (ERROR, LOG_COMP, _("Inst could not be resolved in DB in resolveInstFromInId()."));
         return -1;
     }
 
@@ -4454,19 +4272,14 @@ lsddb_resolveInstFromOutId (struct LSD_SceneNodeInst const** target, int outId)
 
         if (pickIdx (getArr_lsdNodeInstArr (), (void**)&pickedInst, arrIdx) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to pick inst from array in resolveInstFromOutId()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick inst from array in resolveInstFromOutId()."));
             return -1;
         }
     }
     else
     {
-        fprintf (
-            stderr,
-            "Inst %d could not be resolved in DB in resolveInstFromOutId()\n%s\n",
-            outId,
-            sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Inst %d could not be resolved in DB in resolveInstFromOutId()\n%s."),
+            outId, sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -4492,9 +4305,7 @@ lsddb_resolveInputFromId (struct LSD_SceneNodeInput** inBind, int inId)
 
         if (pickIdx (getArr_lsdNodeInputArr (), (void**)inBind, arrIdx) < 0)
         {
-            fprintf (
-                stderr,
-                "Unable to pick input from array in resolveInputFromId()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick input from array in resolveInputFromId()."));
             return -1;
         }
         return 0;
@@ -4665,8 +4476,8 @@ lsddb_addPatchChannelAddr (int* addrIdBind, cJSON* addrObj, int sixteenBit)
 
     if (sqlite3_step (ADD_PATCH_CHANNEL_ADDR_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while adding address into DB\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Error while adding address into DB\n Details: %s"), 
+                                  sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -4740,9 +4551,7 @@ lsddb_addPatchChannel (int partId, cJSON* opts)
         psId = sqlite3_column_int (GET_PARTITON_PATCHSPACE_S, 0);
     else
     {
-        fprintf (
-            stderr,
-            "Unable to resolve partition's patchSpace in addPatchChannel()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to resolve partition's patchSpace in addPatchChannel()."));
         return -1;
     }
 
@@ -4755,8 +4564,8 @@ lsddb_addPatchChannel (int partId, cJSON* opts)
                        NULL);
     if (sqlite3_step (ADD_PATCH_CHANNEL_FACADE_OUT_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to add facade out in addPatchChannel()\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Unable to add facade out in addPatchChannel()\nDetails: %s"),
+               sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -4767,8 +4576,8 @@ lsddb_addPatchChannel (int partId, cJSON* opts)
 
     if (sqlite3_step (ADD_PATCH_CHANNEL_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while inserting channel into DB\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Error while inserting channel into DB\nDetails: %s"),
+                                  sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -4799,8 +4608,7 @@ lsddb_deletePatchChannelAddr (int addrId)
     sqlite3_bind_int (DELETE_PATCH_CHANNEL_ADDR_S, 1, addrId);
     if (sqlite3_step (DELETE_PATCH_CHANNEL_ADDR_S) != SQLITE_DONE)
     {
-        fprintf (stderr,
-                 "Unable to remove address on behalf of deletePatchChannel()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to remove address on behalf of deletePatchChannel()."));
         return -1;
     }
     return 0;
@@ -4878,14 +4686,11 @@ lsddb_updatePatchChannel (int chanId, cJSON* opts)
                            -1,
                            NULL);
         if (sqlite3_step (UPDATE_PATCH_CHANNEL_FACADE_OUT_S) != SQLITE_DONE)
-            fprintf (
-                stderr,
-                "Unable to update facadeOut's name in updatePatchChannel()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to update facadeOut's name in updatePatchChannel()."));
     }
     else
     {
-        fprintf (stderr,
-                 "Unable to discover addresses in updatePatchChannel()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to discover addresses in updatePatchChannel()."));
         return -1;
     }
 
@@ -4912,7 +4717,7 @@ lsddb_updatePatchChannel (int chanId, cJSON* opts)
 
     if (sqlite3_step (UPDATE_PATCH_CHANNEL_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Error while updating channel on DB\n");
+        doLog (ERROR, LOG_COMP, _("Error while updating channel on DB."));
         return -1;
     }
 
@@ -4955,12 +4760,10 @@ lsddb_deletePatchChannel (int chanId)
         sqlite3_reset (DELETE_PATCH_CHANNEL_FACADE_OUT_S);
         sqlite3_bind_int (DELETE_PATCH_CHANNEL_FACADE_OUT_S, 1, facadeOutId);
         if (sqlite3_step (DELETE_PATCH_CHANNEL_FACADE_OUT_S) != SQLITE_DONE)
-            fprintf (stderr,
-                     "Unable to delete facadeOut in deletePatchChannel()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to delete facadeOut in deletePatchChannel()."));
     }
     else
-        fprintf (stderr,
-                 "Unable to discover addresses in deletePatchChannel()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to discover addresses in deletePatchChannel()."));
 
     /* Now Delete Channel */
     sqlite3_reset (DELETE_PATCH_CHANNEL_S);
@@ -4968,7 +4771,7 @@ lsddb_deletePatchChannel (int chanId)
 
     if (sqlite3_step (DELETE_PATCH_CHANNEL_S) != SQLITE_DONE)
     {
-        fprintf (stderr, "Unable to delete channel in deletePatchChannel()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to delete channel in deletePatchChannel()."));
         return -1;
     }
 
@@ -5013,7 +4816,7 @@ lsddbapi_verifyTable (int pluginId, const char* subName,
         pluginName = sqlite3_column_text (API_GET_PLUGIN_NAME_S, 0);
     else  /* Plugin doesn't exist, therefore no table */
     {
-        fprintf (stderr, "Unable to create plugin table, plugin non existant\n");
+        doLog (ERROR, LOG_COMP, _("Unable to create plugin table, plugin non existent."));
         if (bindName)
             *bindName = NULL;
         return 0;
@@ -5078,9 +4881,7 @@ lsddbapi_createTable (int pluginId, const char* subName, const char* colDefs)
         const char* semicolon = strchr (tableStmt, ';');
         if (semicolon[1] != '\0')
         {
-            fprintf (
-                stderr,
-                "Two or more semicolons were detected in table creation statement, aborting\n");
+            doLog (ERROR, LOG_COMP, _("Two or more semicolons were detected in table creation statement, aborting."));
             return -1;
         }
 
@@ -5100,20 +4901,20 @@ lsddbapi_createTable (int pluginId, const char* subName, const char* colDefs)
                 return 0;
             else
             {
-                fprintf (stderr, "Unable to insert table record\n");
+                doLog (ERROR, LOG_COMP, _("Unable to insert table record."));
                 return -1;
             }
         }
         else
         {
-            fprintf (stderr, "Unable to create table: %s\n", createErr);
+            doLog (ERROR, LOG_COMP, _("Unable to create table: %s."), createErr);
             sqlite3_free (createErr);
             return -1;
         }
     }
     else
     {
-        fprintf (stderr, "Plugin doesn't seem to exist for table creation\n");
+        doLog (ERROR, LOG_COMP, _("Plugin doesn't seem to exist for table creation."));
         return -1;
     }
 }
@@ -5156,9 +4957,7 @@ lsddbapi_createIndex (int pluginId,
         const char* semicolon = strchr (indexStmt, ';');
         if (semicolon[1] != '\0')
         {
-            fprintf (
-                stderr,
-                "Two or more semicolons were detected in table creation statement, aborting\n");
+            doLog (ERROR, LOG_COMP, _("Two or more semicolons were detected in table creation statement, aborting."));
             return -1;
         }
 
@@ -5168,15 +4967,14 @@ lsddbapi_createIndex (int pluginId,
             return 0;
         else
         {
-            fprintf (stderr, "Unable to create table index: %s\n", createErr);
+            doLog (ERROR, LOG_COMP, _("Unable to create table index: %s."), createErr);
             sqlite3_free (createErr);
             return -1;
         }
     }
     else
     {
-        fprintf (stderr,
-                 "Plugin doesn't seem to exist for table index creation\n");
+        doLog (ERROR, LOG_COMP, _("Plugin doesn't seem to exist for table index creation."));
         return -1;
     }
 }
@@ -5200,7 +4998,7 @@ lsddbapi_prepSelect (struct LSD_ScenePlugin const* pluginObj,
     const unsigned char* fullTableName;
     if (!lsddbapi_verifyTable (pluginObj->dbId, tblName, &fullTableName))
     {
-        fprintf (stderr, "Table being accessed doesn't exist, unable to prep\n");
+        doLog (ERROR, LOG_COMP, _("Table being accessed doesn't exist, unable to prep."));
         return -1;
     }
 
@@ -5218,8 +5016,8 @@ lsddbapi_prepSelect (struct LSD_ScenePlugin const* pluginObj,
     if (sqlite3_prepare_v2 (memdb, stmtSource, 256, &newStmt,
                             NULL) != SQLITE_OK)
     {
-        fprintf (stderr, "Sqlite was unable to prep a statement\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Sqlite was unable to prep a statement\nDetails: %s"),
+                                  sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -5228,7 +5026,7 @@ lsddbapi_prepSelect (struct LSD_ScenePlugin const* pluginObj,
     struct LSD_SceneDBStmt* newStmtObj;
     if (insertElem (getArr_lsdDBStmtArr (), &newIdx, (void**)&newStmtObj) < 0)
     {
-        fprintf (stderr, "Unable to insert new statement object into array\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert new statement object into array."));
         return -1;
     }
 
@@ -5255,7 +5053,7 @@ lsddbapi_prepInsert (struct LSD_ScenePlugin const* pluginObj,
     const unsigned char* fullTableName;
     if (!lsddbapi_verifyTable (pluginObj->dbId, tblName, &fullTableName))
     {
-        fprintf (stderr, "Table being accessed doesn't exist, unable to prep\n");
+        doLog (ERROR, LOG_COMP, _("Table being accessed doesn't exist, unable to prep."));
         return -1;
     }
 
@@ -5273,8 +5071,8 @@ lsddbapi_prepInsert (struct LSD_ScenePlugin const* pluginObj,
     if (sqlite3_prepare_v2 (memdb, stmtSource, 256, &newStmt,
                             NULL) != SQLITE_OK)
     {
-        fprintf (stderr, "Sqlite was unable to prep a statement\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Sqlite was unable to prep a statement\nDetails: %s"),
+                                  sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -5283,7 +5081,7 @@ lsddbapi_prepInsert (struct LSD_ScenePlugin const* pluginObj,
     struct LSD_SceneDBStmt* newStmtObj;
     if (insertElem (getArr_lsdDBStmtArr (), &newIdx, (void**)&newStmtObj) < 0)
     {
-        fprintf (stderr, "Unable to insert new statement object into array\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert new statement object into array."));
         return -1;
     }
 
@@ -5310,7 +5108,7 @@ lsddbapi_prepUpdate (struct LSD_ScenePlugin const* pluginObj,
     const unsigned char* fullTableName;
     if (!lsddbapi_verifyTable (pluginObj->dbId, tblName, &fullTableName))
     {
-        fprintf (stderr, "Table being accessed doesn't exist, unable to prep\n");
+        doLog (ERROR, LOG_COMP, _("Table being accessed doesn't exist, unable to prep."));
         return -1;
     }
 
@@ -5328,8 +5126,8 @@ lsddbapi_prepUpdate (struct LSD_ScenePlugin const* pluginObj,
     if (sqlite3_prepare_v2 (memdb, stmtSource, 256, &newStmt,
                             NULL) != SQLITE_OK)
     {
-        fprintf (stderr, "Sqlite was unable to prep a statement\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Sqlite was unable to prep a statement\nDetails: %s"),
+                                  sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -5338,7 +5136,7 @@ lsddbapi_prepUpdate (struct LSD_ScenePlugin const* pluginObj,
     struct LSD_SceneDBStmt* newStmtObj;
     if (insertElem (getArr_lsdDBStmtArr (), &newIdx, (void**)&newStmtObj) < 0)
     {
-        fprintf (stderr, "Unable to insert new statement object into array\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert new statement object into array."));
         return -1;
     }
 
@@ -5364,7 +5162,7 @@ lsddbapi_prepDelete (struct LSD_ScenePlugin const* pluginObj,
     const unsigned char* fullTableName;
     if (!lsddbapi_verifyTable (pluginObj->dbId, tblName, &fullTableName))
     {
-        fprintf (stderr, "Table being accessed doesn't exist, unable to prep\n");
+        doLog (ERROR, LOG_COMP, _("Table being accessed doesn't exist, unable to prep."));
         return -1;
     }
 
@@ -5381,8 +5179,8 @@ lsddbapi_prepDelete (struct LSD_ScenePlugin const* pluginObj,
     if (sqlite3_prepare_v2 (memdb, stmtSource, 256, &newStmt,
                             NULL) != SQLITE_OK)
     {
-        fprintf (stderr, "Sqlite was unable to prep a statement\n");
-        fprintf (stderr, "Details: %s\n", sqlite3_errmsg (memdb));
+        doLog (ERROR, LOG_COMP, _("Sqlite was unable to prep a statement\nDetails: %s"),
+                                  sqlite3_errmsg (memdb));
         return -1;
     }
 
@@ -5391,7 +5189,7 @@ lsddbapi_prepDelete (struct LSD_ScenePlugin const* pluginObj,
     struct LSD_SceneDBStmt* newStmtObj;
     if (insertElem (getArr_lsdDBStmtArr (), &newIdx, (void**)&newStmtObj) < 0)
     {
-        fprintf (stderr, "Unable to insert new statement object into array\n");
+        doLog (ERROR, LOG_COMP, _("Unable to insert new statement object into array."));
         return -1;
     }
 
@@ -5403,6 +5201,15 @@ lsddbapi_prepDelete (struct LSD_ScenePlugin const* pluginObj,
     return 0;
 }
 
+const char* PICK_STMT_ERR()
+{
+    return _("Unable to pick stmt from array.");
+}
+               
+const char* STMT_OWN_ERR()
+{
+    return _("Unable to verify ownership of stmt.");
+}
 
 int
 lsddbapi_stmtReset (struct LSD_ScenePlugin const* plugin,
@@ -5413,7 +5220,7 @@ lsddbapi_stmtReset (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5421,7 +5228,7 @@ lsddbapi_stmtReset (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_reset (stmtObj->stmt);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5438,7 +5245,7 @@ lsddbapi_stmtStep (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5446,7 +5253,7 @@ lsddbapi_stmtStep (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_step (stmtObj->stmt);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5465,7 +5272,7 @@ lsddbapi_stmtBindDouble (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5473,7 +5280,7 @@ lsddbapi_stmtBindDouble (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_bind_double (stmtObj->stmt, sqlIdx, data);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5492,7 +5299,7 @@ lsddbapi_stmtBindInt (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5500,7 +5307,7 @@ lsddbapi_stmtBindInt (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_bind_int (stmtObj->stmt, sqlIdx, data);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5519,7 +5326,7 @@ lsddbapi_stmtBindInt64 (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5527,7 +5334,7 @@ lsddbapi_stmtBindInt64 (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_bind_int64 (stmtObj->stmt, sqlIdx, data);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5545,7 +5352,7 @@ lsddbapi_stmtBindNull (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5553,7 +5360,7 @@ lsddbapi_stmtBindNull (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_bind_null (stmtObj->stmt, sqlIdx);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5574,7 +5381,7 @@ lsddbapi_stmtBindText (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5586,7 +5393,7 @@ lsddbapi_stmtBindText (struct LSD_ScenePlugin const* plugin,
                                      destructor);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5607,7 +5414,7 @@ lsddbapi_stmtBindText16 (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5619,7 +5426,7 @@ lsddbapi_stmtBindText16 (struct LSD_ScenePlugin const* plugin,
                                        destructor);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5637,7 +5444,7 @@ lsddbapi_stmtColDouble (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5645,7 +5452,7 @@ lsddbapi_stmtColDouble (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_column_double (stmtObj->stmt, colIdx);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5661,7 +5468,7 @@ lsddbapi_stmtColInt (struct LSD_ScenePlugin const* plugin, unsigned int stmtIdx,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5669,7 +5476,7 @@ lsddbapi_stmtColInt (struct LSD_ScenePlugin const* plugin, unsigned int stmtIdx,
         *result = sqlite3_column_int (stmtObj->stmt, colIdx);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5687,7 +5494,7 @@ lsddbapi_stmtColInt64 (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5695,7 +5502,7 @@ lsddbapi_stmtColInt64 (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_column_int64 (stmtObj->stmt, colIdx);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5713,7 +5520,7 @@ lsddbapi_stmtColText (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5721,7 +5528,7 @@ lsddbapi_stmtColText (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_column_text (stmtObj->stmt, colIdx);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5739,7 +5546,7 @@ lsddbapi_stmtColText16 (struct LSD_ScenePlugin const* plugin,
     struct LSD_SceneDBStmt* stmtObj;
     if (pickIdx (getArr_lsdDBStmtArr (), (void**)&stmtObj, stmtIdx) < 0)
     {
-        fprintf (stderr, "Unable to pick stmt from array\n");
+        doLog (ERROR, LOG_COMP, PICK_STMT_ERR());
         return -1;
     }
 
@@ -5747,7 +5554,7 @@ lsddbapi_stmtColText16 (struct LSD_ScenePlugin const* plugin,
         *result = sqlite3_column_text16 (stmtObj->stmt, colIdx);
     else
     {
-        fprintf (stderr, "Unable to verify ownership of stmt\n");
+        doLog (ERROR, LOG_COMP, STMT_OWN_ERR());
         return -1;
     }
 
@@ -5766,7 +5573,7 @@ lsddbapi_getLastInsertRowId ()
 void
 lsddb_reportPrepProblem (int problem)
 {
-    fprintf (stderr, "Prep problem: %d\nDetails: %s\n", problem,
+    doLog (ERROR, LOG_COMP, _("Prep problem: %d\nDetails: %s"), problem,
              sqlite3_errmsg (memdb));
 }
 

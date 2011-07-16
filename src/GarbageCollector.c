@@ -1,4 +1,4 @@
-/*
+ /*
  **    This file is part of LightShoppe. Copyright 2011 Jack Andersen
  **
  **    LightShoppe is free software: you can redistribute it
@@ -26,6 +26,14 @@
 #include <sqlite3.h>
 
 #include "GarbageCollector.h"
+#include "Logging.h"
+
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+/* Name of this component for logging */
+static const char LOG_COMP[] = "GarbageCollector.c";
 
 #define PREPGC(stmt, \
                num)       if (sqlite3_prepare_v2 (gcdb, stmt, -1, &stmt ## _S, \
@@ -39,8 +47,7 @@ static sqlite3* gcdb;
 void
 lsdgc_reportPrepProblem (int problem)
 {
-    fprintf (stderr,
-             "GC Prep problem: %d\nDetails: %s\n",
+    doLog (ERROR, LOG_COMP, _("GC Prep problem: %d\nDetails: %s."),
              problem,
              sqlite3_errmsg (gcdb));
 }
@@ -175,7 +182,7 @@ lsdgc_prepGCOps ()
 
         if (errMsg)
         {
-            fprintf (stderr, "Error during GC init:\n%s\n", errMsg);
+            doLog (ERROR, LOG_COMP, _("Error during GC init:\n%s."), errMsg);
             sqlite3_free (errMsg);
         }
 
@@ -187,7 +194,7 @@ lsdgc_prepGCOps ()
 
         return 0;
     }
-    fprintf (stderr, "Unable to open empty DB for gc\n");
+    doLog (ERROR, LOG_COMP, _("Unable to open empty DB for gc."));
     return -1;
 
 }

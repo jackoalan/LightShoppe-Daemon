@@ -30,12 +30,14 @@
 
 #include "PluginLoader.h"
 #include "DBOps.h"
+#include "Logging.h"
 
-#if defined(LT_DIRSEP_CHAR)
-#define LSD_DIRSEP_CHAR LT_DIRSEP_CHAR
-#else
-#define LSD_DIRSEP_CHAR '/'
-#endif
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+/* Component Log Name */
+static const char LOG_COMP[] = "PluginLoader.c";
 
 #if defined(PLUGIN_DIR)
 static const char PLUGIN_PATH[] = PLUGIN_DIR;
@@ -62,7 +64,7 @@ checkAddPlugin (const char* pluginFile, const char* pluginName,
 
     pclose (shaStream);
 
-    printf ("%s digest: %.40s\n", pluginName, digest);
+    doLog (NOTICE, LOG_COMP, _("%s digest: %.40s."), pluginName, digest);
 
     /* Now extract the head and load it! */
     ghType getHead = lt_dlsym (pluginHandle, "getPluginHead");
@@ -71,15 +73,15 @@ checkAddPlugin (const char* pluginFile, const char* pluginName,
         if ( lsddb_pluginHeadLoader (getHead, 0, pluginName, digest,
                                      pluginHandle) < 0 )
         {
-            fprintf (stderr, "Unable to validate plugin HEAD\n");
+            doLog (ERROR, LOG_COMP, _("Unable to validate plugin HEAD of %s."), pluginName);
             lt_dlclose (pluginHandle);
             return -1;
         }
     }
     else
     {
-        fprintf (stderr, "Error while loading HEAD of %s:\n", pluginName);
-        fprintf (stderr, "%s\n", lt_dlerror());
+        doLog (ERROR, LOG_COMP, _("Error while loading HEAD of %s.\nDetails: %s"), 
+               pluginName, lt_dlerror());
         lt_dlclose (pluginHandle);
         return -1;
     }
@@ -96,7 +98,7 @@ scrapePlugin (const char *filename, void * data)
     lt_dlhandle pluginHandle = lt_dlopenext (filename);
     if (!pluginHandle)
     {
-        fprintf (stderr, "Unable to link %s\nDetails: %s\n", filename, lt_dlerror());
+        doLog (ERROR, LOG_COMP, _("Unable to link %s\nDetails: %s."), filename, lt_dlerror());
         return 0;
     }
     
@@ -104,12 +106,13 @@ scrapePlugin (const char *filename, void * data)
     lt_dlinfo const * pluginInfo = lt_dlgetinfo (pluginHandle);
     if (!pluginInfo)
     {
-        fprintf (stderr, "Unable to get plugin SO info for %s\nDetails: %s\n", filename, lt_dlerror());
+        doLog (ERROR, LOG_COMP, _("Unable to get plugin SO info for %s\nDetails: %s."), 
+               filename, lt_dlerror());
         return 0;
     }
     
     /* Continue Loading Plugin */
-    printf ("Found %s\n", pluginInfo->name);
+    doLog (NOTICE, LOG_COMP, _("Found %s."), pluginInfo->name);
     checkAddPlugin (pluginInfo->filename, pluginInfo->name, pluginHandle);
     
     return 0;
@@ -123,7 +126,7 @@ loadPluginsDirectory ()
 {
     /* Plugin directory is set by autotools using user-defined prefix */
 #ifndef PLUGIN_DIR
-    fprintf (stderr, "Plugin Directory not provided at compile time\n");
+    doLog (ERROR, LOG_COMP, _("PLUGIN_DIR not provided at compile time."));
     return -1;
 #endif
     
@@ -144,12 +147,12 @@ getPluginWebIncludes (struct evbuffer* target,
 {
     if (!target || !pluginDirName)
     {
-        fprintf (stderr, "Invalid use of getPluginWebIncludes()\n");
+        doLog (ERROR, LOG_COMP, _("Invalid use of getPluginWebIncludes()."));
         return -1;
     }
     
 #ifndef WEB_PLUGIN_DIR
-    fprintf (stderr, "Web Plugin Directory not provided at compile time\n");
+    doLog (ERROR, LOG_COMP, _("WEB_PLUGIN_DIR not provided at compile time."));
     return -1;
 #endif
 
@@ -172,9 +175,7 @@ getPluginWebIncludes (struct evbuffer* target,
         char* includeFileContent = malloc (sizeof( char ) * sz);
         if (!includeFileContent)
         {
-            fprintf (
-                stderr,
-                "Unable to allocate memory to accomodate include file for parsing\n");
+            doLog (ERROR, LOG_COMP, _("Unable to allocate memory to accommodate include file for parsing."));
             fclose (includeFile);
             return -1;
         }
@@ -183,7 +184,7 @@ getPluginWebIncludes (struct evbuffer* target,
         cJSON* includeFileParsed = cJSON_Parse (includeFileContent);
         if (!includeFileParsed)
         {
-            fprintf (stderr, "Unable to parse JSON from include file\n");
+            doLog (ERROR, LOG_COMP, _("Unable to parse JSON from include file."));
             fclose (includeFile);
             free (includeFileContent);
             return -1;
@@ -234,7 +235,7 @@ getPluginWebIncludes (struct evbuffer* target,
     }
     else
     {
-        fprintf (stderr, "Unable to open %s\n", pluginIncludePath);
+        doLog (WARNING, LOG_COMP, _("Unable to open %s. No includes added."), pluginIncludePath);
         return -1;
     }
 

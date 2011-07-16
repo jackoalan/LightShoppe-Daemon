@@ -41,7 +41,7 @@ initLogging (int verboseMode)
     else
         verbose = 0;
     
-    logFile = fopen ("/var/log/lsd.log","a");
+    logFile = fopen ("/var/log/lsd.log","a");
     if (!logFile)
         return -1;
     return 0;
@@ -76,7 +76,7 @@ doLog (enum LogType type, const char* component, const char* msg, ...)
     time_t now = time(NULL);
     struct tm* ts = localtime(&now);
     char tBuf[80];
-    strftime(tBuf, sizeof(tBuf), "%a %Y-%m-%d %H:%M:%S %Z", ts);
+    strftime(tBuf, sizeof(tBuf), "%Y-%m-%d %H:%M:%S %Z", ts);
     
     // Select correct tag
     const char* tag;
@@ -98,11 +98,11 @@ doLog (enum LogType type, const char* component, const char* msg, ...)
     
     // Verbose Print
     if (verbose)
-        fprintf((type == NOTICE)?stdout:stderr, "[%s] %s [%s] %s\n", tag, tBuf, component, vabuf);
+        fprintf((type == NOTICE)?stdout:stderr, "[%s] [%s] %s\n", tag, component, vabuf);
     
     // Log File Print
     if (logFile)
-        fprintf(logFile, "[%s] %s [%s] %s\n", tag, tBuf, component, vabuf);
+        fprintf(logFile, "%s [%s] [%s] %s\n", tBuf, tag, component, vabuf);
     
     return 0;
 }

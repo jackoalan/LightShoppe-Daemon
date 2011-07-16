@@ -21,9 +21,17 @@
  */
 
 #include "NodeInstAPI.h"
+#include "Logging.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+/* Name of this component for logging */
+static const char LOG_COMP[] = "NodeInstAPI.c";
 
 int
 plugininst_addInstInput (struct LSD_SceneNodeInst const* inst,
@@ -35,7 +43,7 @@ plugininst_addInstInput (struct LSD_SceneNodeInst const* inst,
     struct LSD_SceneNodeInput* addedIn;
     if (lsddb_addNodeInstInput (inst, typeId, name, &addedIn, inIdBind) < 0)
     {
-        fprintf (stderr, "Problem adding inst input\n");
+        doLog (ERROR, LOG_COMP, _("Problem adding inst input."));
         return -1;
     }
     return 0;
@@ -56,7 +64,7 @@ plugininst_addInstOutput (struct LSD_SceneNodeInst const* inst,
     if (lsddb_addNodeInstOutput (inst, typeId, name, &addedOut, &outId,
                                  bfFuncIdx, bpFuncIdx) < 0)
     {
-        fprintf (stderr, "Problem adding inst output\n");
+        doLog (ERROR, LOG_COMP, _("Problem adding inst output."));
         return -1;
     }
 
@@ -81,19 +89,19 @@ plugininst_removeInstInput (struct LSD_SceneNodeInst const* inst, int inId)
     struct LSD_SceneNodeInst const* verInst;
     if (lsddb_resolveInstFromInId (&verInst, inId) < 0)
     {
-        fprintf (stderr, "Unable to get inst from inId\n");
+        doLog (ERROR, LOG_COMP, _("Unable to get inst from inId %d."), inId);
         return -1;
     }
 
     if (verInst != inst)
     {
-        fprintf (stderr, "Inst failed ownership test in removeInstInput()\n");
+        doLog (ERROR, LOG_COMP, _("Inst failed ownership test in removeInstInput()."));
         return -1;
     }
 
     if (lsddb_removeNodeInstInput (inId) < 0)
     {
-        fprintf (stderr, "There was an error removing inst input from node\n");
+        doLog (ERROR, LOG_COMP, _("There was an error removing inst input %d from node."), inId);
         return -1;
     }
 
@@ -108,19 +116,19 @@ plugininst_removeInstOutput (struct LSD_SceneNodeInst const* inst, int outId)
     struct LSD_SceneNodeInst const* verInst;
     if (lsddb_resolveInstFromOutId (&verInst, outId) < 0)
     {
-        fprintf (stderr, "Unable to get inst from outId\n");
+        doLog (ERROR, LOG_COMP, _("Unable to get inst from outId %d."), outId);
         return -1;
     }
 
     if (verInst != inst)
     {
-        fprintf (stderr, "Inst failed ownership test in removeInstOutput()\n");
+        doLog (ERROR, LOG_COMP, _("Inst failed ownership test in removeInstOutput()."));
         return -1;
     }
 
     if (lsddb_removeNodeInstOutput (outId) < 0)
     {
-        fprintf (stderr, "There was an error removing inst output from node\n");
+        doLog (ERROR, LOG_COMP, _("There was an error removing inst output %d from node."), outId);
         return -1;
     }
 
@@ -139,13 +147,13 @@ plugininst_getInputStruct (struct LSD_SceneNodeInst const* inst,
     struct LSD_SceneNodeInput* theIn;
     if (lsddb_resolveInputFromId (&theIn, inId) < 0)
     {
-        fprintf (stderr, "Unable to getInputStruct()\n");
+        doLog (ERROR, LOG_COMP, _("Unable to getInputStruct() of inId %d."), inId);
         return -1;
     }
 
     if (theIn->parentNode != inst)
     {
-        fprintf (stderr, "Input failed ownership test in getInputStruct()\n");
+        doLog (ERROR, LOG_COMP, _("Input %d failed ownership test in getInputStruct()."), inId);
         return -1;
     }
 

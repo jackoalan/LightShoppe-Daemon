@@ -37,6 +37,14 @@
 #include "DBArr.h"
 #include "SceneCore.h"
 #include "Node.h"
+#include "Logging.h"
+
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+/* Name of this component for logging */
+static const char LOG_COMP[] = "DMX.c";
 
 int
 initDMX ()
@@ -70,14 +78,14 @@ bufferUnivs ()
     {
         if (pickIdx (chanArr, (void**)&chan, i) < 0)
         {
-            fprintf (stderr, "Unable to pick channel in bufferUnivs()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick channel in bufferUnivs()."));
             return -1;
         }
         if (chan && chan->output && chan->output->typeId == rgbType)
         {
 
             if (!chan->output->bufferFunc)
-                fprintf (stderr, "No buffer func to call!\n");
+                doLog (ERROR, LOG_COMP, _("No buffer func to call on output connected to channel %d."), chan->dbId);
 
             /* printf("Ran\n"); */
 
@@ -153,7 +161,7 @@ writeUnivs ()
     {
         if (pickIdx (univsArr, (void**)&univ, i) < 0)
         {
-            fprintf (stderr, "Unable to pick Univ in writeUnivs()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to pick Univ in writeUnivs()."));
             return -1;
         }
 

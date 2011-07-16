@@ -33,29 +33,15 @@
 #include "DBOps.h"
 #include "SceneCore.h"
 #include "PluginAPI.h"
+#include "Logging.h"
 
-/* Core RPC operations */
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
 
-/* New Node Instances */
-/* Delete Node Instance */
-/* JSON Node Instances */
-/*
- * {nodes:[{nid:123,name:'meh',desc:'bleh',ins:[{inId:33,name:'inOne',wireId:42/NULL}],outs:[]}]} */
+/* Name of this component for logging */
+static const char LOG_COMP[] = "CoreRPC.c";
 
-/* Wire Nodes */
-/* Unwire Nodes */
-/* JSON Wires */
-/* {wires:[{wid:42,out:123,in:456}]} */
-
-/* JSON Inst Ins */
-
-/* JSON Inst Outs */
-
-/* Enable plugin */
-/* Disable plugin */
-/* JSON plugins */
-
-/* JSON stuff below */
 
 void
 lsdCustomRPC (cJSON* req, cJSON* resp)
@@ -77,7 +63,7 @@ lsdCustomRPC (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "nodeId not present or not a number");
+                                 _("nodeId not present or not a number"));
         return;
     }
 }
@@ -106,7 +92,7 @@ lsdJsonPatchSpace (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "psId key not present or not a number");
+                                 _("psId key not present or not a number"));
 }
 
 
@@ -124,7 +110,7 @@ lsdAddNode (cJSON* req, cJSON* resp)
             {
                 cJSON_AddStringToObject (resp,
                                          "error",
-                                         "Problem while resolving class object");
+                                         _("Problem while resolving class object"));
                 return;
             }
 
@@ -147,13 +133,13 @@ lsdAddNode (cJSON* req, cJSON* resp)
             if (lsddb_addNodeInst (psId->valueint, nc, &instId, NULL) < 0)
                 cJSON_AddStringToObject (resp,
                                          "error",
-                                         "Unable to add node instance to DB");
+                                         _("Unable to add node instance to DB"));
             else
             {
                 if (lsddb_nodeInstPos (instId, xValVal, yValVal) < 0)
                     cJSON_AddStringToObject (resp,
                                              "error",
-                                             "Error while positioning node");
+                                             _("Error while positioning node"));
                 cJSON_AddStringToObject (resp, "success", "success");
                 cJSON_AddNumberToObject (resp, "instId", instId);
             }
@@ -161,12 +147,12 @@ lsdAddNode (cJSON* req, cJSON* resp)
         else
             cJSON_AddStringToObject (resp,
                                      "error",
-                                     "classId not present or not a number");
+                                     _("classId not present or not a number"));
     }
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "psId key not present or not a number");
+                                 _("psId key not present or not a number"));
 }
 
 
@@ -184,7 +170,7 @@ lsdDeleteNode (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "nodeId key not present or not a number");
+                                 _("nodeId key not present or not a number"));
 }
 
 
@@ -200,7 +186,7 @@ lsdUpdateNodeName (cJSON* req, cJSON* resp)
         {
             cJSON_AddStringToObject (resp,
                                      "error",
-                                     "name not present or not a string");
+                                     _("name not present or not a string"));
             return;
         }
 
@@ -212,7 +198,7 @@ lsdUpdateNodeName (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "nodeId key not present or not a number");
+                                 _("nodeId key not present or not a number"));
 }
 
 
@@ -228,7 +214,7 @@ lsdSetNodeColour (cJSON* req, cJSON* resp)
         {
             cJSON_AddStringToObject (resp,
                                      "error",
-                                     "name not present or not an object");
+                                     _("name not present or not an object"));
             return;
         }
 
@@ -240,7 +226,7 @@ lsdSetNodeColour (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "nodeId key not present or not a number");
+                                 _("nodeId key not present or not a number"));
 }
 
 
@@ -255,7 +241,7 @@ lsdAddFacade (cJSON* req, cJSON* resp)
                                     psId->valueint) < 0)
             cJSON_AddStringToObject (resp,
                                      "error",
-                                     "Unable to add node instance to DB");
+                                     _("Unable to add node instance to DB"));
         else
         {
             /* Get Coords */
@@ -276,7 +262,7 @@ lsdAddFacade (cJSON* req, cJSON* resp)
             if (lsddb_facadeInstPos (newPS, xValVal, yValVal) < 0)
                 cJSON_AddStringToObject (resp,
                                          "error",
-                                         "Error while positioning facade node");
+                                         _("Error while positioning facade node"));
 
             cJSON_AddStringToObject (resp, "success", "success");
             cJSON_AddNumberToObject (resp, "psId", newPS);
@@ -285,7 +271,7 @@ lsdAddFacade (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "psId key not present or not a number");
+                                 _("psId key not present or not a number"));
 }
 
 
@@ -303,7 +289,7 @@ lsdDeleteFacade (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "facNodeId key not present or not a number");
+                                 _("facNodeId key not present or not a number"));
 }
 
 
@@ -319,7 +305,7 @@ lsdUpdateFacadeName (cJSON* req, cJSON* resp)
         {
             cJSON_AddStringToObject (resp,
                                      "error",
-                                     "name not present or not a string");
+                                     _("name not present or not a string"));
             return;
         }
 
@@ -332,7 +318,7 @@ lsdUpdateFacadeName (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "facNodeId key not present or not a number");
+                                 _("facNodeId key not present or not a number"));
 }
 
 
@@ -348,7 +334,7 @@ lsdSetFacadeColour (cJSON* req, cJSON* resp)
         {
             cJSON_AddStringToObject (resp,
                                      "error",
-                                     "name not present or not an object");
+                                     _("name not present or not an object"));
             return;
         }
 
@@ -360,7 +346,7 @@ lsdSetFacadeColour (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "nodeId key not present or not a number");
+                                 _("nodeId key not present or not a number"));
 }
 
 
@@ -376,7 +362,7 @@ lsdGetFacade (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "facNodeId not present or not a number");
+                                 _("facNodeId not present or not a number"));
 }
 
 
@@ -389,7 +375,7 @@ lsdCreateFacadeIn (cJSON* req, cJSON* resp)
         cJSON* name = cJSON_GetObjectItem (req, "name");
         if (!name || name->type != cJSON_String)
         {
-            cJSON_AddStringToObject (resp, "error", "name not provided");
+            cJSON_AddStringToObject (resp, "error", _("name not provided"));
             return;
         }
 
@@ -406,7 +392,7 @@ lsdCreateFacadeIn (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "facNodeId not present or not a number");
+                                 _("facNodeId not present or not a number"));
 }
 
 
@@ -422,7 +408,7 @@ lsdDeleteFacadeIn (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "inId not present or not a number");
+                                 _("inId not present or not a number"));
 }
 
 
@@ -435,7 +421,7 @@ lsdUpdateFacadeIn (cJSON* req, cJSON* resp)
         cJSON* name = cJSON_GetObjectItem (req, "name");
         if (!name || name->type != cJSON_String)
         {
-            cJSON_AddStringToObject (resp, "error", "name not provided");
+            cJSON_AddStringToObject (resp, "error", _("name not provided"));
             return;
         }
 
@@ -450,7 +436,7 @@ lsdUpdateFacadeIn (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "inId not present or not a number");
+                                 _("inId not present or not a number"));
 }
 
 
@@ -463,7 +449,7 @@ lsdCreateFacadeOut (cJSON* req, cJSON* resp)
         cJSON* name = cJSON_GetObjectItem (req, "name");
         if (!name || name->type != cJSON_String)
         {
-            cJSON_AddStringToObject (resp, "error", "name not provided");
+            cJSON_AddStringToObject (resp, "error", _("name not provided"));
             return;
         }
 
@@ -480,7 +466,7 @@ lsdCreateFacadeOut (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "facNodeId not present or not a number");
+                                 _("facNodeId not present or not a number"));
 }
 
 
@@ -496,7 +482,7 @@ lsdDeleteFacadeOut (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "outId not present or not a number");
+                                 _("outId not present or not a number"));
 }
 
 
@@ -509,7 +495,7 @@ lsdUpdateFacadeOut (cJSON* req, cJSON* resp)
         cJSON* name = cJSON_GetObjectItem (req, "name");
         if (!name || name->type != cJSON_String)
         {
-            cJSON_AddStringToObject (resp, "error", "name not provided");
+            cJSON_AddStringToObject (resp, "error", _("name not provided"));
             return;
         }
 
@@ -524,7 +510,7 @@ lsdUpdateFacadeOut (cJSON* req, cJSON* resp)
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "outId not present or not a number");
+                                 _("outId not present or not a number"));
 }
 
 
@@ -537,7 +523,7 @@ lsdWireNodes (cJSON* req, cJSON* resp)
         cJSON_AddStringToObject (
             resp,
             "error",
-            "leftFacadeInterior not present or not a number");
+            _("leftFacadeInterior not present or not a number"));
         return;
     }
 
@@ -546,7 +532,7 @@ lsdWireNodes (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "leftNodeId not present or not a number");
+                                 _("leftNodeId not present or not a number"));
         return;
     }
 
@@ -557,7 +543,7 @@ lsdWireNodes (cJSON* req, cJSON* resp)
         cJSON_AddStringToObject (
             resp,
             "error",
-            "rightFacadeInterior not present or not a number");
+            _("rightFacadeInterior not present or not a number"));
         return;
     }
 
@@ -566,7 +552,7 @@ lsdWireNodes (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "rightNodeId not present or not a number");
+                                 _("rightNodeId not present or not a number"));
         return;
     }
 
@@ -574,7 +560,7 @@ lsdWireNodes (cJSON* req, cJSON* resp)
     if (lsddb_wireNodes (leftFacadeInterior->valueint, leftNodeId->valueint,
                          rightFacadeInterior->valueint, rightNodeId->valueint,
                          &wireId) < 0)
-        cJSON_AddStringToObject (resp, "error", "Error while wiring nodes");
+        cJSON_AddStringToObject (resp, "error", _("Error while wiring nodes"));
     else
     {
         cJSON_AddStringToObject (resp, "success", "success");
@@ -591,12 +577,12 @@ lsdUnwire (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "wireId not present or not a number");
+                                 _("wireId not present or not a number"));
         return;
     }
 
     if (lsddb_unwireNodes (wireId->valueint) < 0)
-        cJSON_AddStringToObject (resp, "error", "Error while unwiring nodes");
+        cJSON_AddStringToObject (resp, "error", _("Error while unwiring nodes"));
     else
         cJSON_AddStringToObject (resp, "success", "success");
 }
@@ -610,27 +596,27 @@ lsdPositionNode (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "nodeId not present or not a number");
+                                 _("nodeId not present or not a number"));
         return;
     }
 
     cJSON* xVal = cJSON_GetObjectItem (req, "x");
     if (!xVal || xVal->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "x not present or not a number");
+        cJSON_AddStringToObject (resp, "error", _("x not present or not a number"));
         return;
     }
 
     cJSON* yVal = cJSON_GetObjectItem (req, "y");
     if (!yVal || yVal->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "y not present or not a number");
+        cJSON_AddStringToObject (resp, "error", _("y not present or not a number"));
         return;
     }
 
     if (lsddb_nodeInstPos (nodeId->valueint, xVal->valueint,
                            yVal->valueint) < 0)
-        cJSON_AddStringToObject (resp, "error", "Error while positioning node");
+        cJSON_AddStringToObject (resp, "error", _("Error while positioning node"));
     else
         cJSON_AddStringToObject (resp, "success", "success");
 }
@@ -644,27 +630,27 @@ lsdPositionFacade (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "childPSId not present or not a number");
+                                 _("childPSId not present or not a number"));
         return;
     }
 
     cJSON* xVal = cJSON_GetObjectItem (req, "x");
     if (!xVal || xVal->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "x not present or not a number");
+        cJSON_AddStringToObject (resp, "error", _("x not present or not a number"));
         return;
     }
 
     cJSON* yVal = cJSON_GetObjectItem (req, "y");
     if (!yVal || yVal->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "y not present or not a number");
+        cJSON_AddStringToObject (resp, "error", _("y not present or not a number"));
         return;
     }
 
     if (lsddb_facadeInstPos (nodeId->valueint, xVal->valueint,
                              yVal->valueint) < 0)
-        cJSON_AddStringToObject (resp, "error", "Error while positioning node");
+        cJSON_AddStringToObject (resp, "error", _("Error while positioning node"));
     else
         cJSON_AddStringToObject (resp, "success", "success");
 }
@@ -678,21 +664,21 @@ lsdPanPatchSpace (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "psId not present or not a number");
+                                 _("psId not present or not a number"));
         return;
     }
 
     cJSON* xVal = cJSON_GetObjectItem (req, "x");
     if (!xVal || xVal->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "x not present or not a number");
+        cJSON_AddStringToObject (resp, "error", _("x not present or not a number"));
         return;
     }
 
     cJSON* yVal = cJSON_GetObjectItem (req, "y");
     if (!yVal || yVal->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "y not present or not a number");
+        cJSON_AddStringToObject (resp, "error", _("y not present or not a number"));
         return;
     }
 
@@ -701,7 +687,7 @@ lsdPanPatchSpace (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "scale not present or not a number");
+                                 _("scale not present or not a number"));
         return;
     }
 
@@ -720,7 +706,7 @@ void
 lsdGetChannelPatch (cJSON* req, cJSON* resp)
 {
     if (lsddb_getPatchChannels (resp) < 0)
-        cJSON_AddStringToObject (resp, "error", "Unable to get patch");
+        cJSON_AddStringToObject (resp, "error", _("Unable to get patch"));
 }
 
 
@@ -730,7 +716,7 @@ lsdCreatePartition (cJSON* req, cJSON* resp)
     cJSON* partName = cJSON_GetObjectItem (req, "name");
     if (!partName || partName->type != cJSON_String)
     {
-        cJSON_AddStringToObject (resp, "error", "Error while adding partition");
+        cJSON_AddStringToObject (resp, "error", _("Error while adding partition"));
         return;
     }
 
@@ -739,7 +725,7 @@ lsdCreatePartition (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "Unable to insert partition into DB");
+                                 _("Unable to insert partition into DB"));
         return;
     }
 
@@ -757,14 +743,14 @@ lsdUpdatePartition (cJSON* req, cJSON* resp)
     cJSON* partId = cJSON_GetObjectItem (req, "partId");
     if (!partId || partId->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "partId not valid");
+        cJSON_AddStringToObject (resp, "error", _("partId not valid"));
         return;
     }
 
     cJSON* partName = cJSON_GetObjectItem (req, "name");
     if (!partName || partName->type != cJSON_String)
     {
-        cJSON_AddStringToObject (resp, "error", "name not valid");
+        cJSON_AddStringToObject (resp, "error", _("name not valid"));
         return;
     }
 
@@ -772,7 +758,7 @@ lsdUpdatePartition (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "Unable to update partition name");
+                                 _("Unable to update partition name"));
         return;
     }
 
@@ -790,7 +776,7 @@ lsdDeletePartition (cJSON* req, cJSON* resp)
     cJSON* partId = cJSON_GetObjectItem (req, "partId");
     if (!partId || partId->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "partId not a valid value");
+        cJSON_AddStringToObject (resp, "error", _("partId not a valid value"));
         return;
     }
 
@@ -798,7 +784,7 @@ lsdDeletePartition (cJSON* req, cJSON* resp)
     {
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "Unable to remove partition from DB");
+                                 _("Unable to remove partition from DB"));
         return;
     }
 
@@ -812,7 +798,7 @@ lsdUpdateChannel (cJSON* req, cJSON* resp)
     cJSON* chanId = cJSON_GetObjectItem (req, "chanId");
     if (!chanId || chanId->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "chanId not a valid value");
+        cJSON_AddStringToObject (resp, "error", _("chanId not a valid value"));
         return;
     }
 
@@ -829,7 +815,7 @@ lsdDeleteChannel (cJSON* req, cJSON* resp)
     cJSON* chanId = cJSON_GetObjectItem (req, "chanId");
     if (!chanId || chanId->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "chanId not a valid value");
+        cJSON_AddStringToObject (resp, "error", _("chanId not a valid value"));
         return;
     }
 
@@ -846,7 +832,7 @@ lsdCreateChannel (cJSON* req, cJSON* resp)
     cJSON* partId = cJSON_GetObjectItem (req, "partId");
     if (!partId || partId->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "partId not a valid value");
+        cJSON_AddStringToObject (resp, "error", _("partId not a valid value"));
         return;
     }
 
@@ -861,7 +847,7 @@ void
 lsdJsonPlugins (cJSON* req, cJSON* resp)
 {
     if (lsddb_jsonPlugins (resp) < 0)
-        cJSON_AddStringToObject (resp, "error", "unable to get plugins");
+        cJSON_AddStringToObject (resp, "error", _("unable to get plugins"));
 }
 
 
@@ -871,12 +857,12 @@ lsdDisablePlugin (cJSON* req, cJSON* resp)
     cJSON* pId = cJSON_GetObjectItem (req, "pluginId");
     if (!pId || pId->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "pluginId not a valid value");
+        cJSON_AddStringToObject (resp, "error", _("pluginId not a valid value"));
         return;
     }
 
     if (lsddb_disablePlugin (pId->valueint) < 0)
-        cJSON_AddStringToObject (resp, "error", "Unable to disable plugin");
+        cJSON_AddStringToObject (resp, "error", _("Unable to disable plugin"));
     else
         cJSON_AddStringToObject (resp, "success", "success");
 }
@@ -888,12 +874,12 @@ lsdEnablePlugin (cJSON* req, cJSON* resp)
     cJSON* pId = cJSON_GetObjectItem (req, "pluginId");
     if (!pId || pId->type != cJSON_Number)
     {
-        cJSON_AddStringToObject (resp, "error", "pluginId not a valid value");
+        cJSON_AddStringToObject (resp, "error", _("pluginId not a valid value"));
         return;
     }
 
     if (lsddb_enablePlugin (pId->valueint) < 0)
-        cJSON_AddStringToObject (resp, "error", "Unable to enable plugin");
+        cJSON_AddStringToObject (resp, "error", _("Unable to enable plugin"));
     else
         cJSON_AddStringToObject (resp, "success", "success");
 }
@@ -1003,13 +989,13 @@ handleJSONRequest (cJSON* req, cJSON* resp, int* reloadAfter)
             cJSON_AddStringToObject (
                 resp,
                 "error",
-                "Specified method is not handled by this version of LSD");
+                _("Specified method is not handled by this version of LSD"));
 
     }
     else
         cJSON_AddStringToObject (resp,
                                  "error",
-                                 "Method key is not present or not a string");
+                                 _("Method key is not present or not a string"));
         /* return -1; */
 
     return 0;
@@ -1028,7 +1014,6 @@ rpcReqCB (struct evhttp_request* req, void* arg)
      * overflows are bad) */
     evbuffer_add_printf (inputPostBuf, "%c", '\0');
     const unsigned char* inputPost = evbuffer_pullup (inputPostBuf, -1);
-    /* printf("%s\n",inputPost); */
 
     /* Setup json objects for parsing/returning */
     cJSON* input = cJSON_Parse ((const char*)inputPost);
@@ -1037,18 +1022,17 @@ rpcReqCB (struct evhttp_request* req, void* arg)
     if (input)
     {
         if (handleJSONRequest (input, returnjson, &reloadAfter) < 0)
-            fprintf (stderr, "There was a problem while running RPC handler\n");
+            doLog (ERROR, LOG_COMP, _("There was a problem while running RPC handler."));
     }
     else
         cJSON_AddStringToObject (returnjson,
                                  "error",
-                                 "Unable to parse any JSON from HTTP POST data");
+                                 _("Unable to parse any JSON from HTTP POST data"));
 
     struct evbuffer* repBuf = evbuffer_new ();
 
     /* Print results into HTTP reply buffer */
     char* returnjsonStr = cJSON_PrintUnformatted (returnjson);
-    /* printf("%s\n",returnjsonStr); */
     evbuffer_add_printf (repBuf, "%s", returnjsonStr);
     free (returnjsonStr);
 
@@ -1073,8 +1057,8 @@ reqCB (struct evhttp_request* req, void* arg)
 {
     struct evbuffer* repBuf = evbuffer_new ();
     evbuffer_add_printf (repBuf, "<html><body>");
-    evbuffer_add_printf (repBuf, "<h1>I don't handle %s</h1>", req->uri);
-    evbuffer_add_printf (repBuf, "<p>Version: %s</p>", event_get_version ());
+    evbuffer_add_printf (repBuf, _("<h1>I don't handle %s</h1>"), req->uri);
+    evbuffer_add_printf (repBuf, _("<p>Version: %s</p>"), event_get_version ());
     evbuffer_add_printf (repBuf, "</body></html>");
     evhttp_add_header (evhttp_request_get_output_headers (
                            req), "Content-Type", "text/html");
@@ -1088,7 +1072,7 @@ srvIndexCB (struct evhttp_request* req, void* arg)
 {
     struct evbuffer* repBuf = evbuffer_new ();
     if (lsddb_indexHtmlGen (repBuf) < 0)
-        evbuffer_add_printf (repBuf, "Error while generating index\n");
+        evbuffer_add_printf (repBuf, _("Error while generating index\n"));
     evhttp_add_header (evhttp_request_get_output_headers (
                            req), "Content-Type", "text/html");
     evhttp_add_header (evhttp_request_get_output_headers (

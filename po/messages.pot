@@ -1,0 +1,1565 @@
+# LightShoppe Translations.
+# Copyright (C) 2011 Jack Andersen
+# This file is distributed under the same license as the lsd package.
+# Jack Andersen <jackoalan@gmail.com>, 2011.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: lsd 0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2011-07-15 21:09-0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../src/Array.c:76
+msgid "Unit is NULL in recursiveClear()."
+msgstr ""
+
+#: ../src/Array.c:106
+msgid "curUnit is NULL in recursiveResolve()."
+msgstr ""
+
+#: ../src/Array.c:122
+#, c-format
+msgid "Error while linking to ArrayUnit: Unit index %d not found."
+msgstr ""
+
+#: ../src/Array.c:138
+msgid "No target pointer provided in makeArray()."
+msgstr ""
+
+#: ../src/Array.c:144
+msgid "Invalid element size declared in makeArray()."
+msgstr ""
+
+#: ../src/Array.c:150
+msgid "Invalid array multiple declared in makeArray()."
+msgstr ""
+
+#: ../src/Array.c:179
+msgid "Error occurred while allocating first ArrayUnit for array."
+msgstr ""
+
+#: ../src/Array.c:190
+msgid "Error occurred while allocating array block for first ArrayUnit."
+msgstr ""
+
+#: ../src/Array.c:206
+msgid "No arrayHead provided for clearArray()."
+msgstr ""
+
+#: ../src/Array.c:241
+msgid "Array is NULL in pickIdx()."
+msgstr ""
+
+#: ../src/Array.c:247 ../src/Array.c:309
+msgid "Invalid value for idx in pickIdx()."
+msgstr ""
+
+#: ../src/Array.c:253
+#, c-format
+msgid "Index %d out of bounds in pickIdx()."
+msgstr ""
+
+#: ../src/Array.c:271
+#, c-format
+msgid "Cannot resolve array idx %d."
+msgstr ""
+
+#: ../src/Array.c:293
+msgid "Unable to zero memory for delIdx()."
+msgstr ""
+
+#: ../src/Array.c:303
+msgid "array is NULL for delIdx()."
+msgstr ""
+
+#: ../src/Array.c:315
+#, c-format
+msgid "Error in delIdx(): index %d out of bounds."
+msgstr ""
+
+#: ../src/Array.c:321
+msgid "Delete is explicitly not allowed on this array."
+msgstr ""
+
+#: ../src/Array.c:340
+msgid "Error setting initial array mark in DB."
+msgstr ""
+
+#: ../src/Array.c:351
+msgid "Error setting array mark in DB."
+msgstr ""
+
+#: ../src/Array.c:368
+msgid "array is NULL for insertElem()."
+msgstr ""
+
+#: ../src/Array.c:383
+msgid "Unable to unset array mark after discovery."
+msgstr ""
+
+#: ../src/Array.c:389
+msgid "Unable to resolve pointer after insertion."
+msgstr ""
+
+#: ../src/Array.c:408
+msgid "Cannot allocate memory for new ArrayUnit."
+msgstr ""
+
+#: ../src/Array.c:415
+msgid "Unable to allocate memory for new ArrayUnit's buffer."
+msgstr ""
+
+#: ../src/Array.c:421
+#, c-format
+msgid "No lastUnit in arrayHead %d."
+msgstr ""
+
+#: ../src/Array.c:436
+msgid "Unable to resolve pointer using maxIdx."
+msgstr ""
+
+#: ../src/CorePlugin.c:926 ../src/CorePlugin.c:996 ../src/CorePlugin.c:1088
+msgid "Unable to update val"
+msgstr ""
+
+#: ../src/CorePlugin.c:944 ../src/CorePlugin.c:1015 ../src/CorePlugin.c:1122
+msgid "Unable to get val"
+msgstr ""
+
+#: ../src/CorePlugin.c:958 ../src/CorePlugin.c:1029 ../src/CorePlugin.c:1136
+msgid "Unable to find nodeInst in DB"
+msgstr ""
+
+#: ../src/CorePlugin.c:979 ../src/CorePlugin.c:1050 ../src/CorePlugin.c:1164
+msgid "Unable to resolve viewer's connection"
+msgstr ""
+
+#: ../src/CoreRPC.c:66 ../src/CoreRPC.c:599
+msgid "nodeId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:95 ../src/CoreRPC.c:155 ../src/CoreRPC.c:274
+msgid "psId key not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:113
+msgid "Problem while resolving class object"
+msgstr ""
+
+#: ../src/CoreRPC.c:136 ../src/CoreRPC.c:244
+msgid "Unable to add node instance to DB"
+msgstr ""
+
+#: ../src/CoreRPC.c:142 ../src/CoreRPC.c:619 ../src/CoreRPC.c:653
+msgid "Error while positioning node"
+msgstr ""
+
+#: ../src/CoreRPC.c:150
+msgid "classId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:173 ../src/CoreRPC.c:201 ../src/CoreRPC.c:229
+#: ../src/CoreRPC.c:349
+msgid "nodeId key not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:189 ../src/CoreRPC.c:308
+msgid "name not present or not a string"
+msgstr ""
+
+#: ../src/CoreRPC.c:217 ../src/CoreRPC.c:337
+msgid "name not present or not an object"
+msgstr ""
+
+#: ../src/CoreRPC.c:265
+msgid "Error while positioning facade node"
+msgstr ""
+
+#: ../src/CoreRPC.c:292 ../src/CoreRPC.c:321
+msgid "facNodeId key not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:365 ../src/CoreRPC.c:395 ../src/CoreRPC.c:469
+msgid "facNodeId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:378 ../src/CoreRPC.c:424 ../src/CoreRPC.c:452
+#: ../src/CoreRPC.c:498
+msgid "name not provided"
+msgstr ""
+
+#: ../src/CoreRPC.c:411 ../src/CoreRPC.c:439
+msgid "inId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:485 ../src/CoreRPC.c:513
+msgid "outId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:526
+msgid "leftFacadeInterior not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:535
+msgid "leftNodeId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:546
+msgid "rightFacadeInterior not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:555
+msgid "rightNodeId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:563
+msgid "Error while wiring nodes"
+msgstr ""
+
+#: ../src/CoreRPC.c:580
+msgid "wireId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:585
+msgid "Error while unwiring nodes"
+msgstr ""
+
+#: ../src/CoreRPC.c:606 ../src/CoreRPC.c:640 ../src/CoreRPC.c:674
+msgid "x not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:613 ../src/CoreRPC.c:647 ../src/CoreRPC.c:681
+msgid "y not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:633
+msgid "childPSId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:667
+msgid "psId not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:690
+msgid "scale not present or not a number"
+msgstr ""
+
+#: ../src/CoreRPC.c:709
+msgid "Unable to get patch"
+msgstr ""
+
+#: ../src/CoreRPC.c:719
+msgid "Error while adding partition"
+msgstr ""
+
+#: ../src/CoreRPC.c:728
+msgid "Unable to insert partition into DB"
+msgstr ""
+
+#: ../src/CoreRPC.c:746
+msgid "partId not valid"
+msgstr ""
+
+#: ../src/CoreRPC.c:753
+msgid "name not valid"
+msgstr ""
+
+#: ../src/CoreRPC.c:761
+msgid "Unable to update partition name"
+msgstr ""
+
+#: ../src/CoreRPC.c:779 ../src/CoreRPC.c:835
+msgid "partId not a valid value"
+msgstr ""
+
+#: ../src/CoreRPC.c:787
+msgid "Unable to remove partition from DB"
+msgstr ""
+
+#: ../src/CoreRPC.c:801 ../src/CoreRPC.c:818
+msgid "chanId not a valid value"
+msgstr ""
+
+#: ../src/CoreRPC.c:850
+msgid "unable to get plugins"
+msgstr ""
+
+#: ../src/CoreRPC.c:860 ../src/CoreRPC.c:877
+msgid "pluginId not a valid value"
+msgstr ""
+
+#: ../src/CoreRPC.c:865
+msgid "Unable to disable plugin"
+msgstr ""
+
+#: ../src/CoreRPC.c:882
+msgid "Unable to enable plugin"
+msgstr ""
+
+#: ../src/CoreRPC.c:992
+msgid "Specified method is not handled by this version of LSD"
+msgstr ""
+
+#: ../src/CoreRPC.c:998
+msgid "Method key is not present or not a string"
+msgstr ""
+
+#: ../src/CoreRPC.c:1025
+msgid "There was a problem while running RPC handler."
+msgstr ""
+
+#: ../src/CoreRPC.c:1030
+msgid "Unable to parse any JSON from HTTP POST data"
+msgstr ""
+
+#: ../src/CoreRPC.c:1060
+#, c-format
+msgid "<h1>I don't handle %s</h1>"
+msgstr ""
+
+#: ../src/CoreRPC.c:1061
+#, c-format
+msgid "<p>Version: %s</p>"
+msgstr ""
+
+#: ../src/CoreRPC.c:1075
+msgid "Error while generating index\n"
+msgstr ""
+
+#: ../src/DBArrOps.c:48
+#, c-format
+msgid "Error while establishing array: %d."
+msgstr ""
+
+#: ../src/DBArrOps.c:68
+msgid "Error while clearing array."
+msgstr ""
+
+#: ../src/DBOps.c:99
+msgid "There was a problem initing DB."
+msgstr ""
+
+#: ../src/DBOps.c:104 ../src/DBOps.c:147
+msgid "There was a problem preparing DB statements while opening DB."
+msgstr ""
+
+#: ../src/DBOps.c:109
+msgid "Unable to open empty DB."
+msgstr ""
+
+#: ../src/DBOps.c:142
+msgid "There was a problem initing DB at open."
+msgstr ""
+
+#: ../src/DBOps.c:155
+#, c-format
+msgid "Error while opening memory DB: %s"
+msgstr ""
+
+#: ../src/DBOps.c:164
+#, c-format
+msgid "Error while opening file DB: %s"
+msgstr ""
+
+#: ../src/DBOps.c:173
+msgid "Error while opening DB: Path not specified."
+msgstr ""
+
+#: ../src/DBOps.c:203 ../src/DBOps.c:251
+#, c-format
+msgid ""
+"Error while opening file DB for saving:\n"
+"%s"
+msgstr ""
+
+#: ../src/DBOps.c:211 ../src/DBOps.c:259
+msgid "Error while saving DB: path AND memdb must not be NULL."
+msgstr ""
+
+#: ../src/DBOps.c:229
+msgid "Error while autosaving DB: pathname too long."
+msgstr ""
+
+#: ../src/DBOps.c:421
+#, c-format
+msgid ""
+"Error during DB init:\n"
+"%s"
+msgstr ""
+
+#: ../src/DBOps.c:467
+#, c-format
+msgid ""
+"Error during DB reset:\n"
+"%s"
+msgstr ""
+
+#: ../src/DBOps.c:489
+msgid ""
+"There was an error executing initial DB insertion for createPatchSpace()."
+msgstr ""
+
+#: ../src/DBOps.c:566
+#, c-format
+msgid ""
+"Error while removing patch space from DB.\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:590
+msgid "Error while updating patch space name."
+msgstr ""
+
+#: ../src/DBOps.c:643
+msgid "Unable to insert Patch Space Input in createPatchSpaceIn()."
+msgstr ""
+
+#: ../src/DBOps.c:668
+#, c-format
+msgid ""
+"Unable to insert Patch Space Output in createPatchSpaceOut()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:696
+msgid "Error while removing patch space output."
+msgstr ""
+
+#: ../src/DBOps.c:710
+msgid "Error while removing patch space input."
+msgstr ""
+
+#: ../src/DBOps.c:737
+msgid "Unable to update PatchSpace input name."
+msgstr ""
+
+#: ../src/DBOps.c:757
+msgid "Unable to update PatchSpace output name."
+msgstr ""
+
+#: ../src/DBOps.c:775
+msgid "Name must not be NULL in createPartition()."
+msgstr ""
+
+#: ../src/DBOps.c:780
+msgid "Name is too long in createPartition()."
+msgstr ""
+
+#: ../src/DBOps.c:806
+msgid "createPatchSpace failed in createPartition()."
+msgstr ""
+
+#: ../src/DBOps.c:817
+msgid "Error inserting partition into DB in createPartition()."
+msgstr ""
+
+#: ../src/DBOps.c:847
+#, c-format
+msgid ""
+"Unable to set image in setPartitionImage()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:880
+msgid "Requested partition to be removed does not exist."
+msgstr ""
+
+#: ../src/DBOps.c:885
+msgid ""
+"There was a problem while removing partition's patchSpace in removePartition"
+"()."
+msgstr ""
+
+#: ../src/DBOps.c:902
+#, c-format
+msgid ""
+"Problem while removing partition from DB in removePartition()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:931
+msgid "Ubable to Update Name in updatePartitionName()."
+msgstr ""
+
+#: ../src/DBOps.c:943
+msgid "Unable to get psId in updatePartitionName()."
+msgstr ""
+
+#: ../src/DBOps.c:951
+msgid "Unable to update patchSpace's name in updatePartitionName()."
+msgstr ""
+
+#: ../src/DBOps.c:990
+msgid "Name not provided in addNodeClass()."
+msgstr ""
+
+#: ../src/DBOps.c:995
+msgid ""
+"Binding ptr not provided in addNodeClass(), unable to do anything useful."
+msgstr ""
+
+#: ../src/DBOps.c:1017
+#, c-format
+msgid "Unable to resolve array entry %d in addNodeClass()."
+msgstr ""
+
+#: ../src/DBOps.c:1023
+msgid "Picked class failed sanity check in addNodeClass()."
+msgstr ""
+
+#: ../src/DBOps.c:1031
+msgid "Structing existing Class."
+msgstr ""
+
+#: ../src/DBOps.c:1044
+#, c-format
+msgid ""
+"Unable to insert new class entry into DB in addNodeClass()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:1058
+msgid "Unable to insert class into array in addNodeClass()."
+msgstr ""
+
+#: ../src/DBOps.c:1072
+msgid "Unable to update arrIdx in addNodeClass()."
+msgstr ""
+
+#: ../src/DBOps.c:1095
+msgid "Name not provided in addDataType()."
+msgstr ""
+
+#: ../src/DBOps.c:1100
+msgid ""
+"Binding ptr not provided in addDataType(), unable to do anything useful."
+msgstr ""
+
+#: ../src/DBOps.c:1124
+#, c-format
+msgid ""
+"Unable to insert new class entry into DB in addDataType()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:1152
+msgid "nodeInst may not be null in structNodeInstOutputArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1173
+msgid "Unable to insert inst output into array in structNodeInstOutputArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1195
+msgid ""
+"Unable to update node output's array index in structNodeInstOutputArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1201
+msgid "structNodeInstOutputArr did not loop cleanly."
+msgstr ""
+
+#: ../src/DBOps.c:1224
+msgid "nodeInst may not be null in structNodeInstInputArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1243
+msgid "Unable to insert inst output in array in structNodeInstInputArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1258
+msgid "Unable to update node input's array index in structNodeInstInputArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1264
+msgid "structNodeInstInputArr did not loop cleanly."
+msgstr ""
+
+#: ../src/DBOps.c:1374
+msgid "Unable to insert array element in structNodeInstArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1385
+msgid "Unable to resolve node's class while restructing."
+msgstr ""
+
+#: ../src/DBOps.c:1394
+msgid "Error while updating node inst arr idx in structNodeInstArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1401
+msgid "Unable to struct node's inputs in structNodeInstArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1406
+msgid "Unable to struct node's outputs in structNodeInstArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1417
+msgid "Unable to allocate memory for node inst data in structNodeInstArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1429
+msgid "structNodeInstArr() did not loop cleanly."
+msgstr ""
+
+#: ../src/DBOps.c:1465
+msgid "Unable to allocate array space in structUnivArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1475
+msgid "structUnivArr() was unable to update an instance's arrayIdx."
+msgstr ""
+
+#: ../src/DBOps.c:1498
+msgid "Unable to allocate memory for DMX buffer."
+msgstr ""
+
+#: ../src/DBOps.c:1505
+msgid "structUnivArr() did not loop cleanly."
+msgstr ""
+
+#: ../src/DBOps.c:1523
+msgid "addr is NULL in structChannelArrAddr()."
+msgstr ""
+
+#: ../src/DBOps.c:1540
+msgid "There was a problem while picking universe in structChannelArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1546
+msgid "Light address is outside bounds of its universe structure."
+msgstr ""
+
+#: ../src/DBOps.c:1557
+msgid "Unable to find DB record for requested address in structChannelArrAddr."
+msgstr ""
+
+#: ../src/DBOps.c:1591
+msgid "Unable to insert channel into array in structChannelArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1602
+msgid "Unable to struct single addr in structChannelArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1611
+msgid "Unable to struct red addr in structChannelArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1616
+msgid "Unable to struct green addr in structChannelArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1621
+msgid "Unable to struct blue addr in structChannelArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1631
+#, c-format
+msgid "structChannelArr() output id %d."
+msgstr ""
+
+#: ../src/DBOps.c:1639
+msgid "Unable to update channel's arrIdx in structChannelArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1646
+msgid "structChannelArr() did not loop cleanly."
+msgstr ""
+
+#: ../src/DBOps.c:1694
+msgid "Unable to struct partition facade nodes in structPartitionArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1713
+msgid "Unable to insert Partition into array in createPartition()."
+msgstr ""
+
+#: ../src/DBOps.c:1721
+msgid ""
+"Unable to insert nodes contained within partition's patch space in "
+"structPartitionArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1742
+msgid ""
+"There was a problem updating the partition arr idx in structPartitionArr()."
+msgstr ""
+
+#: ../src/DBOps.c:1753
+msgid "structPartitionArr() did not loop cleanly."
+msgstr ""
+
+#: ../src/DBOps.c:1781
+msgid "Improper arguments passed to addNodeInstInput()."
+msgstr ""
+
+#: ../src/DBOps.c:1792
+msgid "Error while inserting input into DB."
+msgstr ""
+
+#: ../src/DBOps.c:1803
+msgid "Unable to insert input into array in addNodeInstInput()."
+msgstr ""
+
+#: ../src/DBOps.c:1814
+msgid "Unable to update arrIdx in addNodeInstInput()."
+msgstr ""
+
+#: ../src/DBOps.c:1853
+msgid "Improper arguments passed to addNodeInstOutput()."
+msgstr ""
+
+#: ../src/DBOps.c:1866
+msgid "Error while inserting output into DB."
+msgstr ""
+
+#: ../src/DBOps.c:1877
+msgid "Unable to insert output into array in addNodeInstOutput()."
+msgstr ""
+
+#: ../src/DBOps.c:1888
+msgid "Unable to update arrIdx in addNodeInstOutput()."
+msgstr ""
+
+#: ../src/DBOps.c:1940
+msgid "Unable to resolve array index in removeNodeInstInput()."
+msgstr ""
+
+#: ../src/DBOps.c:1947
+msgid "Unable to remove input from array in removeNodeInstInput()."
+msgstr ""
+
+#: ../src/DBOps.c:1957
+msgid "Unable to remove input from DB."
+msgstr ""
+
+#: ../src/DBOps.c:1999
+msgid "Unable to resolve array index in removeNodeInstOutput()."
+msgstr ""
+
+#: ../src/DBOps.c:2006
+msgid "Unable to remove output from array in removeNodeInstOutput()."
+msgstr ""
+
+#: ../src/DBOps.c:2016
+msgid "Unable to remove output from DB."
+msgstr ""
+
+#: ../src/DBOps.c:2043
+msgid "Invalid NodeClass used in addNodeInst()."
+msgstr ""
+
+#: ../src/DBOps.c:2045
+msgid "NULL NodeClass\n"
+msgstr ""
+
+#: ../src/DBOps.c:2056
+msgid "Unable to insert node instance into array in addNodeInst()."
+msgstr ""
+
+#: ../src/DBOps.c:2080
+#, c-format
+msgid ""
+"Error inserting element into DB in addNodeInst()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:2098
+msgid "Unable to allocate memory for node inst data in addNodeInst()."
+msgstr ""
+
+#: ../src/DBOps.c:2108
+msgid "Plugin's Make function returned failure."
+msgstr ""
+
+#: ../src/DBOps.c:2112
+msgid "Plugin's Restore function returned failure."
+msgstr ""
+
+#: ../src/DBOps.c:2153
+msgid "Unable to pick inst from array in removeNodeInst()."
+msgstr ""
+
+#: ../src/DBOps.c:2162
+msgid "Unable to remove node from array in removeNodeInst()."
+msgstr ""
+
+#: ../src/DBOps.c:2189
+msgid "Unable to remove node from DB."
+msgstr ""
+
+#: ../src/DBOps.c:2196
+msgid "Node inst non-existent in removeNodeInst()."
+msgstr ""
+
+#: ../src/DBOps.c:2220
+msgid "error while updating node instance name."
+msgstr ""
+
+#: ../src/DBOps.c:2274
+msgid "Error while updating node position values."
+msgstr ""
+
+#: ../src/DBOps.c:2296
+msgid "Error while updating facade position values."
+msgstr ""
+
+#: ../src/DBOps.c:2534
+msgid "Invalid use of pluginHeadLoader()."
+msgstr ""
+
+#: ../src/DBOps.c:2544
+#, c-format
+msgid "Checking %s."
+msgstr ""
+
+#: ../src/DBOps.c:2553
+msgid "Already in DB."
+msgstr ""
+
+#: ../src/DBOps.c:2587
+msgid "Error while updating plugin SHA1."
+msgstr ""
+
+#: ../src/DBOps.c:2596
+msgid "Unable to mark plugin seen in pluginHeadLoader()."
+msgstr ""
+
+#: ../src/DBOps.c:2602
+#, c-format
+msgid "Adding %s to DB."
+msgstr ""
+
+#: ../src/DBOps.c:2613
+#, c-format
+msgid ""
+"Unable to insert newfound plugin into DB in pluginHeadLoader()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:2634
+msgid "Unable to insert plugin into array in pluginHeadLoader()."
+msgstr ""
+
+#: ../src/DBOps.c:2643
+#, c-format
+msgid "Invalid Plugin HEAD extracted from %s."
+msgstr ""
+
+#: ../src/DBOps.c:2650
+msgid "Plugin's own init failed within pluginHeadLoader()."
+msgstr ""
+
+#: ../src/DBOps.c:2670
+msgid "Error updating plugin's status in DB in pluginHeadLoader()."
+msgstr ""
+
+#: ../src/DBOps.c:2702
+msgid "Unable to pick plugin from array in resolvePluginFromNodeId()."
+msgstr ""
+
+#: ../src/DBOps.c:2708
+msgid "Unable to resolve plugin id in resolvePluginFromNodeId()."
+msgstr ""
+
+#: ../src/DBOps.c:2742
+#, c-format
+msgid ""
+"Unable to traceInput %d()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:2751
+msgid "Input is not constructed in memory; its plugin may be disabled."
+msgstr ""
+
+#: ../src/DBOps.c:2768
+msgid "Unable to pick Input in traceInput()."
+msgstr ""
+
+#: ../src/DBOps.c:2810
+msgid "Output is not constructed in memory; its plugin may be disabled."
+msgstr ""
+
+#: ../src/DBOps.c:2827
+msgid "Unable to pick Output in traceOutput()."
+msgstr ""
+
+#: ../src/DBOps.c:2880
+msgid "Unable to pick channel from array in checkChannelWiring()."
+msgstr ""
+
+#: ../src/DBOps.c:2891 ../src/DBOps.c:2945
+msgid "Couldn't resolve arrIdx from facadeOut on root patchSpace."
+msgstr ""
+
+#: ../src/DBOps.c:2899 ../src/DBOps.c:2953
+msgid "Unable to retrieve parentPatchSpace from facadeOut."
+msgstr ""
+
+#: ../src/DBOps.c:2935
+msgid "Unable to pick channel from array in checkChannelUnwiring()."
+msgstr ""
+
+#: ../src/DBOps.c:3025
+msgid "Redundant connections not allowed."
+msgstr ""
+
+#: ../src/DBOps.c:3038
+msgid "Attempting to connect wire to already connected facade interior out."
+msgstr ""
+
+#: ../src/DBOps.c:3050
+msgid "Attempting to connect a wire to an already connected input."
+msgstr ""
+
+#: ../src/DBOps.c:3079
+msgid "Unable to verify facade input's patch space."
+msgstr ""
+
+#: ../src/DBOps.c:3093 ../src/DBOps.c:3401
+msgid "Unable to verify node input's patch space."
+msgstr ""
+
+#: ../src/DBOps.c:3099 ../src/DBOps.c:3231 ../src/DBOps.c:3408
+msgid "Patch Spaces Do not match in wireNodes()."
+msgstr ""
+
+#: ../src/DBOps.c:3105
+msgid "Unable to connect wire's destination; destination class disabled."
+msgstr ""
+
+#: ../src/DBOps.c:3118 ../src/DBOps.c:3263
+msgid ""
+"Wire source does not check to be a facade plug as claimed in wireNodes()."
+msgstr ""
+
+#: ../src/DBOps.c:3135
+#, c-format
+msgid "Facade Plug not internally connected on input %d."
+msgstr ""
+
+#: ../src/DBOps.c:3149 ../src/DBOps.c:3294
+msgid ""
+"Unable to update facade plug data after internal connection in wireNodes()."
+msgstr ""
+
+#: ../src/DBOps.c:3156
+msgid "Dest Input non-existent."
+msgstr ""
+
+#: ../src/DBOps.c:3170 ../src/DBOps.c:3321 ../src/DBOps.c:3451
+msgid "Unable to insert wire into DB in wireNodes()."
+msgstr ""
+
+#: ../src/DBOps.c:3212 ../src/DBOps.c:3369
+msgid "Unable to verify node output's patch space."
+msgstr ""
+
+#: ../src/DBOps.c:3225
+msgid "Unable to verify facade output's patch space."
+msgstr ""
+
+#: ../src/DBOps.c:3244
+msgid "Unable to connect wire's source; not internally connected."
+msgstr ""
+
+#: ../src/DBOps.c:3250 ../src/DBOps.c:3420
+msgid "Unable to connect wire's source; source class disabled."
+msgstr ""
+
+#: ../src/DBOps.c:3280
+#, c-format
+msgid "Facade Plug not internally connected on output %d."
+msgstr ""
+
+#: ../src/DBOps.c:3307
+msgid "Dest Output non-existent."
+msgstr ""
+
+#: ../src/DBOps.c:3414
+msgid "Types do not match in wireNodes()."
+msgstr ""
+
+#: ../src/DBOps.c:3426
+#, c-format
+msgid "Unable to connect wire's destination; destination class %d,%d disabled."
+msgstr ""
+
+#: ../src/DBOps.c:3557
+msgid "Unable to trace input for node disconnection in unwireNodes()."
+msgstr ""
+
+#: ../src/DBOps.c:3570
+msgid "Unable to remove wire in unwireNodes()."
+msgstr ""
+
+#: ../src/DBOps.c:3627
+msgid "Problem while rewiring nodes."
+msgstr ""
+
+#: ../src/DBOps.c:3646
+msgid "target may not be null in jsonClassLibrary()."
+msgstr ""
+
+#: ../src/DBOps.c:3755
+msgid "target may not be null in jsonParts()."
+msgstr ""
+
+#: ../src/DBOps.c:3824
+msgid "Unable to resolve class from DB in jsonInsertClassObject()."
+msgstr ""
+
+#: ../src/DBOps.c:4127
+msgid "Patch Space Non-existent"
+msgstr ""
+
+#: ../src/DBOps.c:4154
+msgid "Unable to pick class from array in resolveClassFromId()."
+msgstr ""
+
+#: ../src/DBOps.c:4160
+msgid ""
+"Class could not be resolved or its plugin is disabled in resolveClassFromId"
+"()."
+msgstr ""
+
+#: ../src/DBOps.c:4194
+msgid "Unable to pick inst from array in resolveInstFromId()."
+msgstr ""
+
+#: ../src/DBOps.c:4200
+msgid "Inst could not be resolved in DB in resolveInstFromId()."
+msgstr ""
+
+#: ../src/DBOps.c:4236
+msgid "Unable to pick inst from array in resolveInstFromInId()."
+msgstr ""
+
+#: ../src/DBOps.c:4242
+msgid "Inst could not be resolved in DB in resolveInstFromInId()."
+msgstr ""
+
+#: ../src/DBOps.c:4275
+msgid "Unable to pick inst from array in resolveInstFromOutId()."
+msgstr ""
+
+#: ../src/DBOps.c:4281
+#, c-format
+msgid ""
+"Inst %d could not be resolved in DB in resolveInstFromOutId()\n"
+"%s."
+msgstr ""
+
+#: ../src/DBOps.c:4308
+msgid "Unable to pick input from array in resolveInputFromId()."
+msgstr ""
+
+#: ../src/DBOps.c:4479
+#, c-format
+msgid ""
+"Error while adding address into DB\n"
+" Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:4554
+msgid "Unable to resolve partition's patchSpace in addPatchChannel()."
+msgstr ""
+
+#: ../src/DBOps.c:4567
+#, c-format
+msgid ""
+"Unable to add facade out in addPatchChannel()\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:4579
+#, c-format
+msgid ""
+"Error while inserting channel into DB\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:4611
+msgid "Unable to remove address on behalf of deletePatchChannel()."
+msgstr ""
+
+#: ../src/DBOps.c:4689
+msgid "Unable to update facadeOut's name in updatePatchChannel()."
+msgstr ""
+
+#: ../src/DBOps.c:4693
+msgid "Unable to discover addresses in updatePatchChannel()."
+msgstr ""
+
+#: ../src/DBOps.c:4720
+msgid "Error while updating channel on DB."
+msgstr ""
+
+#: ../src/DBOps.c:4763
+msgid "Unable to delete facadeOut in deletePatchChannel()."
+msgstr ""
+
+#: ../src/DBOps.c:4766
+msgid "Unable to discover addresses in deletePatchChannel()."
+msgstr ""
+
+#: ../src/DBOps.c:4774
+msgid "Unable to delete channel in deletePatchChannel()."
+msgstr ""
+
+#: ../src/DBOps.c:4819
+msgid "Unable to create plugin table, plugin non existent."
+msgstr ""
+
+#: ../src/DBOps.c:4884 ../src/DBOps.c:4960
+msgid ""
+"Two or more semicolons were detected in table creation statement, aborting."
+msgstr ""
+
+#: ../src/DBOps.c:4904
+msgid "Unable to insert table record."
+msgstr ""
+
+#: ../src/DBOps.c:4910
+#, c-format
+msgid "Unable to create table: %s."
+msgstr ""
+
+#: ../src/DBOps.c:4917
+msgid "Plugin doesn't seem to exist for table creation."
+msgstr ""
+
+#: ../src/DBOps.c:4970
+#, c-format
+msgid "Unable to create table index: %s."
+msgstr ""
+
+#: ../src/DBOps.c:4977
+msgid "Plugin doesn't seem to exist for table index creation."
+msgstr ""
+
+#: ../src/DBOps.c:5001 ../src/DBOps.c:5056 ../src/DBOps.c:5111
+#: ../src/DBOps.c:5165
+msgid "Table being accessed doesn't exist, unable to prep."
+msgstr ""
+
+#: ../src/DBOps.c:5019 ../src/DBOps.c:5074 ../src/DBOps.c:5129
+#: ../src/DBOps.c:5182
+#, c-format
+msgid ""
+"Sqlite was unable to prep a statement\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DBOps.c:5029 ../src/DBOps.c:5084 ../src/DBOps.c:5139
+#: ../src/DBOps.c:5192
+msgid "Unable to insert new statement object into array."
+msgstr ""
+
+#: ../src/DBOps.c:5206
+msgid "Unable to pick stmt from array."
+msgstr ""
+
+#: ../src/DBOps.c:5211
+msgid "Unable to verify ownership of stmt."
+msgstr ""
+
+#: ../src/DBOps.c:5576
+#, c-format
+msgid ""
+"Prep problem: %d\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/DMX.c:81
+msgid "Unable to pick channel in bufferUnivs()."
+msgstr ""
+
+#: ../src/DMX.c:88
+#, c-format
+msgid "No buffer func to call on output connected to channel %d."
+msgstr ""
+
+#: ../src/DMX.c:164
+msgid "Unable to pick Univ in writeUnivs()."
+msgstr ""
+
+#: ../src/GarbageCollector.c:50
+#, c-format
+msgid ""
+"GC Prep problem: %d\n"
+"Details: %s."
+msgstr ""
+
+#: ../src/GarbageCollector.c:185
+#, c-format
+msgid ""
+"Error during GC init:\n"
+"%s."
+msgstr ""
+
+#: ../src/GarbageCollector.c:197
+msgid "Unable to open empty DB for gc."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:46
+msgid "Problem adding inst input."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:67
+msgid "Problem adding inst output."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:92
+#, c-format
+msgid "Unable to get inst from inId %d."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:98
+msgid "Inst failed ownership test in removeInstInput()."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:104
+#, c-format
+msgid "There was an error removing inst input %d from node."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:119
+#, c-format
+msgid "Unable to get inst from outId %d."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:125
+msgid "Inst failed ownership test in removeInstOutput()."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:131
+#, c-format
+msgid "There was an error removing inst output %d from node."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:150
+#, c-format
+msgid "Unable to getInputStruct() of inId %d."
+msgstr ""
+
+#: ../src/NodeInstAPI.c:156
+#, c-format
+msgid "Input %d failed ownership test in getInputStruct()."
+msgstr ""
+
+#: ../src/PluginAPI.c:98
+msgid "Improper use of registerNodeClass(): all args must be filled."
+msgstr ""
+
+#: ../src/PluginAPI.c:107
+msgid "Error while running DB and array portion of registerNodeClass()."
+msgstr ""
+
+#: ../src/PluginAPI.c:137
+msgid "Improper use of registerDataType()."
+msgstr ""
+
+#: ../src/PluginAPI.c:146
+msgid "Error while running DB and Array portion of registerDataType()."
+msgstr ""
+
+#: ../src/PluginAPI.c:167
+#, c-format
+msgid "Inst request with id %d failed ownership test."
+msgstr ""
+
+#: ../src/PluginAPI.c:185
+msgid "Error while creating table in plugin API."
+msgstr ""
+
+#: ../src/PluginAPI.c:204
+msgid "Error while creating table index in plugin API."
+msgstr ""
+
+#: ../src/PluginAPI.c:227
+msgid "Error while prepping SELECT in plugin API."
+msgstr ""
+
+#: ../src/PluginAPI.c:249
+msgid "Error while prepping INSERT in plugin API."
+msgstr ""
+
+#: ../src/PluginAPI.c:271
+msgid "Error while prepping UPDATE in plugin API."
+msgstr ""
+
+#: ../src/PluginAPI.c:291
+msgid "Error while prepping DELETE in plugin API."
+msgstr ""
+
+#: ../src/PluginAPI.c:309
+msgid "Unable to reset stmt."
+msgstr ""
+
+#: ../src/PluginAPI.c:324
+msgid "Unable to step stmt."
+msgstr ""
+
+#: ../src/PluginAPI.c:345
+msgid "Unable to bind double to stmt."
+msgstr ""
+
+#: ../src/PluginAPI.c:361
+msgid "Unable to bind int to stmt."
+msgstr ""
+
+#: ../src/PluginAPI.c:380
+msgid "Unable to bind int64 to stmt."
+msgstr ""
+
+#: ../src/PluginAPI.c:396
+msgid "Unable to bind null to stmt."
+msgstr ""
+
+#: ../src/PluginAPI.c:414
+msgid "Unable to bind text to stmt."
+msgstr ""
+
+#: ../src/PluginAPI.c:435
+msgid "Unable to bind text16 to stmt."
+msgstr ""
+
+#: ../src/PluginAPI.c:454 ../src/PluginAPI.c:471 ../src/PluginAPI.c:488
+#: ../src/PluginAPI.c:504 ../src/PluginAPI.c:521
+msgid "Unable to get column from stmt."
+msgstr ""
+
+#: ../src/PluginLoader.c:67
+#, c-format
+msgid "%s digest: %.40s."
+msgstr ""
+
+#: ../src/PluginLoader.c:76
+#, c-format
+msgid "Unable to validate plugin HEAD of %s."
+msgstr ""
+
+#: ../src/PluginLoader.c:83
+#, c-format
+msgid ""
+"Error while loading HEAD of %s.\n"
+"Details: %s"
+msgstr ""
+
+#: ../src/PluginLoader.c:101
+#, c-format
+msgid ""
+"Unable to link %s\n"
+"Details: %s."
+msgstr ""
+
+#: ../src/PluginLoader.c:109
+#, c-format
+msgid ""
+"Unable to get plugin SO info for %s\n"
+"Details: %s."
+msgstr ""
+
+#: ../src/PluginLoader.c:115
+#, c-format
+msgid "Found %s."
+msgstr ""
+
+#: ../src/PluginLoader.c:129
+msgid "PLUGIN_DIR not provided at compile time."
+msgstr ""
+
+#: ../src/PluginLoader.c:150
+msgid "Invalid use of getPluginWebIncludes()."
+msgstr ""
+
+#: ../src/PluginLoader.c:155
+msgid "WEB_PLUGIN_DIR not provided at compile time."
+msgstr ""
+
+#: ../src/PluginLoader.c:178
+msgid "Unable to allocate memory to accommodate include file for parsing."
+msgstr ""
+
+#: ../src/PluginLoader.c:187
+msgid "Unable to parse JSON from include file."
+msgstr ""
+
+#: ../src/PluginLoader.c:238
+#, c-format
+msgid "Unable to open %s. No includes added."
+msgstr ""
+
+#: ../src/SceneCore.c:134
+msgid "Lighting update behind schedule."
+msgstr ""
+
+#: ../src/SceneCore.c:190
+msgid "Checking for DB in home."
+msgstr ""
+
+#: ../src/SceneCore.c:192
+msgid "Establishing empty DB."
+msgstr ""
+
+#: ../src/SceneCore.c:195
+msgid "Unable to initialise new DB."
+msgstr ""
+
+#: ../src/SceneCore.c:202
+msgid "Opening DB from file."
+msgstr ""
+
+#: ../src/SceneCore.c:205
+msgid "Unable to open specified DB from file."
+msgstr ""
+
+#: ../src/SceneCore.c:216
+msgid "Registering signal handlers."
+msgstr ""
+
+#: ../src/SceneCore.c:229
+msgid "Opening HTTP RPC."
+msgstr ""
+
+#: ../src/SceneCore.c:232
+#, c-format
+msgid "Unable to open RPC on port %d."
+msgstr ""
+
+#: ../src/SceneCore.c:237
+msgid "Starting OLA connection."
+msgstr ""
+
+#: ../src/SceneCore.c:240
+msgid "Unable to open OLA connection."
+msgstr ""
+
+#: ../src/SceneCore.c:245
+msgid "Registering periodic lighting update."
+msgstr ""
+
+#: ../src/SceneCore.c:255
+msgid "Initialising Garbage Collector."
+msgstr ""
+
+#: ../src/SceneCore.c:259
+msgid "Resetting DB."
+msgstr ""
+
+#: ../src/SceneCore.c:267
+msgid "Establishing System ArrayHeads."
+msgstr ""
+
+#: ../src/SceneCore.c:270
+msgid "Error while establishing ArrayHeads."
+msgstr ""
+
+#: ../src/SceneCore.c:276
+msgid "Loading core plugin head."
+msgstr ""
+
+#: ../src/SceneCore.c:279
+msgid "Unable to properly load core plugin."
+msgstr ""
+
+#: ../src/SceneCore.c:284
+#, c-format
+msgid "Unable to initialise ltdl: %s."
+msgstr ""
+
+#: ../src/SceneCore.c:291
+msgid "Structing partition array."
+msgstr ""
+
+#: ../src/SceneCore.c:293
+msgid "Unable to structPartitionArr()."
+msgstr ""
+
+#: ../src/SceneCore.c:296
+msgid "Structing Universe array."
+msgstr ""
+
+#: ../src/SceneCore.c:299
+msgid "Problem structing universe array."
+msgstr ""
+
+#: ../src/SceneCore.c:304
+msgid "Structing Channel array."
+msgstr ""
+
+#: ../src/SceneCore.c:307
+msgid "Problem structing channel array."
+msgstr ""
+
+#: ../src/SceneCore.c:317
+msgid "Dispatching(Ctrl-c to quit)..."
+msgstr ""
+
+#: ../src/SceneCore.c:323
+msgid "Cleaning up Arrays."
+msgstr ""
+
+#: ../src/SceneCore.c:326
+msgid "There was a problem cleaning up arrays. Continuing anyway."
+msgstr ""
+
+#: ../src/SceneCore.c:332
+msgid "Closing Garbage Collector."
+msgstr ""
+
+#: ../src/SceneCore.c:338
+msgid "Closing OLA connection."
+msgstr ""
+
+#: ../src/SceneCore.c:342
+msgid "Closing HTTP RPC."
+msgstr ""
+
+#: ../src/SceneCore.c:346
+msgid "Cleaning Lighting Update."
+msgstr ""
+
+#: ../src/SceneCore.c:351
+msgid "Cleaning signal handlers."
+msgstr ""
+
+#: ../src/SceneCore.c:363
+msgid "Saving DB to file."
+msgstr ""
+
+#: ../src/SceneCore.c:370
+msgid "Cleaning up DB."
+msgstr ""
+
+#: ../src/SceneCore.c:397
+#, c-format
+msgid "Usage: lsd [-hv] [-p port] [-d dbfile]\n"
+msgstr ""
+
+#: ../src/SceneCore.c:410
+#, c-format
+msgid "Missing path value for -d.\n"
+msgstr ""
+
+#: ../src/SceneCore.c:424
+#, c-format
+msgid "Missing port value for -p.\n"
+msgstr ""
+
+#: ../src/SceneCore.c:431
+#, c-format
+msgid "Unable to parse port value.\n"
+msgstr ""
