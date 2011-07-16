@@ -2459,6 +2459,8 @@ static const char INDEX_HTML_HEAD[] =
     "\t\t<title>LightShoppe Client</title>\n"
     "\t\t<meta charset=\"utf-8\"/>\n"
     "\t\t<meta name = \"viewport\" content = \"user-scalable=no, initial-scale=1.0, width=device-width\">\n"
+    "\t\t<link rel=\"icon\" href=\"../favicon.ico\" type=\"image/x-icon\" />\n"
+    "\t\t<link rel=\"shortcut icon\" href=\"../favicon.ico\" type=\"image/x-icon\" />\n"
     "\t\t<script type=\"text/javascript\">var LSD_PLUGIN_TABLE = new Array();</script>\n"
     "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"/japis/jquery-ui/themes/custom-theme/jquery-ui-1.8.12.custom.css\">\n"
     "\t\t<script type=\"text/javascript\" src=\"/japis/jquery/jquery.min.js\"></script>\n"
@@ -4500,6 +4502,10 @@ lsddb_resolveInputFromId (struct LSD_SceneNodeInput** inBind, int inId)
 
     return -1;
 }
+
+
+/* Widget operations below */
+//static const char 
 
 
 /* Channel patch operations below */

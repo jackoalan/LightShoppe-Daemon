@@ -49,3 +49,5 @@ done
 
 autoreconf -vif
 
+aclocal
+intltoolize --force

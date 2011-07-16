@@ -32,6 +32,7 @@
 #include "DMX.h"
 #include "PluginLoader.h"
 #include "Node.h"
+#include "Logging.h"
 
 #include <event.h>
 #include <signal.h>
@@ -43,11 +44,21 @@
 #include "DBOps.h"
 #include "cJSON.h"
 
+#include "../config.h"
+
+/* Gettext stuff */
+#include <libintl.h>
+#define _(String) gettext (String)
+
+
+/* Name of this component for logging */
+static const char LOG_COMP[] = "SceneCore.c";
+
 
 /* Basic runtime configuration stuff */
-static int verbose;
 static int dbfile;
 static char dbpath[256];
+static int rpcPort;
 
 void
 destruct_Univ (void* univ)
@@ -120,7 +131,7 @@ rescheduleUpdate (struct event* ev, struct timeval* lastUpd, void ( *handler )(
 
     if (remTime.tv_usec < 0)  /* If we're behind schedule */
     {
-        printf ("Behind Schedule\n");
+        doLog (WARNING, LOG_COMP, _("Lighting update behind schedule."));
         handler (0, 0, NULL);
     }
     else
@@ -137,7 +148,6 @@ updateBuffers (int one, short int two, void* three)
     gettimeofday (&lastUpdLi, NULL);
 
     /* Do per-frame shite here */
-    /* printf("Update...\n"); */
     node_incFrameCount ();
     bufferUnivs ();
     writeUnivs ();
@@ -163,6 +173,12 @@ handleReload (int ont, short int two, void* three)
     event_base_loopbreak (ebMain);
 }
 
+void
+handleLogReopen (int ont, short int two, void* three)
+{
+    reloadLogging ();
+}
+
 
 int
 lsdSceneEntry ()
@@ -171,22 +187,22 @@ lsdSceneEntry ()
     
     if (!dbfile)
     {
-        printf ("Checking for DB in home.\n");
+        doLog (NOTICE, LOG_COMP, _("Checking for DB in home."));
         if (lsddb_openDB (HOME_DB) < 0){
-            printf ("Establishing empty DB.\n");
+            doLog (NOTICE, LOG_COMP, _("Establishing empty DB."));
             if (lsddb_emptyDB () < 0)
             {
-                fprintf (stderr, "\nError while opening DB\n");
+                doLog (ERROR, LOG_COMP, _("Unable to initialise new DB."));
                 return -1;
             }
         }
     }
     else
     {
-        printf ("Opening DB from file\n");
+        doLog (NOTICE, LOG_COMP, _("Opening DB from file."));
         if (lsddb_openDB (dbpath) < 0)
         {
-            fprintf (stderr, "Unable to open DB from file\n");
+            doLog (ERROR, LOG_COMP, _("Unable to open specified DB from file."));
             return -1;
         }
     }
@@ -197,32 +213,36 @@ lsdSceneEntry ()
     ebMain = event_base_new ();
 
     /** REGISTER INTERRUPT HANDLER **/
-    printf ("Registering signal handlers\n");
+    doLog (NOTICE, LOG_COMP, _("Registering signal handlers."));
     struct event* intEv = evsignal_new (ebMain, SIGINT, handleInterrupt, NULL);
     evsignal_add (intEv, NULL);
 
     /** REGISTER RELOAD HANDLER **/
     struct event* relEv = evsignal_new (ebMain, SIGUSR1, handleReload, NULL);
     evsignal_add (relEv, NULL);
+    
+    /** REGISTER LOG REOPEN HANDLER **/
+    struct event* logEv = evsignal_new (ebMain, SIGUSR2, handleLogReopen, NULL);
+    evsignal_add (logEv, NULL);
 
     /** OPEN HTTP RPC **/
-    printf ("Opening HTTP RPC\n");
-    if (openRPC (ebMain, 9196) < 0)
+    doLog (NOTICE, LOG_COMP, _("Opening HTTP RPC."));
+    if (openRPC (ebMain, rpcPort) < 0)
     {
-        fprintf (stderr, "Unable to open RPC\n");
+        doLog (ERROR, LOG_COMP, _("Unable to open RPC on port %d."), rpcPort);
         return -1;
     }
 
     /** OPEN OLA **/
-    printf ("Starting OLA connection\n");
+    doLog (NOTICE, LOG_COMP, _("Starting OLA connection."));
     if (initDMX () < 0)
     {
-        fprintf (stderr, "Unable to open OLA connection\n");
+        doLog (ERROR, LOG_COMP, _("Unable to open OLA connection."));
         return -1;
     }
 
     /** REGISTER PERIODIC LIGHTING UPDATE **/
-    printf ("Registering periodic lighting update\n");
+    doLog (NOTICE, LOG_COMP, _("Registering periodic lighting update."));
     updEv = evtimer_new (ebMain, updateBuffers, NULL);
 
     /** Reloader Loop **/
@@ -232,11 +252,11 @@ lsdSceneEntry ()
     {
 
         /** INIT GARBAGE COLLECTOR **/
-        printf ("Initialising Garbage Collector\n");
+        doLog (NOTICE, LOG_COMP, _("Initialising Garbage Collector."));
         lsdgc_prepGCOps ();
 
         /** RESET DATABASE FOR FRESH STATE **/
-        printf ("Resetting DB\n");
+        doLog (NOTICE, LOG_COMP, _("Resetting DB."));
         lsddb_resetDB ();
 
         /** INIT TIME **/
@@ -244,47 +264,47 @@ lsdSceneEntry ()
 
         /** ALLOCATE STATE ARRAYS **/
 
-        printf ("Establishing System ArrayHeads.\n");
+        doLog (NOTICE, LOG_COMP, _("Establishing System ArrayHeads."));
         if (initLsdArrays () < 0)
         {
-            fprintf (stderr, "Error while establishing ArrayHeads\n");
+            doLog (ERROR, LOG_COMP, _("Error while establishing ArrayHeads."));
             return -1;
         }
 
         /** LOAD PLUGINS HERE **/
 
-        printf ("Loading core plugin head\n");
+        doLog (NOTICE, LOG_COMP, _("Loading core plugin head."));
         if (lsddb_pluginHeadLoader (getCoreHead, 1, "CORE", "0", NULL) < 0)
         {
-            fprintf (stderr, "Unable to properly load core plugin\n");
+            doLog (ERROR, LOG_COMP, _("Unable to properly load core plugin."));
             return -1;
         }
 
         if(lt_dlinit ())
-            fprintf(stderr, "Unable to init ltdl: %s\n", lt_dlerror());
+            doLog (ERROR, LOG_COMP, _("Unable to initialise ltdl: %s."), lt_dlerror());
         else
             loadPluginsDirectory ();
 
 
         /** STRUCT PARTITION ARRAY **/
 
-        printf ("Structing partition array\n");
+        doLog (NOTICE, LOG_COMP, _("Structing partition array."));
         if (lsddb_structPartitionArr () < 0)
-            fprintf (stderr, "Unable to structPartitionArr()\n");
+            doLog (ERROR, LOG_COMP, _("Unable to structPartitionArr()."));
 
         /** STRUCT UNIV ARRAY **/
-        printf ("Structing Universe array\n");
+        doLog (NOTICE, LOG_COMP, _("Structing Universe array."));
         if (lsddb_structUnivArr () < 0)
         {
-            fprintf (stderr, "Problem structing universe array\n");
+            doLog (ERROR, LOG_COMP, _("Problem structing universe array."));
             return -1;
         }
 
         /** STRUCT CHANNEL ARRAY **/
-        printf ("Structing Channel array\n");
+        doLog (NOTICE, LOG_COMP, _("Structing Channel array."));
         if (lsddb_structChannelArr () < 0)
         {
-            fprintf (stderr, "Problem structing channel array\n");
+            doLog (ERROR, LOG_COMP, _("Problem structing channel array."));
             return -1;
         }
 
@@ -294,62 +314,63 @@ lsdSceneEntry ()
         /** BEGIN PARTITION BUFFER LOOP **/
         node_resetFrameCount ();
         updateBuffers (0, 0, NULL);
-        printf ("Dispatching(Ctrl-c to quit)...\n");
+        doLog (NOTICE, LOG_COMP, _("Dispatching(Ctrl-c to quit)..."));
         event_base_dispatch (ebMain);
 
         /** CLEAN UP SHITE **/
         lsdapi_setState (STATE_PCLEAN);
 
-        printf ("\nCleaning up Arrays\n");
+        doLog (NOTICE, LOG_COMP, _("Cleaning up Arrays."));
         if (clearLsdArrays () < 0)
-            fprintf (
-                stderr,
-                "There was a problem cleaning up arrays. Continuing anyway\n");
+            doLog (WARNING, LOG_COMP, 
+                   _("There was a problem cleaning up arrays. Continuing anyway."));
         
         /** DONE WITH LTDL **/
         lt_dlexit ();
 
         /** CLOSE GARBAGE COLLECTOR **/
-        printf ("Closing Garbage Collector\n");
+        doLog (NOTICE, LOG_COMP, _("Closing Garbage Collector."));
         lsdgc_finalGCOps ();
 
     }
 
     /** Close OLA **/
-    printf ("Closing OLA connection\n");
+    doLog (NOTICE, LOG_COMP, _("Closing OLA connection."));
     closeDMX ();
 
     /** Close RPC **/
-    printf ("Closing HTTP RPC\n");
+    doLog (NOTICE, LOG_COMP, _("Closing HTTP RPC."));
     closeRPC ();
 
     /* Update Cleanup */
-    printf ("Cleaning Lighting Update\n");
+    doLog (NOTICE, LOG_COMP, _("Cleaning Lighting Update."));
     evtimer_del (updEv);
     event_free (updEv);
 
     /* Signal cleanup */
-    printf ("Cleaning signal handlers\n");
+    doLog (NOTICE, LOG_COMP, _("Cleaning signal handlers."));
     evsignal_del (intEv);
     event_free (intEv);
     evsignal_del (relEv);
     event_free (relEv);
+    evsignal_del (logEv);
+    event_free (logEv);
 
     /* Done with libevent */
     event_base_free (ebMain);
 
     /* Save */
-    printf ("Saving DB to file\n");
+    doLog (NOTICE, LOG_COMP, _("Saving DB to file."));
     if (dbfile)
         lsddb_saveDB (dbpath);
     else /* Save In Home Directory */
         lsddb_saveDB (HOME_DB);
 
     /* Finialise DB */
-    printf ("Cleaning up DB\n");
+    doLog (NOTICE, LOG_COMP, _("Cleaning up DB."));
     lsddb_closeDB ();
 
-    free(HOME_DB);
+    free((void*)HOME_DB);
     
     return 0;
 }
@@ -359,30 +380,73 @@ int
 main (int argc, const char** argv)
 {
 
+    setlocale (LC_ALL, "");
+    bindtextdomain (PACKAGE, LOCALEDIR);
+    textdomain (PACKAGE);
+    
     /* Parse Command Line */
     int i;
-    verbose = 0;
+    int verbose = 0;
     dbfile = 0;
+    rpcPort = 9196;
     if (argc > 0)
         for (i = 0; i < argc; ++i)
         {
-            if (strcmp (argv[i], "-h") == 0)
+            if (strncmp (argv[i], "-h", 2) == 0)
             {
-                printf ("Usage: lsd [-hv] [-d dbfile]\n");
+                printf (_("Usage: lsd [-hv] [-p port] [-d dbfile]\n"));
                 return 0;
             }
-            if (strcmp (argv[i], "-v") == 0)
+            else if (strncmp (argv[i], "-v", 2) == 0)
                 verbose = 1;
-            if (strcmp (argv[i], "-d") == 0)
+            else if (strncmp (argv[i], "-d", 2) == 0)
             {
-                strncpy (dbpath, argv[i + 1], 256);
+                if (strlen(argv[i]) > 2)
+                    strncpy (dbpath, argv[i]+2, 256);
+                else if (i+1 < argc)
+                    strncpy (dbpath, argv[i+1], 256);
+                else
+                {
+                    printf (_("Missing path value for -d.\n"));
+                    return -1;
+                }
                 dbfile = 1;
+            }
+            else if (strncmp (argv[i], "-p", 2) == 0)
+            {
+                const char* portStr;
+                if (strlen(argv[i]) > 2)
+                    portStr = argv[i]+2;
+                else if(i+1 < argc)
+                    portStr = argv[i+1];
+                else
+                {
+                    printf (_("Missing port value for -p.\n"));
+                    return -1;
+                }
+                
+                int portNum = atoi (portStr);
+                if (!portNum)
+                {
+                    printf (_("Unable to parse port value.\n"));
+                    return -1;
+                }
+                
+                rpcPort = portNum;
             }
 
         }
 
+    /* Begin Logging */
+    initLogging (verbose);
+    
     /* Start LSD! */
-    return lsdSceneEntry ();
+    int exitCode = lsdSceneEntry ();
+    
+    /* End Logging */
+    finishLogging ();
+    
+    return exitCode;
 }
 
 

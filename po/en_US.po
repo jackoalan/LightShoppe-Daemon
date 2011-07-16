@@ -1,0 +1,32 @@
+# LightShoppe Translations.
+# Copyright (C) 2011 Jack Andersen
+# This file is distributed under the same license as the lsd package.
+# Jack Andersen <jacokalan@gmail.com>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: lsd 0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2011-07-15 17:54-0500\n"
+"PO-Revision-Date: 2011-07-15 17:56-0500\n"
+"Last-Translator: Jack Andersen <jackoalan@gmail.com>\n"
+"Language-Team: English\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+
+#: src/SceneCore.c:195
+msgid "Unable to initialise new DB."
+msgstr "Unable to initialize new DB."
+
+#: src/SceneCore.c:255
+msgid "Initialising Garbage Collector."
+msgstr "Initializing Garbage Collector."
+
+#: src/SceneCore.c:284
+#, c-format
+msgid "Unable to initialise ltdl: %s."
+msgstr "Unable to initialize ltdl: %s."

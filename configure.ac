@@ -12,6 +12,12 @@ LT_INIT([disable-static])
 
 AM_INIT_AUTOMAKE([lsd], [0.1])
 
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.18])
+GETTEXT_PACKAGE=$PACKAGE
+AC_SUBST(GETTEXT_PACKAGE)
+IT_PROG_INTLTOOL
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
@@ -42,6 +48,9 @@ AC_CHECK_FUNCS([floor gettimeofday memset pow strcasecmp strchr])
 
 # Output Files
 AC_CONFIG_FILES([Makefile src/Makefile Plugins/Makefile web/Makefile])
+AC_CONFIG_FILES([po/Makefile.in])
+AC_CONFIG_FILES([po/Makefile], [AM_POSTPROCESS_PO_MAKEFILE])
+
 
 # Plugin Configure
 m4_include([Plugins/pluginlist.m4])
