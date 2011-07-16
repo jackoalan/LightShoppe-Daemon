@@ -18,6 +18,7 @@ build:
 * build-essential
 * lidltdl-dev
 * libtool
+* gettext
 * automake
 * autoconf
 * libevent-dev
