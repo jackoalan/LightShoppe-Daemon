@@ -74,9 +74,9 @@ doLog (enum LogType type, const char* component, const char* msg, ...)
 {
     // Get Time
     time_t now = time(NULL);
-    struct tm* ts = localtime(&now);
+    struct tm* ts = localtime (&now);
     char tBuf[80];
-    strftime(tBuf, sizeof(tBuf), "%Y-%m-%d %H:%M:%S %Z", ts);
+    strftime (tBuf, sizeof(tBuf), "%Y-%m-%d %H:%M:%S %Z", ts);
     
     // Select correct tag
     const char* tag;
@@ -92,17 +92,20 @@ doLog (enum LogType type, const char* component, const char* msg, ...)
     // Buffer variable argument list for msg
     char vabuf[256];
     va_list argptr;
-    va_start(argptr, msg);
-    vsnprintf(vabuf, 256, msg, argptr);
-    va_end(argptr);
+    va_start (argptr, msg);
+    vsnprintf (vabuf, 256, msg, argptr);
+    va_end (argptr);
     
     // Verbose Print
     if (verbose)
-        fprintf((type == NOTICE)?stdout:stderr, "[%s] [%s] %s\n", tag, component, vabuf);
+        fprintf ((type == NOTICE)?stdout:stderr, "[%s] [%s] %s\n", tag, component, vabuf);
     
     // Log File Print
     if (logFile)
-        fprintf(logFile, "%s [%s] [%s] %s\n", tBuf, tag, component, vabuf);
+    {
+        fprintf (logFile, "%s [%s] [%s] %s\n", tBuf, tag, component, vabuf);
+        fflush (logFile);
+    }
     
     return 0;
 }
