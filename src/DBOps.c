@@ -2356,7 +2356,7 @@ static const char INDEX_HTML_FOOT[] =
     "\t\t<script type=\"text/javascript\" src=\"../farbtastic/farbtastic.js\"></script>\n"
     "\t</head>\n"
     "\t<body>\n"
-    "\t\t<div id=\"bg\"></div>\n"
+    "\t\t<div id=\"bgClip\"><div id=\"bg\"></div></div>\n"
     "\t\t<div id=\"canv\"></div>\n"
     "\t</body>\n"
     "</html>\n";

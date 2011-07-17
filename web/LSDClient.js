@@ -270,10 +270,14 @@ function LSDLibrary(app){
     this.app = app;
     
     this.jq = $(document.createElement('div'));
-    this.jq.addClass('lsdLibrary');
+    this.jq.addClass('lsdLibraryClip');
+
+    this.libCont = $(document.createElement('div'));
+    this.libCont.addClass('lsdLibrary');
+    this.jq.append(this.libCont);
     
     this.liblist = $(document.createElement('ul'));
-    this.jq.append(this.liblist);
+    this.libCont.append(this.liblist);
     
     this.liblist.append($(document.createElement('li')).addClass('dummy'));
     
@@ -307,9 +311,11 @@ LSDLibrary.prototype = {
             var libItem = $(document.createElement('li')).addClass('ui-widget-content');
             libItem.append(itemData.className).data(itemData);
             libItem.draggable({helper:'clone',revert:'invalid',appendTo:lsdApp.canvas});
-            
+ 
             library.liblist.append(libItem);
         }
+
+	library.liblist.append($(document.createElement('div')).addClass('dummy'));
     },
     makeFacadeItem:function(){
         var facadeItem = $(document.createElement('li'));
@@ -319,13 +325,13 @@ LSDLibrary.prototype = {
         return facadeItem;
     },
     showLibrary:function(){
-        this.jq.css('-webkit-transform','translate(0px,0px)');
-        this.jq.css('-moz-transform','translate(0px,0px)');
+        this.libCont.css('-webkit-transform','translate(0px,0px)');
+        this.libCont.css('-moz-transform','translate(0px,0px)');
         this.shown = true;
     },
     hideLibrary:function(){
-        this.jq.css('-webkit-transform','translate(300px,0px)');
-        this.jq.css('-moz-transform','translate(300px,0px)');
+        this.libCont.css('-webkit-transform','translate(300px,0px)');
+        this.libCont.css('-moz-transform','translate(300px,0px)');
         this.shown = false;
     },
     toggleLibrary:function(){
