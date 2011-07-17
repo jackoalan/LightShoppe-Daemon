@@ -2340,9 +2340,9 @@ static const char INDEX_HTML_HEAD[] =
     "\t\t<link rel=\"icon\" href=\"../favicon.ico\" type=\"image/x-icon\" />\n"
     "\t\t<link rel=\"shortcut icon\" href=\"../favicon.ico\" type=\"image/x-icon\" />\n"
     "\t\t<script type=\"text/javascript\">var LSD_PLUGIN_TABLE = new Array();</script>\n"
-    "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"/japis/jquery-ui/themes/custom-theme/jquery-ui-1.8.12.custom.css\">\n"
-    "\t\t<script type=\"text/javascript\" src=\"/japis/jquery/jquery.min.js\"></script>\n"
-    "\t\t<script type=\"text/javascript\" src=\"/japis/jquery-ui/jquery-ui.min.js\"></script>\n"
+    "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../jquery-ui/themes/custom-theme/jquery-ui-1.8.12.custom.css\">\n"
+    "\t\t<script type=\"text/javascript\" src=\"../jquery/jquery.min.js\"></script>\n"
+    "\t\t<script type=\"text/javascript\" src=\"../jquery-ui/jquery-ui.min.js\"></script>\n"
     "\n\t\t<!-- BEGIN PROCEDURALLY GENERATED CONTENT -->\n\n";
 
 static const char INDEX_HTML_FOOT[] =
