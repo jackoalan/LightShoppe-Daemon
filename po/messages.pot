@@ -1563,3 +1563,9 @@ msgstr ""
 #, c-format
 msgid "Unable to parse port value.\n"
 msgstr ""
+
+#: ../src/SceneCore.c:445
+#, c-format
+msgid "Missing string for path prefix.\n"
+msgstr ""
+

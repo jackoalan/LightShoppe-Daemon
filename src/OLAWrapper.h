@@ -49,7 +49,7 @@ initOlaClient ();
   * Sends DMX buffer to universe <univId>
   */
 int
-updateDMX (uint8_t* univ, size_t len, int univId);
+olaUpdateDMX (uint8_t* univ, size_t len, int univId);
 
 
 /**

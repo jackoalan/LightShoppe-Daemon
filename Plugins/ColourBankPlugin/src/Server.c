@@ -99,7 +99,6 @@ int
 colourBankNodeMake (struct LSD_SceneNodeInst const* inst, void* instData)
 {
     /* Nothing to be done here */
-    printf ("Node Make ran\n");
 
     return 0;
 }
@@ -162,7 +161,6 @@ colourBankNodeRestore (struct LSD_SceneNodeInst const* inst, void* instData)
         ++i;
     }
 
-    printf ("Node Restore ran\n");
 
     return 0;
 }
@@ -173,7 +171,6 @@ colourBankNodeClean (struct LSD_SceneNodeInst const* inst, void* instData)
 {
     struct PickerInstData* castData = (struct PickerInstData*)instData;
     free (castData->pickerArr);
-    printf ("Node Clean ran\n");
 }
 
 
@@ -185,7 +182,6 @@ colourBankNodeDelete (struct LSD_SceneNodeInst const* inst, void* instData)
                        1, inst->dbId);
     if (plugindb_step (pickerBankPlugin, deletePickerNodeStmt) != SQLITE_DONE)
         fprintf (stderr, "Problem while removing picker Bank from DB\n");
-    printf ("Node Delete ran\n");
 }
 
 
@@ -431,7 +427,6 @@ colourBankRPCHandler (cJSON* in, cJSON* out)
 int
 colourBankPluginInit (struct LSD_ScenePlugin const* plugin)
 {
-    printf ("Colour Bank Init Ran\n");
 
     pickerBankPlugin = plugin;
 

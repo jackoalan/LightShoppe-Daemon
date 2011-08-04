@@ -1040,8 +1040,8 @@ rpcReqCB (struct evhttp_request* req, void* arg)
     cJSON_Delete (returnjson);
     cJSON_Delete (input);
 
-    evhttp_add_header (evhttp_request_get_output_headers (
-                           req), "Content-Type", "application/json");
+    evhttp_add_header (evhttp_request_get_output_headers (req), 
+                       "Content-Type", "application/json");
     evhttp_send_reply (req, 200, "OK", repBuf);
 
     evbuffer_free (repBuf);
@@ -1050,23 +1050,151 @@ rpcReqCB (struct evhttp_request* req, void* arg)
         handleReload (0, 0, NULL);
 }
 
-
-/* Catchall for requests not made to /lsd/rpc */
+/* Generates an HTTP error */
 void
-reqCB (struct evhttp_request* req, void* arg)
+_serveFileErr (struct evhttp_request* req, const char* msg)
 {
-    struct evbuffer* repBuf = evbuffer_new ();
-    evbuffer_add_printf (repBuf, "<html><body>");
-    evbuffer_add_printf (repBuf, _("<h1>I don't handle %s</h1>"), req->uri);
-    evbuffer_add_printf (repBuf, _("<p>Version: %s</p>"), event_get_version ());
-    evbuffer_add_printf (repBuf, "</body></html>");
-    evhttp_add_header (evhttp_request_get_output_headers (
-                           req), "Content-Type", "text/html");
-    evhttp_send_reply (req, 200, "OK", repBuf);
-    evbuffer_free (repBuf);
+    struct evbuffer* errBuf = evbuffer_new ();
+    evbuffer_add_printf (errBuf, "<html><body>\n");
+    evbuffer_add_printf (errBuf, "<h1>Internal LightShoppe Error</h1>\n");
+    evbuffer_add_printf (errBuf, "<p>%s</p>\n", msg);
+    evbuffer_add_printf (errBuf, "</body></html>\n");
+    evhttp_add_header (evhttp_request_get_output_headers (req),
+                       "Content-Type", "text/html");
+    evhttp_send_reply (req, 500, "Internal Server Error", errBuf);
+    evbuffer_free (errBuf);
 }
 
+/* user-set location prefix */
+static const char* urlPrefix;
+/* Length of prefix to assist in chopping it from the uri */
+static int urlPrefixLen;
 
+struct MIMEEntry
+{
+    const char* fExt;
+    const char* mType;
+};
+
+static const struct MIMEEntry mTable[] =
+{
+    {".html","text/html"},
+    {".js","application/javascript"},
+    {".css","text/css"},
+    {".svg","image/svg+xml"},
+    {".png","image/png"},
+    {".jpg","image/jpeg"},
+    {".ico","image/vnd.microsoft.icon"}
+};
+static const int mTableLen = 7;
+
+static const char miscMime[] = "application/octet-stream";
+
+void
+_serveFile (struct evhttp_request* req, const char* path)
+{
+    /* No directories allowed */
+    int last = strlen (path);
+    if (path[last-1] == '/')
+    {
+        _serveFileErr (req, "Unable to list directories.");
+        return;
+    }
+    
+    /* Open file and check its presence */
+    FILE* toServe;
+    toServe = fopen (path, "rb");
+    if (!toServe)
+    {
+        _serveFileErr (req, "Unable to open file requested.");
+        return;
+    }
+            
+    /* Find mime type of opened file */
+    const char* fileExt;
+    const char* mimeType;
+    fileExt = strrchr (path, '.');
+    
+    if (fileExt)
+    {
+        int i;
+        for (i=0;i<mTableLen;++i)
+        {
+            const struct MIMEEntry* mEnt = &mTable[i];
+            if (strcmp (fileExt, mEnt->fExt) == 0)
+            {
+                mimeType = mEnt->mType;
+                goto mimeDone;
+            }
+        }
+    }
+    
+    mimeType = miscMime;
+    
+mimeDone:
+        
+    /* Attach mime to request */
+    evhttp_add_header (evhttp_request_get_output_headers (req),
+                       "Content-Type", mimeType);
+    
+    /* get file length */
+    size_t fileLen;
+    fseek (toServe, 0, SEEK_END);
+    fileLen = ftell (toServe);
+    fseek (toServe, 0, SEEK_SET);
+    char sfileLen[32];
+    snprintf (sfileLen, 32, "%d", (int)fileLen);
+    
+    /* Attach length to request */
+    evhttp_add_header (evhttp_request_get_output_headers (req),
+                       "Content-Length", sfileLen);
+        
+    /* Create and fill buffer with file content */
+#define BUFFERCHUNK 2048
+    struct evbuffer* fileBuf = evbuffer_new();
+    char chunkBuf[BUFFERCHUNK];
+    int readSize = BUFFERCHUNK;
+    
+    while (readSize == BUFFERCHUNK)
+    {
+        readSize = fread (chunkBuf, 1, BUFFERCHUNK, toServe);
+        evbuffer_add (fileBuf, chunkBuf, readSize);
+    }
+    
+    evhttp_send_reply (req, 200, "OK", fileBuf);
+    evbuffer_free (fileBuf);
+}
+
+void
+serveFileCore (struct evhttp_request* req)
+{
+#ifndef WEB_DIR
+    _serveFileErr (req, "WEB_DIR not provided at compile time.")
+    return;
+#else
+    char comppath[256];
+    const char* subpath = req->uri + urlPrefixLen;
+    snprintf (comppath, 256, "%s%s", WEB_DIR, subpath);
+    _serveFile (req, comppath);
+#endif
+}
+
+void
+serveFilePlugin (struct evhttp_request* req)
+{
+#ifndef WEB_PLUGIN_DIR
+    _serveFileErr (req, "WEB_PLUGIN_DIR not provided at compile time.");
+    return;
+#else
+    char comppath[256];
+    /* Length of prefix + "/plugins" */
+    const char* subpath = req->uri + urlPrefixLen + 8;
+    snprintf (comppath, 256, "%s%s", WEB_PLUGIN_DIR, subpath);
+    _serveFile (req, comppath);
+#endif
+}
+
+/* Serve main index.html */
 void
 srvIndexCB (struct evhttp_request* req, void* arg)
 {
@@ -1074,12 +1202,60 @@ srvIndexCB (struct evhttp_request* req, void* arg)
     if (lsddb_indexHtmlGen (repBuf) < 0)
         evbuffer_add_printf (repBuf, _("Error while generating index\n"));
     evhttp_add_header (evhttp_request_get_output_headers (
-                           req), "Content-Type", "text/html");
+                                                          req), "Content-Type", "text/html");
     evhttp_add_header (evhttp_request_get_output_headers (
-                           req), "Pragma", "no-cache");
+                                                          req), "Pragma", "no-cache");
     evhttp_send_reply (req, 200, "OK", repBuf);
     evbuffer_free (repBuf);
 }
+
+
+/* Set location header to prefix/main/ */
+void
+mainRedirect (struct evhttp_request* req, void* arg)
+{
+    char compLocation[256];
+    snprintf (compLocation, 256, "%s/main/", urlPrefix);
+    evhttp_add_header (evhttp_request_get_output_headers (req),
+                       "Location", compLocation);
+    evhttp_add_header (evhttp_request_get_output_headers (req),
+                       "Content-Type", "text/html");
+    
+    struct evbuffer* redirBuf = evbuffer_new ();
+    evbuffer_add_printf (redirBuf, "<html><body>Lightshoppe may be accessed at %s</body></html>",
+                         compLocation);
+    
+    evhttp_send_reply (req, 301, "Moved Permanently", redirBuf);
+    evbuffer_free (redirBuf);
+}
+
+
+/* Catchall for requests not made to /lsd/rpc */
+void
+reqCB (struct evhttp_request* req, void* arg)
+{
+    
+    /* Determine what type of file serve request will be made */
+    const char* uriNoPrefix = req->uri + urlPrefixLen;
+    
+    if (strlen (uriNoPrefix) <= 1)
+    {
+        /* Root Requested, redirect main */
+        mainRedirect (req, NULL);
+    }
+    else if (strncmp (uriNoPrefix, "/plugins/", 9) == 0)
+    {
+        /* Get plugin file */
+        serveFilePlugin (req);
+    }
+    else
+    {
+        /* Normal web file serve */
+        serveFileCore (req);
+    }
+}
+
+
 
 
 /* Libevent stuff below */
@@ -1088,15 +1264,28 @@ static struct event_base* eb;
 static struct evhttp* eh;
 
 int
-openRPC (struct event_base* ebin, int port)
+openRPC (struct event_base* ebin, int port, const char* prefix)
 {
+    urlPrefix = prefix;
+    urlPrefixLen = strlen (prefix);
+    char compPrefix[256];
+    
     eb = ebin;
     eh = evhttp_new (eb);
     if (evhttp_bind_socket (eh, "0.0.0.0", port) < 0)
         return -1;
+    
     evhttp_set_gencb (eh, reqCB, NULL);
-    evhttp_set_cb (eh, "/lsdnew/main/rpc", rpcReqCB, NULL);
-    evhttp_set_cb (eh, "/lsdnew/main/", srvIndexCB, NULL);
+    
+    snprintf (compPrefix, 256, "%s/main/rpc", prefix);
+    evhttp_set_cb (eh, compPrefix, rpcReqCB, NULL);
+    
+    snprintf (compPrefix, 256, "%s/main/", prefix);
+    evhttp_set_cb (eh, compPrefix, srvIndexCB, NULL);
+    
+    snprintf (compPrefix, 256, "%s/main", prefix);
+    evhttp_set_cb (eh, compPrefix, mainRedirect, NULL);
+    
 
     return 0;
 }

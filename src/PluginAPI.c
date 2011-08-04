@@ -52,7 +52,6 @@ destruct_ScenePlugin (void* plugin)
         if (castPlugin->dlObj)
         {
             lt_dlclose (castPlugin->dlObj);
-            printf ("Closed Plugin SO\n");
         }
     }
 }

@@ -28,7 +28,7 @@
 /* RPC initialisation function. opens a port for http
  * listening */
 int
-openRPC (struct event_base* ebin, int port);
+openRPC (struct event_base* ebin, int port, const char* prefix);
 
 
 /* Close RPC */

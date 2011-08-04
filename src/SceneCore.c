@@ -21,8 +21,6 @@
  */
 
 #include "SceneCore.h"
-#include <stdio.h>
-#include <ltdl.h>
 #include "PluginAPI.h"
 #include "PluginAPICore.h"
 #include "DBArrOps.h"
@@ -33,16 +31,17 @@
 #include "PluginLoader.h"
 #include "Node.h"
 #include "Logging.h"
+#include "DBOps.h"
+#include "cJSON.h"
 
+#include <stdio.h>
+#include <ltdl.h>
 #include <event.h>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
-
-#include "DBOps.h"
-#include "cJSON.h"
 
 #include "../config.h"
 
@@ -59,6 +58,7 @@ static const char LOG_COMP[] = "SceneCore.c";
 static int dbfile;
 static char dbpath[256];
 static int rpcPort;
+static const char* pathPrefix;
 
 void
 destruct_Univ (void* univ)
@@ -227,7 +227,7 @@ lsdSceneEntry ()
 
     /** OPEN HTTP RPC **/
     doLog (NOTICE, LOG_COMP, _("Opening HTTP RPC."));
-    if (openRPC (ebMain, rpcPort) < 0)
+    if (openRPC (ebMain, rpcPort, pathPrefix) < 0)
     {
         doLog (ERROR, LOG_COMP, _("Unable to open RPC on port %d."), rpcPort);
         return -1;
@@ -389,12 +389,13 @@ main (int argc, const char** argv)
     int verbose = 0;
     dbfile = 0;
     rpcPort = 9196;
+    pathPrefix = "/lightshoppe";
     if (argc > 0)
         for (i = 0; i < argc; ++i)
         {
             if (strncmp (argv[i], "-h", 2) == 0)
             {
-                printf (_("Usage: lsd [-hv] [-p port] [-d dbfile]\n"));
+                printf (_("Usage: lsd [-hv] [-p port] [-P \"Path Prefix\"] [-d dbfile]\n"));
                 return 0;
             }
             else if (strncmp (argv[i], "-v", 2) == 0)
@@ -417,7 +418,7 @@ main (int argc, const char** argv)
                 const char* portStr;
                 if (strlen(argv[i]) > 2)
                     portStr = argv[i]+2;
-                else if(i+1 < argc)
+                else if (i+1 < argc)
                     portStr = argv[i+1];
                 else
                 {
@@ -433,6 +434,24 @@ main (int argc, const char** argv)
                 }
                 
                 rpcPort = portNum;
+            }
+            else if (strncmp (argv[i], "-P", 2) == 0)
+            {
+                if (strlen(argv[i]) > 2)
+                    pathPrefix = argv[i]+2;
+                else if (i+1 < argc)
+                    pathPrefix = argv[i+1];
+                else
+                {
+                    printf (_("Missing string for path prefix.\n"));
+                    return -1;
+                }
+                
+                if(pathPrefix[0] != '/')
+                {
+                    printf (_("Path must begin with a leading slash.\n"));
+                    return -1;
+                }
             }
 
         }

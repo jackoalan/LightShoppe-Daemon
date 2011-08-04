@@ -368,10 +368,10 @@ function LSDNode(parps,nodeId,classObj,name,colour){
     // Add Drop Shadow
     this.ds = document.createElementNS('http://www.w3.org/2000/svg','rect');
     this.ds.setAttribute('fill','url(#dsGrad)');
-    this.ds.setAttribute('x','-100');
-    this.ds.setAttribute('y','-80');
-    this.ds.setAttribute('width','500');
-    this.ds.setAttribute('height','360');
+    this.ds.setAttribute('x','-80');
+    this.ds.setAttribute('y','-60');
+    this.ds.setAttribute('width','460');
+    this.ds.setAttribute('height','320');
     this.ds.setAttribute('pointer-events','none');
     this.nodeSvg.appendChild(this.ds);
 
@@ -498,7 +498,7 @@ LSDNode.prototype = {
         height = Math.max(0,height);
         height += 60;
         
-        this.ds.setAttribute('height',height+160);
+        this.ds.setAttribute('height',height+120);
         
         this.clipRect.setAttribute('height',height);
         
@@ -652,10 +652,10 @@ function LSDFacadeNode(parps,nodeId,name,colour){
     // Add Drop Shadow
     this.ds = document.createElementNS('http://www.w3.org/2000/svg','rect');
     this.ds.setAttribute('fill','url(#dsGrad)');
-    this.ds.setAttribute('x','-100');
+    this.ds.setAttribute('x','-80');
     this.ds.setAttribute('y','-80');
-    this.ds.setAttribute('width','500');
-    this.ds.setAttribute('height','360');
+    this.ds.setAttribute('width','460');
+    this.ds.setAttribute('height','320');
     this.ds.setAttribute('pointer-events','none');
     this.nodeSvg.appendChild(this.ds);
     
@@ -782,7 +782,7 @@ LSDFacadeNode.prototype = {
         height = Math.max(0,height);
         height += 60;
         
-        this.ds.setAttribute('height',height+160);
+        this.ds.setAttribute('height',height+80);
         
         this.clipRect.setAttribute('height',height);
         

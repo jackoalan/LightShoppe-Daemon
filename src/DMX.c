@@ -30,7 +30,9 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifdef USING_OLA
 #include "OLAWrapper.h"
+#endif
 
 #include "DMX.h"
 #include "CorePlugin.h"
@@ -49,14 +51,20 @@ static const char LOG_COMP[] = "DMX.c";
 int
 initDMX ()
 {
+#ifdef USING_OLA
     return initOlaClient ();
+#else
+    return 0;
+#endif
 }
 
 
 void
 closeDMX ()
 {
+#ifdef USING_OLA
     stopOlaClient ();
+#endif
 }
 
 
@@ -157,6 +165,8 @@ writeUnivs ()
     int i;
     if (univsArr->maxIdx == -1)
         return 0;
+    
+#ifdef USING_OLA
     for (i = 0; i <= univsArr->maxIdx; ++i)
     {
         if (pickIdx (univsArr, (void**)&univ, i) < 0)
@@ -165,9 +175,9 @@ writeUnivs ()
             return -1;
         }
 
-        updateDMX (univ->buffer, univ->maxIdx, univ->olaUnivId);
-        /* printf("MaxIdx: %d\n",univ->maxIdx); */
+        olaUpdateDMX (univ->buffer, univ->maxIdx, univ->olaUnivId);
     }
+#endif
 
     return 0;
 
