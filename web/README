@@ -21,10 +21,10 @@ server's user and use its path in the server's configuration as shown below.
 
 I use Lighttpd with a configuration like the following:
 
-alias.url += ( "/lsdnew/plugins" => "<PATH TO LIGHTSHOPPE-DAEMON'S PLUGINS DIRECTORY>" )
+alias.url += ( "/lightshoppe/plugins" => "<PATH TO LIGHTSHOPPE-DAEMON'S PLUGINS DIRECTORY>" )
 
-$HTTP["url"] =~ "^/lsdnew" {
-  alias.url += ( "/lsdnew" => "<PATH TO LIGHTSHOPPE-WEB>" )
+$HTTP["url"] =~ "^/lightshoppe" {
+  alias.url += ( "/lightshoppe" => "<PATH TO LIGHTSHOPPE-WEB>" )
 
   auth.backend = "htdigest"
   auth.backend.htdigest.userfile = "<PATH TO HTDIGEST>"
@@ -38,7 +38,7 @@ $HTTP["url"] =~ "^/lsdnew" {
 
 
   proxy.server = (
-    "/lsdnew/main/" => (
+    "/lightshoppe/main/" => (
       (
         "host" => "127.0.0.1",
         "port" => 9196
