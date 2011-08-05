@@ -273,14 +273,22 @@ lsdSceneEntry ()
 
         /** LOAD PLUGINS HERE **/
 
+        /* Core Plugin */
         doLog (NOTICE, LOG_COMP, _("Loading core plugin head."));
         if (lsddb_pluginHeadLoader (getCoreHead, 1, "CORE", "0", NULL) < 0)
         {
             doLog (ERROR, LOG_COMP, _("Unable to properly load core plugin."));
             return -1;
         }
+        
+        /* Statically linked plugins */
+        doLog (NOTICE, LOG_COMP, _("Loading static plugins."));
+        if (loadPlugins_static () < 0)
+            doLog (ERROR, LOG_COMP, _("Unable to get preloaded (static) plugins."));
 
-        if(lt_dlinit ())
+        /* Dynamically shared plugins */
+        doLog (NOTICE, LOG_COMP, _("Loading shared plugins."));
+        if (lt_dlinit ())
             doLog (ERROR, LOG_COMP, _("Unable to initialise ltdl: %s."), lt_dlerror());
         else
             loadPluginsDirectory ();

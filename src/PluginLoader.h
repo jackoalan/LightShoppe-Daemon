@@ -25,6 +25,9 @@
 int
 loadPluginsDirectory ();
 
+int
+loadPlugins_static ();
+
 
 int
 getPluginWebIncludes (struct evbuffer* target,

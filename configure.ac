@@ -8,7 +8,7 @@ AC_CONFIG_SRCDIR([src/OLAWrapper.cpp])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_PREFIX_DEFAULT([/usr])
-LT_INIT([disable-static])
+LT_INIT([dlopen])
 
 AM_INIT_AUTOMAKE([lsd], [0.1])
 

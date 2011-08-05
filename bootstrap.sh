@@ -22,12 +22,23 @@ test -e "$plugin/Makefile.am"
 if [ $? -eq 0 ]; then
 echo -e " \\" >> Plugins/Makefile.am
 echo -n `echo -n $plugin | sed 's/Plugins\/\(.*\)\//\1/g'` >> Plugins/Makefile.am
-
 fi
 done
 
 echo " " >> Plugins/Makefile.am
 echo "nobase_webplugin_DATA = CORE/CorePlugin.css CORE/CorePlugin.js CORE/Client.json" >> Plugins/Makefile.am
+
+
+echo -n "lsd_LDFLAGS =" > PluginStaticLinks.m4
+for plugin in Plugins/*/
+do
+test -e "$plugin/Makefile.am"
+if [ $? -eq 0 ]; then
+echo -e " \\" >> PluginStaticLinks.m4
+echo -n "-dlpreopen ../Plugins/`echo -n $plugin | sed 's/Plugins\/\(.*\)\//\1/g'`/src/`echo -n $plugin | sed 's/Plugins\/\(.*\)\//\1/g'`.la" >> PluginStaticLinks.m4
+fi
+done
+
 
 # Autoreconf everything
 type libtoolize

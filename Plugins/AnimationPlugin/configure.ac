@@ -10,6 +10,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([AnimationPlugin], [0.1])
 
 # Libtool Stuff
+LT_INIT([])
 AC_PROG_LIBTOOL
 AC_SUBST(LIBTOOL_DEPS)
 

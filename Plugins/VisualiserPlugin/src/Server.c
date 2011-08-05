@@ -58,18 +58,24 @@ static struct sembuf msem[2];
 static int mshmid;
 static void* mshmAttach;
 
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 static int asemid;
 static struct sembuf asem[2];
 static int ashmid;
 static void* ashmAttach;
+#endif
 
 static pid_t mpipeProc;
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 static pid_t apipeProc;
+#endif
 
 
 /* Process-local storage buffer for band values */
 static double mlocalBuffer[NUM_BANDS];
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 static double alocalBuffer[NUM_BANDS];
+#endif
 
 
 /* Float type */
@@ -95,6 +101,7 @@ mlocalBufCopy (struct LSD_SceneNodeOutput const* output)
     semop (msemid, msem, 1);
 }
 
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 void
 alocalBufCopy (struct LSD_SceneNodeOutput const* output)
 {
@@ -114,6 +121,7 @@ alocalBufCopy (struct LSD_SceneNodeOutput const* output)
     asem[0].sem_op = -1;
     semop (asemid, asem, 1);
 }
+#endif
 
 
 void*
@@ -136,6 +144,7 @@ mgetLow (struct LSD_SceneNodeOutput const* output)
     return &( mlocalBuffer[0] );
 }
 
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 void*
 agetHigh (struct LSD_SceneNodeOutput const* output)
 {
@@ -155,7 +164,7 @@ agetLow (struct LSD_SceneNodeOutput const* output)
 {
     return &( alocalBuffer[0] );
 }
-
+#endif
 
 /* Buffer func tables */
 static const bfFunc mbfFuncs[] =
@@ -164,11 +173,13 @@ static const bfFunc mbfFuncs[] =
 static const bpFunc mbpFuncs[] =
 {mgetHigh, mgetMid, mgetLow};
 
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 static const bfFunc abfFuncs[] =
 {alocalBufCopy};
 
 static const bpFunc abpFuncs[] =
 {agetHigh, agetMid, agetLow};
+#endif
 
 int
 makeNode (struct LSD_SceneNodeInst const* inst, void* instData)
@@ -256,6 +267,7 @@ msemInit ()
     return 0;
 }
 
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 int
 asemInit ()
 {
@@ -312,7 +324,7 @@ asemInit ()
     
     return 0;
 }
-
+#endif
 
 int
 mstartPipeProcess ()
@@ -338,6 +350,7 @@ mstopPipeProcess ()
     return 0;
 }
 
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 int
 astartPipeProcess ()
 {
@@ -353,14 +366,17 @@ astartPipeProcess ()
         return -1;
     return 0;
 }
+#endif
 
 
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 int
 astopPipeProcess ()
 {
     kill (apipeProc, SIGKILL);
     return 0;
 }
+#endif
 
 int
 visPluginMPDInit (struct LSD_ScenePlugin const* plugin)
@@ -388,6 +404,7 @@ visPluginMPDInit (struct LSD_ScenePlugin const* plugin)
     return 0;
 }
 
+#ifdef HAVE_ALSA_ASOUNDLIB_H
 int
 visPluginALSAInit (struct LSD_ScenePlugin const* plugin)
 {
@@ -415,6 +432,7 @@ visPluginALSAInit (struct LSD_ScenePlugin const* plugin)
     
     return 0;
 }
+#endif
 
 int
 visPluginInit (struct LSD_ScenePlugin const* plugin)

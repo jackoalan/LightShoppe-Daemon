@@ -48,6 +48,7 @@ static const char WEB_PLUGIN_PATH[] = WEB_PLUGIN_DIR;
 #endif
 
 
+/* compute a hash for the plugin and pass to database system for insertion */
 int
 checkAddPlugin (const char* pluginFile, const char* pluginName, 
                 lt_dlhandle pluginHandle)
@@ -59,7 +60,8 @@ checkAddPlugin (const char* pluginFile, const char* pluginName,
     FILE* shaStream = popen (shaCommand, "r");
 
     char digest[42];
-    fread (digest, 40, 1, shaStream);
+    if(!fread (digest, 40, 1, shaStream))
+        return -1;
     digest[41] = '\0';
 
     pclose (shaStream);
@@ -88,6 +90,29 @@ checkAddPlugin (const char* pluginFile, const char* pluginName,
     
     return 0;
 
+}
+
+/* Static plugin counterpart of checkAddPlugin 
+ * searches for pluginHead accessor within linked plugin */
+int
+checkAddPlugin_static (const char* pluginName, void* ghPtr)
+{
+    ghType getHead = (ghType)ghPtr;
+    if (getHead)
+    {
+        if ( lsddb_pluginHeadLoader (getHead, 0, pluginName, "STATIC",
+                                     NULL) < 0 )
+        {
+            doLog (ERROR, LOG_COMP, _("Unable to validate plugin HEAD of %s statically."), pluginName);
+            return -1;
+        }
+    }
+    else
+    {
+        doLog (ERROR, LOG_COMP, _("Error while loading HEAD of %s statically."), 
+               pluginName);
+        return -1;
+    }
 }
 
 
@@ -130,9 +155,47 @@ loadPluginsDirectory ()
     return -1;
 #endif
     
-
     return lt_dlforeachfile (PLUGIN_PATH, scrapePlugin, NULL);
+}
+
+/* Uses dlpreloading to discover plugins that
+ * were statically linked at compile time */
+int
+loadPlugins_static ()
+{
+    if(LTDL_SET_PRELOADED_SYMBOLS() != 0)
+        return -1;
     
+    lt_dlsymlist sym;
+    int i = 1;
+    char* dot;
+    int nameLen;
+    char pluginName[64];
+    char nameComp[128];
+    
+    while (1) {
+        sym = lt_preloaded_symbols[i];
+        if (sym.name && !sym.address)
+        {
+            dot = strrchr (sym.name, '.');
+            nameLen = dot - sym.name;
+            memset (pluginName, '\0', 64);
+            memcpy (pluginName, sym.name, nameLen);
+            memset (nameComp, '\0', 128);
+            memcpy (nameComp, sym.name, nameLen);
+            snprintf (nameComp+nameLen, 128-nameLen, "_LTX_getPluginHead");
+        }
+        else if (sym.name && sym.address)
+        {
+            if (strncmp (nameComp, sym.name, 128) == 0)
+                checkAddPlugin_static (pluginName, sym.address);
+        }
+        else
+            break;
+        ++i;
+    }
+    
+    return 0;
 }
 
 

@@ -2499,7 +2499,7 @@ lsddb_purgePlugin (int pluginId)
  * iteratively) exists in DB, adds if not, */
 /* inits plugin if 'enabled' is true */
 static const char PLUGIN_HEAD_LOADER_CHECK_NAME[] =
-    "SELECT id,enabled FROM ScenePlugin WHERE pluginDomain=?1 LIMIT 1";
+    "SELECT id,enabled,loaded FROM ScenePlugin WHERE pluginDomain=?1 LIMIT 1";
 static sqlite3_stmt* PLUGIN_HEAD_LOADER_CHECK_NAME_S;
 
 static const char PLUGIN_HEAD_LOADER_CHECK_SHA[] =
@@ -2545,14 +2545,26 @@ lsddb_pluginHeadLoader (ghType phGet,
 
     int pluginId;
     int enabled = 0;
-    if (sqlite3_step (PLUGIN_HEAD_LOADER_CHECK_NAME_S) == SQLITE_ROW)  /*
-                                                                        * Found
-                                                                        * by
-                                                                        * name */
+    int loaded = 0;
+    if (sqlite3_step (PLUGIN_HEAD_LOADER_CHECK_NAME_S) == SQLITE_ROW)
     {
+        /* Found by name */
         doLog (NOTICE, LOG_COMP, _("Already in DB."));
         pluginId = sqlite3_column_int (PLUGIN_HEAD_LOADER_CHECK_NAME_S, 0);
         enabled = sqlite3_column_int (PLUGIN_HEAD_LOADER_CHECK_NAME_S, 1);
+        loaded = sqlite3_column_int (PLUGIN_HEAD_LOADER_CHECK_NAME_S, 2);
+        
+        /* If plugin is already loaded, don't load this one to prevent clashes */
+        if (loaded)
+        {
+            doLog (WARNING, LOG_COMP, 
+                   _("A plugin with the name '%s' was already loaded;\n"
+                     "Skipping this one with SHA '%s'."),
+                   parentDirectoryName, pluginSha);
+            
+            return -1;
+        }
+        
 
         /* If enabled, verify SHA1 matches last known SHA1 */
         if (enabled)
@@ -2564,14 +2576,9 @@ lsddb_pluginHeadLoader (ghType phGet,
                                pluginSha,
                                40,
                                NULL);
-            if (sqlite3_step (PLUGIN_HEAD_LOADER_CHECK_SHA_S) != SQLITE_ROW)  /*
-                                                                               * match
-                                                                               * not
-                                                                               * found,
-                                                                               * disable
-                                                                               * and
-                                                                               * update */
+            if (sqlite3_step (PLUGIN_HEAD_LOADER_CHECK_SHA_S) != SQLITE_ROW)
             {
+                /* Match not found, disable and update */
                 enabled = 0;
                 lsddb_disablePlugin (pluginId);
 
@@ -2622,10 +2629,9 @@ lsddb_pluginHeadLoader (ghType phGet,
         /* return 0; */
     }
 
-    if (enabled || enable)  /* Cleared to allocate plugin
-                             * and execute it's init
-                             * function. */
+    if (enabled || enable)
     {
+        /* Cleared to allocate plugin and execute it's init function */
         size_t pluginArrIdx;
         struct LSD_ScenePlugin* scenePlugin;
         if (insertElem (getArr_lsdPluginArr (), &pluginArrIdx,

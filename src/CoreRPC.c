@@ -1061,7 +1061,7 @@ _serveFileErr (struct evhttp_request* req, const char* msg)
     evbuffer_add_printf (errBuf, "</body></html>\n");
     evhttp_add_header (evhttp_request_get_output_headers (req),
                        "Content-Type", "text/html");
-    evhttp_send_reply (req, 500, "Internal Server Error", errBuf);
+    evhttp_send_reply (req, 404, "File Not Found", errBuf);
     evbuffer_free (errBuf);
 }
 
@@ -1285,6 +1285,9 @@ openRPC (struct event_base* ebin, int port, const char* prefix)
     
     snprintf (compPrefix, 256, "%s/main", prefix);
     evhttp_set_cb (eh, compPrefix, mainRedirect, NULL);
+    
+    evhttp_set_cb (eh, "/", mainRedirect, NULL);
+    evhttp_set_cb (eh, "", mainRedirect, NULL);
     
 
     return 0;
