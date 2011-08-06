@@ -32,9 +32,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifndef HW_RVL
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
+#endif
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -54,7 +56,9 @@
 
 /* IPC vars */
 static int msemid;
+#ifndef HW_RVL
 static struct sembuf msem[2];
+#endif
 static int mshmid;
 static void* mshmAttach;
 
@@ -84,6 +88,7 @@ int floatTypeId;
 void
 mlocalBufCopy (struct LSD_SceneNodeOutput const* output)
 {
+#ifndef HW_RVL
     /* Get semaphore */
     msem[0].sem_op = 0;
     msem[1].sem_op = 1;
@@ -99,6 +104,7 @@ mlocalBufCopy (struct LSD_SceneNodeOutput const* output)
     /* Release semaphore */
     msem[0].sem_op = -1;
     semop (msemid, msem, 1);
+#endif
 }
 
 #ifdef HAVE_ALSA_ASOUNDLIB_H
@@ -213,6 +219,7 @@ deleteNode (struct LSD_SceneNodeInst const* inst, void* instData)
 int
 msemInit ()
 {
+#ifndef HW_RVL
     int ofile = open ("/tmp/lsdvis.ipc", O_CREAT | O_WRONLY, 0666);
     close (ofile);
 
@@ -263,7 +270,7 @@ msemInit ()
         fprintf (stderr, "No shared memory pointer produced\n");
         return -1;
     }
-
+#endif
     return 0;
 }
 
@@ -329,6 +336,7 @@ asemInit ()
 int
 mstartPipeProcess ()
 {
+#ifndef HW_RVL
     mpipeProc = fork ();
     if (mpipeProc == 0)  /* Child */
     {
@@ -340,14 +348,17 @@ mstartPipeProcess ()
     else /* Failure */
         return -1;
     return 0;
+#endif
 }
 
 
 int
 mstopPipeProcess ()
 {
+#ifndef HW_RVL
     kill (mpipeProc, SIGKILL);
     return 0;
+#endif
 }
 
 #ifdef HAVE_ALSA_ASOUNDLIB_H
@@ -452,12 +463,14 @@ visPluginInit (struct LSD_ScenePlugin const* plugin)
 void
 visPluginClean (struct LSD_ScenePlugin const* plugin)
 {
+#ifndef HW_RVL
     struct shmid_ds shmid_struct;
 
     mstopPipeProcess ();
     semctl ( msemid, 0, IPC_RMID );
     shmdt (mshmAttach);
     shmctl (mshmid, IPC_RMID, &shmid_struct);
+#endif
     
 #ifdef HAVE_ALSA_ASOUNDLIB_H
     astopPipeProcess ();

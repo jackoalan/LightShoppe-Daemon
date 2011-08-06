@@ -15,7 +15,11 @@ lsd_SOURCES = cJSON.c GarbageCollector.c DBArr.c Array.c DBArrOps.c \
 DBOps.c Node.c PluginAPI.c NodeInstAPI.c CoreRPC.c CorePlugin.c \
 $(OLAOBJ) DMX.c PluginLoader.c Logging.c SceneCore.c
 
-lsd_LDADD = $(OLALINK) @LTLIBINTL@
+if BUILD_RVL
+lsd_LDADD = -lsqlite3
+else
+lsd_LDADD = $(OLALINK) @LTLIBINTL@ -lsqlite3
+endif
 
 include $(top_srcdir)/PluginStaticLinks.m4
 

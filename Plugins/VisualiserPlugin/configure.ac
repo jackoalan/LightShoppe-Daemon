@@ -21,7 +21,7 @@ AC_SUBST([webinstalldir], ['${webplugindir}/VisualiserPlugin'])
 AC_PROG_CC
 
 # Checks for libraries.
-AC_SEARCH_LIBS([fftw_plan_dft_r2c_1d], [fftw3], [], [AC_MSG_ERROR([LIBFFTW3 not found. Unable to Make Visualiser plugin])])
+#AC_SEARCH_LIBS([fftw_plan_dft_r2c_1d], [fftw3], [], [AC_MSG_ERROR([LIBFFTW3 not found. Unable to Make Visualiser plugin])])
 AC_SEARCH_LIBS([snd_pcm_open], [asound], [], [AC_MSG_RESULT([ALSA's library not found. Building without ALSA support])])
 
 # Checks for header files.

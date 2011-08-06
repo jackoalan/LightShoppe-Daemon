@@ -41,13 +41,21 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#ifndef HW_RVL
 #include <pwd.h>
+#else
+#include <gctypes.h>
+#endif
 
 #include "../config.h"
 
 /* Gettext stuff */
+#ifndef HW_RVL
 #include <libintl.h>
 #define _(String) gettext (String)
+#else
+#define _(String) String
+#endif
 
 
 /* Name of this component for logging */
@@ -96,6 +104,7 @@ static struct timeval lastUpdLi;
 char const * 
 getHomeDBPath ()
 {
+#ifndef HW_RVL
     struct passwd *pw = getpwuid(getuid());
     if(!pw)
         return NULL;
@@ -108,6 +117,9 @@ getHomeDBPath ()
     }
     else
         return NULL;
+#else
+    return "sd:/lsd.db";
+#endif
 }
 
 /* Function which handles the calculation of remaining time */
@@ -286,12 +298,14 @@ lsdSceneEntry ()
         if (loadPlugins_static () < 0)
             doLog (ERROR, LOG_COMP, _("Unable to get preloaded (static) plugins."));
 
+#ifndef HW_RVL
         /* Dynamically shared plugins */
         doLog (NOTICE, LOG_COMP, _("Loading shared plugins."));
         if (lt_dlinit ())
             doLog (ERROR, LOG_COMP, _("Unable to initialise ltdl: %s."), lt_dlerror());
         else
             loadPluginsDirectory ();
+#endif
 
 
         /** STRUCT PARTITION ARRAY **/
@@ -378,7 +392,9 @@ lsdSceneEntry ()
     doLog (NOTICE, LOG_COMP, _("Cleaning up DB."));
     lsddb_closeDB ();
 
+#ifndef HW_RVL
     free((void*)HOME_DB);
+#endif
     
     return 0;
 }
@@ -388,9 +404,11 @@ int
 main (int argc, const char** argv)
 {
 
+#ifndef HW_RVL
     setlocale (LC_ALL, "");
     bindtextdomain (PACKAGE, LOCALEDIR);
     textdomain (PACKAGE);
+#endif
     
     /* Parse Command Line */
     int i;

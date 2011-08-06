@@ -36,8 +36,12 @@
 #include "Logging.h"
 
 /* Gettext stuff */
+#ifndef HW_RVL
 #include <libintl.h>
 #define _(String) gettext (String)
+#else
+#define _(String) String
+#endif
 
 /* Name of this component for logging */
 static const char LOG_COMP[] = "CoreRPC.c";

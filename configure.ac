@@ -12,11 +12,26 @@ LT_INIT([dlopen])
 
 AM_INIT_AUTOMAKE([lsd], [0.1])
 
+# Detect Wii
+AC_MSG_CHECKING(for HW_RVL)
+AC_TRY_COMPILE(,
+[
+#ifndef HW_RVL
+die horribly
+#endif
+],
+wii=true; AC_MSG_RESULT(yes),
+wii=false; AC_MSG_RESULT(no),
+)
+AM_CONDITIONAL(BUILD_RVL, test x$wii = xtrue)
+
+if test "$wii" != true; then
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.18])
 GETTEXT_PACKAGE=$PACKAGE
 AC_SUBST(GETTEXT_PACKAGE)
 IT_PROG_INTLTOOL
+fi
 
 # Process User festures
 
@@ -37,7 +52,7 @@ AC_PROG_CC
 # Checks for libraries.
 AC_SEARCH_LIBS([lt_dlinit], [ltdl],[],[AC_MSG_ERROR([Libltdl not found. Please install libltdl])])
 AC_SEARCH_LIBS([pow], [m])
-AC_SEARCH_LIBS([sqlite3_open], [sqlite3],[],[AC_MSG_ERROR([libsqlite3 not found. Please install libsqlite3])])
+#AC_SEARCH_LIBS([sqlite3_open], [sqlite3],[],[AC_MSG_ERROR([libsqlite3 not found. Please install libsqlite3])])
 AC_SEARCH_LIBS([event_base_new], [event],[],[AC_MSG_ERROR([Libevent not found. Please install libevent])])
 
 # Checks for header files.

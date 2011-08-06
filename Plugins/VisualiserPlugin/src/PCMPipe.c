@@ -33,9 +33,13 @@
   */
 
 #include <sys/types.h>
+#ifndef HW_RVL
 #include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/ipc.h>
+#else
+#include <gctypes.h>
+#endif
 #include <string.h> /* For strerror(3c) */
 #include <errno.h> /* For errno */
 #include <unistd.h> /* rand(3c) */
@@ -69,7 +73,9 @@ static fftw_plan thePlan = NULL;
 
 /* IPC vars */
 static int semid;
+#ifndef HW_RVL
 static struct sembuf sem[2];
+#endif
 static int shmid;
 static void* shmAttach;
 
@@ -79,7 +85,7 @@ static void* shmAttach;
 int
 shmInit (int prog) // 0 mpd; 1 alsa
 {
-
+#ifndef HW_RVL
     /* Set up IPC semaphore */
     key_t semkey, shmkey;
     semkey = ftok ("/tmp/lsdvis.ipc", (prog)?654:321);
@@ -114,6 +120,7 @@ shmInit (int prog) // 0 mpd; 1 alsa
         /* fprintf(logfile,"Unable to attach to shared
          * memory\n"); */
         return -1;
+#endif
 
     return 0;
 }
@@ -169,6 +176,7 @@ procSamples ()
 int
 sendBands ()
 {
+#ifndef HW_RVL
     /* Wait and get the semaphore */
     sem[0].sem_op = 0;
     sem[1].sem_op = 1;
@@ -185,6 +193,7 @@ sendBands ()
     sem[0].sem_op = -1;
     if (semop (semid, sem, 1) < 0)
         return -1;
+#endif
 
     return 0;
 }
@@ -246,18 +255,21 @@ PCMPipeEntryMpd ()
     // MPD Pipe
     static FILE* audioPipe;
     
-    
+#ifndef HW_RVL
     audioPipe = fopen ("/tmp/mpd.fifo", "r");
+#endif
 
     
     int16_t samples[NUM_SAMPLES];
     size_t readSize;
     while (run)
     {
+#ifndef HW_RVL
         readSize = fread (samples, sizeof( int16_t ), NUM_SAMPLES, audioPipe);
         if (readSize != NUM_SAMPLES){
             break;
         }
+#endif
         
         /* Convert samples to floating point for
          * transformation */
@@ -270,9 +282,13 @@ PCMPipeEntryMpd ()
             sendBands ();
     }
     
+#ifndef HW_RVL
     fclose (audioPipe);
+#endif
     fftw_cleanup ();
+#ifndef HW_RVL
     shmdt (shmAttach);
+#endif
     
     return 0;
 }

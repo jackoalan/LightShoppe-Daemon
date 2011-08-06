@@ -33,8 +33,12 @@
 #include "Logging.h"
 
 /* Gettext stuff */
+#ifndef HW_RVL
 #include <libintl.h>
 #define _(String) gettext (String)
+#else
+#define _(String) String
+#endif
 
 /* Component Log Name */
 static const char LOG_COMP[] = "PluginLoader.c";
@@ -48,6 +52,7 @@ static const char WEB_PLUGIN_PATH[] = WEB_PLUGIN_DIR;
 #endif
 
 
+#ifndef HW_RVL
 /* compute a hash for the plugin and pass to database system for insertion */
 int
 checkAddPlugin (const char* pluginFile, const char* pluginName, 
@@ -91,6 +96,7 @@ checkAddPlugin (const char* pluginFile, const char* pluginName,
     return 0;
 
 }
+#endif
 
 /* Static plugin counterpart of checkAddPlugin 
  * searches for pluginHead accessor within linked plugin */
@@ -116,6 +122,7 @@ checkAddPlugin_static (const char* pluginName, void* ghPtr)
 }
 
 
+#ifndef HW_RVL
 /* Pulls server library out of plugin folder */
 int
 scrapePlugin (const char *filename, void * data)
@@ -142,8 +149,9 @@ scrapePlugin (const char *filename, void * data)
     
     return 0;
 }
+#endif
 
-
+#ifndef HW_RVL
 /* Opens the plugins directory provided and calls
  * scrapePlugin for the name */
 int
@@ -157,6 +165,7 @@ loadPluginsDirectory ()
     
     return lt_dlforeachfile (PLUGIN_PATH, scrapePlugin, NULL);
 }
+#endif
 
 /* Uses dlpreloading to discover plugins that
  * were statically linked at compile time */

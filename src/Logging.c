@@ -41,18 +41,24 @@ initLogging (int verboseMode)
     else
         verbose = 0;
     
+#ifndef HW_RVL
     logFile = fopen ("/var/log/lsd.log","a");
     if (!logFile)
         return -1;
+#endif
     return 0;
 }
 
 int
 finishLogging ()
 {
+#ifndef HW_RVL
     if (logFile)
         return fclose (logFile);
     return -1;
+#else
+    return 0;
+#endif
 }
 
 /* Ran on log file rotation */
@@ -100,12 +106,14 @@ doLog (enum LogType type, const char* component, const char* msg, ...)
     if (verbose)
         fprintf ((type == NOTICE)?stdout:stderr, "[%s] [%s] %s\n", tag, component, vabuf);
     
+#ifndef HW_RVL
     // Log File Print
     if (logFile)
     {
         fprintf (logFile, "%s [%s] [%s] %s\n", tBuf, tag, component, vabuf);
         fflush (logFile);
     }
+#endif
     
     return 0;
 }
