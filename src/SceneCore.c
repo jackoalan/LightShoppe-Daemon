@@ -45,6 +45,7 @@
 #include <pwd.h>
 #else
 #include <gctypes.h>
+#include <wiiuse/wpad.h>
 #endif
 
 #include "../config.h"
@@ -61,12 +62,6 @@
 /* Name of this component for logging */
 static const char LOG_COMP[] = "SceneCore.c";
 
-
-/* Basic runtime configuration stuff */
-static int dbfile;
-static char dbpath[256];
-static int rpcPort;
-static const char* pathPrefix;
 
 void
 destruct_Univ (void* univ)
@@ -130,7 +125,7 @@ getHomeDBPath ()
  * immediately instead */
 void
 rescheduleUpdate (struct event* ev, struct timeval* lastUpd, void ( *handler )(
-                      int,
+                      evutil_socket_t,
                       short int,
                       void*), int interval)
 {
@@ -150,12 +145,27 @@ rescheduleUpdate (struct event* ev, struct timeval* lastUpd, void ( *handler )(
         evtimer_add (ev, &remTime);
 }
 
+void
+handleInterrupt (evutil_socket_t one, short int two, void* three)
+{
+    reload = 0;
+    event_base_loopbreak (ebMain);
+}
+
 
 /* Function which ensures each partition's output buffer is
  * available */
 void
-updateBuffers (int one, short int two, void* three)
+updateBuffers (evutil_socket_t one, short int two, void* three)
 {
+#ifdef HW_RVL
+    /* We're on Wii, check to see if Home button is pressed */
+    WPAD_ScanPads();
+    u32 pressed = WPAD_ButtonsDown(0);
+    if ( pressed & WPAD_BUTTON_HOME ) 
+        handleInterrupt (0,0,NULL);
+#endif
+    
     evtimer_del (updEv);
     gettimeofday (&lastUpdLi, NULL);
 
@@ -170,34 +180,27 @@ updateBuffers (int one, short int two, void* three)
 }
 
 
-void
-handleInterrupt (int one, short int two, void* three)
-{
-    reload = 0;
-    event_base_loopbreak (ebMain);
-}
-
 
 void
-handleReload (int ont, short int two, void* three)
+handleReload (evutil_socket_t ont, short int two, void* three)
 {
     reload = 1;
     event_base_loopbreak (ebMain);
 }
 
 void
-handleLogReopen (int ont, short int two, void* three)
+handleLogReopen (evutil_socket_t ont, short int two, void* three)
 {
     reloadLogging ();
 }
 
 
 int
-lsdSceneEntry ()
+lsdSceneEntry (const char* dbpath, int rpcPort, const char* pathPrefix)
 {
     char const * HOME_DB = getHomeDBPath ();
     
-    if (!dbfile)
+    if (!dbpath)
     {
         doLog (NOTICE, LOG_COMP, _("Checking for DB in home."));
         if (lsddb_openDB (HOME_DB) < 0){
@@ -224,6 +227,7 @@ lsdSceneEntry ()
     /** INIT EVENT BASE **/
     ebMain = event_base_new ();
 
+#ifndef HW_RVL
     /** REGISTER INTERRUPT HANDLER **/
     doLog (NOTICE, LOG_COMP, _("Registering signal handlers."));
     struct event* intEv = evsignal_new (ebMain, SIGINT, handleInterrupt, NULL);
@@ -236,6 +240,7 @@ lsdSceneEntry ()
     /** REGISTER LOG REOPEN HANDLER **/
     struct event* logEv = evsignal_new (ebMain, SIGUSR2, handleLogReopen, NULL);
     evsignal_add (logEv, NULL);
+#endif
 
     /** OPEN HTTP RPC **/
     doLog (NOTICE, LOG_COMP, _("Opening HTTP RPC."));
@@ -347,8 +352,10 @@ lsdSceneEntry ()
             doLog (WARNING, LOG_COMP, 
                    _("There was a problem cleaning up arrays. Continuing anyway."));
         
+#ifndef HW_RVL
         /** DONE WITH LTDL **/
         lt_dlexit ();
+#endif
 
         /** CLOSE GARBAGE COLLECTOR **/
         doLog (NOTICE, LOG_COMP, _("Closing Garbage Collector."));
@@ -370,6 +377,7 @@ lsdSceneEntry ()
     event_free (updEv);
 
     /* Signal cleanup */
+#ifndef HW_RVL
     doLog (NOTICE, LOG_COMP, _("Cleaning signal handlers."));
     evsignal_del (intEv);
     event_free (intEv);
@@ -377,13 +385,14 @@ lsdSceneEntry ()
     event_free (relEv);
     evsignal_del (logEv);
     event_free (logEv);
+#endif
 
     /* Done with libevent */
     event_base_free (ebMain);
 
     /* Save */
     doLog (NOTICE, LOG_COMP, _("Saving DB to file."));
-    if (dbfile)
+    if (dbpath)
         lsddb_saveDB (dbpath);
     else /* Save In Home Directory */
         lsddb_saveDB (HOME_DB);
@@ -399,23 +408,21 @@ lsdSceneEntry ()
     return 0;
 }
 
-
+#ifndef HW_RVL
 int
 main (int argc, const char** argv)
 {
 
-#ifndef HW_RVL
     setlocale (LC_ALL, "");
     bindtextdomain (PACKAGE, LOCALEDIR);
     textdomain (PACKAGE);
-#endif
     
     /* Parse Command Line */
     int i;
     int verbose = 0;
-    dbfile = 0;
-    rpcPort = 9196;
-    pathPrefix = "/lightshoppe";
+    int rpcPort = 9196;
+    const char* dbpath = NULL;
+    const char* pathPrefix = "/lightshoppe";
     if (argc > 0)
         for (i = 0; i < argc; ++i)
         {
@@ -429,15 +436,14 @@ main (int argc, const char** argv)
             else if (strncmp (argv[i], "-d", 2) == 0)
             {
                 if (strlen(argv[i]) > 2)
-                    strncpy (dbpath, argv[i]+2, 256);
+                    dbpath = argv[i]+2;
                 else if (i+1 < argc)
-                    strncpy (dbpath, argv[i+1], 256);
+                    dbpath = argv[i+1];
                 else
                 {
                     printf (_("Missing path value for -d.\n"));
                     return -1;
                 }
-                dbfile = 1;
             }
             else if (strncmp (argv[i], "-p", 2) == 0)
             {
@@ -486,12 +492,11 @@ main (int argc, const char** argv)
     initLogging (verbose);
     
     /* Start LSD! */
-    int exitCode = lsdSceneEntry ();
+    int exitCode = lsdSceneEntry (dbpath, rpcPort, pathPrefix);
     
     /* End Logging */
     finishLogging ();
     
     return exitCode;
 }
-
-
+#endif

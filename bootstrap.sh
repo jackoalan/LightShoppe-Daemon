@@ -29,7 +29,7 @@ echo " " >> Plugins/Makefile.am
 echo "nobase_webplugin_DATA = CORE/CorePlugin.css CORE/CorePlugin.js CORE/Client.json" >> Plugins/Makefile.am
 
 
-echo -n "lsd_LDFLAGS =" > PluginStaticLinks.m4
+echo -n "lsd_LDFLAGS +=" > PluginStaticLinks.m4
 for plugin in Plugins/*/
 do
 test -e "$plugin/Makefile.am"

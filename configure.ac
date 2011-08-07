@@ -12,18 +12,8 @@ LT_INIT([dlopen])
 
 AM_INIT_AUTOMAKE([lsd], [0.1])
 
-# Detect Wii
-AC_MSG_CHECKING(for HW_RVL)
-AC_TRY_COMPILE(,
-[
-#ifndef HW_RVL
-die horribly
-#endif
-],
-wii=true; AC_MSG_RESULT(yes),
-wii=false; AC_MSG_RESULT(no),
-)
-AM_CONDITIONAL(BUILD_RVL, test x$wii = xtrue)
+# Get Plugin Directories for compiler flags
+m4_include([Plugins/plugininclude.m4])
 
 if test "$wii" != true; then
 AM_GNU_GETTEXT([external])
@@ -82,19 +72,22 @@ AC_CHECK_FUNCS([floor gettimeofday memset pow strcasecmp strchr])
 AC_CONFIG_FILES([Makefile src/Makefile Plugins/Makefile web/Makefile])
 AC_CONFIG_FILES([po/Makefile.in])
 AC_CONFIG_FILES([po/Makefile], [AM_POSTPROCESS_PO_MAKEFILE])
+AM_COND_IF([BUILD_RVL],[
+AC_CONFIG_FILES([src/wii/Makefile])])
 
 
 # Plugin Configure
 m4_include([Plugins/pluginlist.m4])
 
-# Get Plugin Directories for compiler flags
-m4_include([Plugins/plugininclude.m4])
-
 # Web directory
-AC_SUBST([webdir], ['${datadir}/lsd/www'])
+AM_COND_IF([BUILD_RVL],[
+AC_SUBST([webdir], ['${wiidir}/lsd/www'])
+AC_SUBST([wiiappdir], ['${wiidir}/apps/lsd'])],[
+AC_SUBST([webdir], ['${datadir}/lsd/www'])])
 
 # CORE Plugin
 AC_SUBST([corewebdir], ['${webplugindir}/CORE'])
+
 
 # Do
 AC_OUTPUT

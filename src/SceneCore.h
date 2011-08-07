@@ -93,9 +93,9 @@ struct LSD_Partition
 
 /* Primary entry point for scene node architecture */
 /* Establishes managerial support for database operations */
-/* and the like */
+/* and the like EDIT: Turns out the entire program runs through here */
 int
-lsdSceneEntry ();
+lsdSceneEntry (const char* dbpath, int rpcPort, const char* pathPrefix);
 
 
 int
@@ -104,7 +104,7 @@ lsdSceneRevert (const char* dbpath, sqlite3* revertTarget);
 
 /* Request call for state reload */
 void
-handleReload (int ont, short int two, void* three);
+handleReload (evutil_socket_t ont, short int two, void* three);
 
 
 struct event_base*
