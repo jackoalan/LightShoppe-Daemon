@@ -1,0 +1,4 @@
+#!/bin/sh
+WII_BUILD=~/Desktop/wii_build
+
+./configure --prefix=$WII_BUILD --enable-static --disable-shared LDFLAGS="-L$DEVKITPPC/powerpc-eabi/lib -L$DEVKITPRO/libogc/lib/wii -L$WII_BUILD/lib" CPPFLAGS="-I$DEVKITPPC/powerpc-eabi/include -I$DEVKITPRO/libogc/include -I$WII_BUILD/include -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float" --host=powerpc-eabi

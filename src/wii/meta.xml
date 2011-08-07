@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="2.0">
+  <name>LightShoppe-Daemon</name>
+  <coder>jacko</coder>
+  <version>1.0</version>
+  <release_date>20110806</release_date>
+  <short_description>LightShoppe Daemon</short_description>
+  <long_description>Turns your Wii into a LightShoppe server, allowing web-based lighting control.</long_description>
+</app>
