@@ -164,6 +164,7 @@ updateBuffers (evutil_socket_t one, short int two, void* three)
     u32 pressed = WPAD_ButtonsDown(0);
     if ( pressed & WPAD_BUTTON_HOME ) 
         handleInterrupt (0,0,NULL);
+    printf ("Update happened\n");
 #endif
     
     evtimer_del (updEv);

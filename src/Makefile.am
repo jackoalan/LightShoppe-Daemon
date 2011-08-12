@@ -32,7 +32,7 @@ $(OLAOBJ) DMX.c PluginLoader.c Logging.c SceneCore.c $(WIIOBJ)
 lsd_LDFLAGS = 
 if BUILD_RVL
 lsd_LDFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float \
--lltdlc -lsqlite3 -levent -lwiiuse -lbte -logc
+-lltdlc -lsqlite3 -levent -lwiiuse -lfat -lbte -logc
 else
 lsd_LDFLAGS += $(OLALINK) @LTLIBINTL@ -lsqlite3
 endif

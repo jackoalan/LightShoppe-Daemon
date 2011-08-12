@@ -26,10 +26,13 @@
 #include <gccore.h>
 #include <network.h>
 #include <wiiuse/wpad.h>
+#include <sdcard/wiisd_io.h>
+#include <fat.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "SceneCore.h"
 
@@ -79,10 +82,9 @@ wii_init ()
 	// e.g. printf ("\x1b[%d;%dH", row, column );
 	printf("\x1b[2;0H");
     
-    if (net_init () < 0)
-    {
-        printf ("Something went wibbly with net_init().\n");
-    }
+    
+    __io_wiisd.startup();
+    fatMountSimple("sd", &__io_wiisd);
 	
 }
 
@@ -90,6 +92,28 @@ void
 wii_deinit ()
 {
     net_deinit ();
+    fatUnmount ("sd");
+}
+
+static s32 initialise_network() {
+    s32 result;
+    while ((result = net_init()) == -EAGAIN);
+    return result;
+}
+
+void wait_for_network_initialisation() {
+    printf("Waiting for network to initialise...\n");
+    if (initialise_network() >= 0) {
+        char myIP[16];
+        if (if_config(myIP, NULL, NULL, true) < 0) {
+            printf("Error reading IP address, exiting");
+            exit(1);
+        }
+        printf("Network initialised.  Wii IP address: %s\n", myIP);
+    } else {
+        printf("Unable to initialise network, exiting");
+        exit(1);
+    }
 }
 
 int
@@ -170,17 +194,22 @@ main (int argc, const char** argv)
     /* Init Wii */
     wii_init ();
     
+    /* Init Network */
+    wait_for_network_initialisation();
+    
     /* Begin Logging */
-    initLogging (verbose);
+    initLogging (0);
     
     /* Start LSD! */
     int exitCode = lsdSceneEntry (dbpath, rpcPort, pathPrefix);
+    //int exitCode = 0;
     
     /* End Logging */
     finishLogging ();
     
     /* Deinit Wii */
     wii_deinit ();
+    
     
     
     return exitCode;
