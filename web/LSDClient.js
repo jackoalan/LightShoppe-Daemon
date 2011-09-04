@@ -271,6 +271,7 @@ function LSDLibrary(app){
     
     this.jq = $(document.createElement('div'));
     this.jq.addClass('lsdLibraryClip');
+    this.jq.css('pointer-events','none');
 
     this.libCont = $(document.createElement('div'));
     this.libCont.addClass('lsdLibrary');
@@ -328,11 +329,13 @@ LSDLibrary.prototype = {
         this.libCont.css('-webkit-transform','translate(0px,0px)');
         this.libCont.css('-moz-transform','translate(0px,0px)');
         this.shown = true;
+        this.jq.css('pointer-events','auto');
     },
     hideLibrary:function(){
         this.libCont.css('-webkit-transform','translate(300px,0px)');
         this.libCont.css('-moz-transform','translate(300px,0px)');
         this.shown = false;
+        this.jq.css('pointer-events','none');
     },
     toggleLibrary:function(){
         if(this.shown)
