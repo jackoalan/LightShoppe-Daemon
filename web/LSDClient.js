@@ -1697,9 +1697,15 @@ function LSDPatchSpace(data){
     
     this.divE = $(document.createElement('div'));
     this.divE.addClass('lsdpatchspace');
+
+	// Init pan handler
     this.divE.mousedown(this,this.handleMdown);
+	this.divE.bind('touchstart',this,this.handleTouchStart);
+
+	// Init zoom handler
     this.divE.bind('mousewheel',this,this.handleMwheel);
     this.divE.bind('DOMMouseScroll',this,this.handleMscroll);
+	this.divE.bind('gesturestart',this,this.handleGestureStart);
     
     this.divE.empty();
     
