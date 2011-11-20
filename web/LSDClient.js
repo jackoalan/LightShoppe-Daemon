@@ -1994,10 +1994,31 @@ LSDPatchSpace.prototype = {
         doc.mouseup(event.data,event.data.handleMup);
     },
     
+    handleTouchStart:function(event){
+    	var patchspace = event.data;
+    	
+    	event.data.startMouseX = event.changedTouches[0].pageX;
+        event.data.startMouseY = event.changedTouches[0].pageY;
+        event.data.startPanX = event.data.x;
+        event.data.startPanY = event.data.y;
+    	
+    	patchspace.divE.unbind('touchstart',patchspace.handleTouchStart);
+    	
+    	var doc = $(document);
+    	doc.bind('touchmove',patchspace,patchspace.handleTouchMove);
+    	doc.bind('touchend',patchspace,patchspace.handleTouchEnd);
+    },
+    
     handleMmove:function(event){
         var mDiffX = event.data.startMouseX - event.pageX;
         var mDiffY = event.data.startMouseY - event.pageY;
         
+        event.data.setPan(mDiffX+event.data.startPanX,mDiffY+event.data.startPanY);
+    },
+    
+    handleTouchMove:function(event){
+    	var mDiffX = event.data.startMouseX - event.changedTouches[0].pageX;
+        var mDiffY = event.data.startMouseY - event.changedTouches[0].pageY;
         
         event.data.setPan(mDiffX+event.data.startPanX,mDiffY+event.data.startPanY);
     },
@@ -2009,6 +2030,15 @@ LSDPatchSpace.prototype = {
         event.data.divE.mousedown(event.data,event.data.handleMdown);
         
         lsdApp.server.panPatchSpace(event.data.psId,event.data.x,event.data.y,event.data.scale);
+    },
+    
+    handleTouchEnd:function(event){
+    	var doc = $(document);
+    	doc.unbind('touchend',event.data.handleTouchEnd);
+    	doc.unbind('touchmove',event.data.handleTouchMove);
+    	event.data.divE.bind('touchstart',event.data.handleTouchStart);
+    	
+    	lsdApp.server.panPatchSpace(event.data.psId,event.data.x,event.data.y,event.data.scale);
     },
     
     // Webkit & co (positive up 120 units wheelDelta)
