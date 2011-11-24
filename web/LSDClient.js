@@ -471,9 +471,13 @@ function LSDNode(parps,nodeId,classObj,name,colour){
     
     
     this.nodeSvgJq = $(rectGroup);
-    this.nodeSvgJq.mousedown(this,this.handleMouseDown);
-    this.nodeSvgJq.dblclick(this,this.handleDoubleClick);
-    
+    if(!('ontouchstart' in document.documentElement))
+    {
+        this.nodeSvgJq.mousedown(this,this.handleMouseDown);
+        this.nodeSvgJq.dblclick(this,this.handleDoubleClick);
+    }
+    else
+        this.nodeSvgJq.bind('touchstart',this,this.handleTouchStart);
     
 }
 
@@ -587,6 +591,23 @@ LSDNode.prototype = {
         event.data.getFocus(event.data.nodeSvg);
         event.data.setPosition(event.data.x,event.data.y);
     },
+
+    handleTouchStart:function(event){
+        $(document).bind('touchmove',event.data,event.data.handleTouchMove);
+        $(document).bind('touchend',event.data,event.data.handleTouchEnd);
+
+        event.data.nodeSvgJq.unbind('touchstart',event.data.handleTouchStart);
+
+        event.preventDefault();
+        event.stopPropagation();
+           
+        event.data.holdOffsetX = (event.originalEvent.changedTouches[0].pageX/event.data.parps.scale)-event.data.x;
+        event.data.holdOffsetY = (event.originalEvent.changedTouches[0].pageY/event.data.parps.scale)-event.data.y;
+        
+        event.data.getFocus(event.data.nodeSvg);
+        event.data.setPosition(event.data.x,event.data.y);
+	
+    },
     
     handleMouseMove:function(event){
         event.preventDefault();
@@ -596,6 +617,15 @@ LSDNode.prototype = {
         
         event.data.setPosition(x,y);
     },
+
+    handleTouchMove:function(event){
+        event.preventDefault();
+        
+        var x = (event.originalEvent.changedTouches[0].pageX/event.data.parps.scale)-event.data.holdOffsetX;
+        var y = (event.originalEvent.changedTouches[0].pageY/event.data.parps.scale)-event.data.holdOffsetY;
+
+        event.data.setPosition(x,y); 
+    },
     
     handleMouseUp:function(event){
         var doc = $(document);
@@ -603,6 +633,14 @@ LSDNode.prototype = {
         doc.unbind('mouseup',event.data.handleMouseUp);
         
         event.data.nodeSvgJq.mousedown(event.data,event.data.handleMouseDown);
+        lsdApp.server.positionNode(event.data.nodeId,event.data.x,event.data.y);
+    },
+
+    handleTouchEnd:function(event){
+        $(document).unbind('touchmove');
+        $(document).unbind('touchend');
+
+        event.data.nodeSvgJq.bind('touchstart',event.data,event.data.handleTouchStart);
         lsdApp.server.positionNode(event.data.nodeId,event.data.x,event.data.y);
     },
     
@@ -1344,7 +1382,10 @@ function LSDInput(parnode,typeId,inId){
     //this.inSvg.setAttribute('pointer-events','painted');
     
     this.inSvgJq = $(this.inSvg);
-    this.inSvgJq.mousedown(this,this.handleMDown);
+    if(!('ontouchstart' in document.documentElement))
+        this.inSvgJq.mousedown(this,this.handleMDown);
+    else
+        this.inSvgJq.bind('touchstart',this,this.handleTouchStart);
     
     this.inText = document.createElementNS('http://www.w3.org/2000/svg','text');
     this.inText.textContent = "Test";
@@ -1443,6 +1484,37 @@ LSDInput.prototype = {
             event.data.patchSpace.tentativeOut = wire.left;
         }
     },
+
+    handleTouchStart:function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        
+        event.data.inSvgJq.unbind('touchstart',event.data.handleTouchStart);
+
+        if(event.data.parnode.assps)
+            event.data.patchSpace = event.data.parnode.assps;
+        else
+            event.data.patchSpace = event.data.parnode.parps;
+        
+        if(event.data.wire){
+            var wire = event.data.wire;
+            event.data.wire = null;
+            
+            var doc = $(document);
+            doc.bind('touchend',event.data,event.data.handleTouchEnd);
+            doc.bind('touchmove',event.data,event.data.handleTouchMove); 
+
+            var x = (event.originalEvent.changedTouches[0].pageX/event.data.patchSpace.scale)+(event.data.patchSpace.x/event.data.patchSpace.scale);
+            var y = (event.originalEvent.changedTouches[0].pageY/event.data.patchSpace.scale)+(event.data.patchSpace.y/event.data.patchSpace.scale);
+            
+            wire.right = null;
+            wire.setRightPos(x,y);
+            
+            event.data.patchSpace.openInputListeners(wire);
+            event.data.patchSpace.tentativeOut = wire.left;
+        }
+    },
+
     
     handleMMove:function(event){
         var x = (event.pageX/event.data.patchSpace.scale)+(event.data.patchSpace.x/event.data.patchSpace.scale);
@@ -1451,6 +1523,15 @@ LSDInput.prototype = {
         
         event.data.patchSpace.curWire.setRightPos(x,y);
     },
+
+    handleTouchMove:function(event){
+        var x = (event.originalEvent.changedTouches[0].pageX/event.data.patchSpace.scale)+(event.data.patchSpace.x/event.data.patchSpace.scale);
+        var y = (event.originalEvent.changedTouches[0].pageY/event.data.patchSpace.scale)+(event.data.patchSpace.y/event.data.patchSpace.scale);
+        
+        
+        event.data.patchSpace.curWire.setRightPos(x,y);
+    },
+
     
     handleMUp:function(event){
         var doc = $(document);
@@ -1501,7 +1582,59 @@ LSDInput.prototype = {
         }
         
         event.data.patchSpace.closeInputListeners();
+    },
+
+    handleTouchEnd:function(event){
+        var doc = $(document);
+        doc.unbind('touchend',event.data.handleTouchEnd);
+        doc.unbind('touchmove',event.data.handleTouchMove);
+        event.data.inSvgJq.bind('touchstart',event.data,event.data.handleTouchStart);
+        
+        var wire = event.data.patchSpace.curWire;
+        
+        // Perform Connection or delete wire if no connection made
+        if(event.data.patchSpace.tentativeIn){
+            var targetIn = event.data.patchSpace.tentativeIn;
+            if(targetIn.typeId==event.data.typeId){
+                targetIn.wire = wire;
+                targetIn.wire.right = targetIn;
+                targetIn.wire.colourDefault();
+                targetIn.updateWirePos();
+                
+                // Disconnect wire
+                lsdApp.server.unwireNodes(targetIn.wire.wireId);
+                
+                // Make the RPC connection
+                var targetOut = event.data.patchSpace.tentativeOut;
+                
+                var leftFacade;
+                if(targetOut.parnode.assps)
+                    leftFacade = 1;
+                else
+                    leftFacade = 0;
+                
+                var rightFacade;
+                if(targetIn.parnode.assps)
+                    rightFacade = 1;
+                else
+                    rightFacade = 0;
+                
+                lsdApp.lastAddedWire = targetIn.wire;
+                lsdApp.server.wireNodes(leftFacade,targetOut.outId,rightFacade,targetIn.inId,lsdApp.quickWire);
+            }
+            else{
+                wire.removeWire(event.data.patchSpace);
+                //event.data.parnode.parps.wireArr.pop();
+            }
+        }
+        else{
+            wire.removeWire(event.data.patchSpace);
+            //event.data.parnode.parps.wireArr.pop();
+        }
+        
+        event.data.patchSpace.closeInputListeners();
     }
+
 };
 
 
@@ -1520,7 +1653,10 @@ function LSDOutput(parnode,typeId,outId){
     this.outSvg = document.createElementNS('http://www.w3.org/2000/svg','g');
     
     this.outSvgJq = $(this.outSvg);
-    this.outSvgJq.mousedown(this,this.handleMDown);
+    if(!('ontouchstart' in document.documentElement))
+        this.outSvgJq.mousedown(this,this.handleMDown);
+    else
+        this.outSvgJq.bind('touchstart',this,this.handleTouchStart);
     
     this.outText = document.createElementNS('http://www.w3.org/2000/svg','text');
     this.outText.textContent = "Test";
@@ -1589,8 +1725,8 @@ LSDOutput.prototype = {
         event.data.wireArr.push(newWire);
         event.data.updateWirePos();
         
-        var x = (event.pageX/event.data.patchSpace.scale)+(event.data.patchSpace.x/event.data.patchSpace.scale);
-        var y = (event.pageY/event.data.patchSpace.scale)+(event.data.patchSpace.y/event.data.patchSpace.scale);
+        var x = (event.pageX+event.data.patchSpace.x)/event.data.patchSpace.scale;
+        var y = (event.pageY+event.data.patchSpace.y)/event.data.patchSpace.scale;
 
         
         newWire.setRightPos(x,y);
@@ -1598,15 +1734,51 @@ LSDOutput.prototype = {
         event.data.patchSpace.openInputListeners(newWire);
         event.data.patchSpace.tentativeOut = event.data;
     },
-    
-    handleMMove:function(event){
-        var x = (event.pageX/event.data.patchSpace.scale)+(event.data.patchSpace.x/event.data.patchSpace.scale);
-        var y = (event.pageY/event.data.patchSpace.scale)+(event.data.patchSpace.y/event.data.patchSpace.scale);
+
+    handleTouchStart:function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        
+        if(event.data.parnode.assps)
+            event.data.patchSpace = event.data.parnode.assps;
+        else
+            event.data.patchSpace = event.data.parnode.parps;
+        
+        event.data.outSvgJq.unbind('touchstart',event.data.handleTouchStart);
+        
+        var doc = $(document);
+        doc.bind('touchend',event.data,event.data.handleTouchEnd);
+        doc.bind('touchmove',event.data,event.data.handleTouchMove);
+        
+        var newWire = new LSDWire(event.data,null,null);
+        event.data.patchSpace.addWire(newWire,0,0,30,30);
+        event.data.wireArr.push(newWire);
+        event.data.updateWirePos();
+        
+        var x = (event.originalEvent.changedTouches[0].pageX+event.data.patchSpace.x)/event.data.patchSpace.scale;
+        var y = (event.originalEvent.changedTouches[0].pageY+event.data.patchSpace.y)/event.data.patchSpace.scale;
 
         
-        event.data.patchSpace.curWire.setRightPos(x,y);
+        newWire.setRightPos(x,y);
         
+        //event.data.patchSpace.openInputListeners(newWire);
+	event.data.patchSpace.curWire = newWire;
+        event.data.patchSpace.tentativeOut = event.data;
     },
+
+    
+    handleMMove:function(event){
+        var x = (event.pageX+event.data.patchSpace.x)/event.data.patchSpace.scale;
+        var y = (event.pageY+event.data.patchSpace.y)/event.data.patchSpace.scale;
+        event.data.patchSpace.curWire.setRightPos(x,y);
+    },
+
+    handleTouchMove:function(event){
+        var x = (event.originalEvent.changedTouches[0].pageX+event.data.patchSpace.x)/event.data.patchSpace.scale;
+        var y = (event.originalEvent.changedTouches[0].pageY+event.data.patchSpace.y)/event.data.patchSpace.scale;
+        event.data.patchSpace.curWire.setRightPos(x,y);
+    },
+
     
     handleMUp:function(event){
         var doc = $(document);
@@ -1655,7 +1827,61 @@ LSDOutput.prototype = {
         }
         
         event.data.patchSpace.closeInputListeners();
+    },
+
+    handleTouchEnd:function(event){
+        var doc = $(document);
+        doc.unbind('touchend',event.data.handleTouchEnd);
+        doc.unbind('touchmove',event.data.handleTouchMove);
+        event.data.outSvgJq.bind('touchstart',event.data,event.data.handleTouchStart);
+        
+        // Perform Connection or delete wire if no connection made
+        var touch = event.originalEvent.changedTouches[0];
+	var tenIn = event.data.patchSpace.scanForInput((touch.pageX+event.data.patchSpace.x)/event.data.patchSpace.scale,
+                                                       (touch.pageY+event.data.patchSpace.y)/event.data.patchSpace.scale);
+
+        if(tenIn){
+            var targetIn = tenIn;
+            if(targetIn.typeId==event.data.typeId || targetIn.parnode.assps || event.data.typeId==0){
+                targetIn.wire = event.data.wireArr[event.data.wireArr.length-1];
+                targetIn.wire.right = targetIn;
+                targetIn.wire.colourDefault();
+                targetIn.updateWirePos();
+                
+                // Make the RPC connection
+                var targetOut = event.data.patchSpace.tentativeOut;
+                
+                var leftFacade;
+                if(targetOut.parnode.assps)
+                    leftFacade = 1;
+                else
+                    leftFacade = 0;
+                
+                var rightFacade;
+                if(targetIn.parnode.assps)
+                    rightFacade = 1;
+                else
+                    rightFacade = 0;
+                
+                lsdApp.lastAddedWire = targetIn.wire;
+                lsdApp.server.wireNodes(leftFacade,targetOut.outId,rightFacade,targetIn.inId,lsdApp.quickWire);
+                
+            }
+            else{
+                var wire = event.data.wireArr.pop();
+                wire.removeWire(event.data.patchSpace);
+                event.data.patchSpace.wireArr.pop();
+            }
+        }
+        else{
+            var wire = event.data.wireArr.pop();
+            wire.removeWire(event.data.patchSpace);
+            event.data.patchSpace.wireArr.pop();
+        }
+        
+        //event.data.patchSpace.closeInputListeners();
     }
+
 };
 
 // ************************
@@ -1699,26 +1925,30 @@ function LSDPatchSpace(data){
     this.divE.addClass('lsdpatchspace');
 
 	// Init pan handler
-    this.divE.mousedown(this,this.handleMdown);
-	this.divE.bind('touchstart',this,this.handleTouchStart);
+    if(!('ontouchstart' in document.documentElement))
+        this.divE.mousedown(this,this.handleMdown);
+    //this.divE.bind('touchstart',this,this.handleTouchStart);
 
 	// Init zoom handler
     this.divE.bind('mousewheel',this,this.handleMwheel);
     this.divE.bind('DOMMouseScroll',this,this.handleMscroll);
-	this.divE.bind('gesturestart',this,this.handleGestureStart);
+    //this.divE.bind('gesturestart',this,this.handleGestureStart);
     
     this.divE.empty();
     
     // Zoom slider
-    var slideCont = $(document.createElement('div'));
-    slideCont.addClass('lsdZoomSlider');
-    this.divE.append(slideCont);
-    this.zoomSlider = $(document.createElement('div'));
-    this.zoomSlider.addClass('lsdActualSlider')
-    slideCont.append(this.zoomSlider);
-    this.zoomSlider.slider({value:50,start:function(event,ui){event.stopPropagation();}});
-    this.zoomSlider.bind('slide',this,this.handleZoomSlide);
-    
+    if (!('ongesturestart' in document.documentElement))
+    {
+        var slideCont = $(document.createElement('div'));
+        slideCont.addClass('lsdZoomSlider');
+        this.divE.append(slideCont);
+        this.zoomSlider = $(document.createElement('div'));
+        this.zoomSlider.addClass('lsdActualSlider')
+        slideCont.append(this.zoomSlider);
+        this.zoomSlider.slider({value:50,start:function(event,ui){event.stopPropagation();}});
+        this.zoomSlider.bind('slide',this,this.handleZoomSlide);
+    }
+
     
     this.psSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
     this.psSvg.setAttribute('version','1.1');
@@ -1743,6 +1973,7 @@ function LSDPatchSpace(data){
     this.bgGrid.setAttribute('width','105%');
     this.bgGrid.setAttribute('height','105%');
     this.nodegroup.appendChild(this.bgGrid);
+    $(this.bgGrid).bind('touchstart',this,this.handleTouchStart);
     
     // Facade Inputs
     this.facadeIns = new LSDFacadeIns(this,data.facadeIns);
@@ -1827,7 +2058,15 @@ LSDPatchSpace.prototype = {
                 tempNode.inArr[j].inSvgJq.unbind('mouseout',tempNode.inArr[j].handleWireOut);
             }
         }
-        
+
+        for(var i in this.facadeArr){
+            var tempNode = this.facadeArr[i];
+            for (var j in tempNode.inArr){
+                tempNode.inArr[j].inSvgJq.unbind('mouseover',tempNode.inArr[j],tempNode.inArr[j].handleWireOver);
+                tempNode.inArr[j].inSvgJq.unbind('mouseout',tempNode.inArr[j],tempNode.inArr[j].handleWireOut);
+            }
+        }
+ 
         // Facade (Output) inputs
         for(var i in this.facadeOuts.inArr){
             this.facadeOuts.inArr[i].inSvgJq.unbind('mouseover',this.facadeOuts.inArr[i].handleWireOver);
@@ -1841,6 +2080,23 @@ LSDPatchSpace.prototype = {
     
     closeOutputListeners:function(){
         
+    },
+
+    scanForInput:function(x,y)
+    {
+        for(var i in this.nodeArr)
+        {
+            var tempNode = this.nodeArr[i];
+            for (var j in tempNode.inArr)
+            {
+                var theIn = tempNode.inArr[j];
+                if(x >= tempNode.x + theIn.x && x <= tempNode.x + theIn.x + 60 && y >= tempNode.y + theIn.y && y <= tempNode.y + theIn.y + 15)
+                {
+                    return theIn;
+                }
+            }
+        }
+        return null;
     },
     
     setInputs:function(inputArr){
@@ -1995,18 +2251,20 @@ LSDPatchSpace.prototype = {
     },
     
     handleTouchStart:function(event){
-    	var patchspace = event.data;
-    	
-    	event.data.startMouseX = event.changedTouches[0].pageX;
-        event.data.startMouseY = event.changedTouches[0].pageY;
+	event.preventDefault();
+
+        event.data.startMouseX = event.originalEvent.changedTouches[0].pageX;
+        event.data.startMouseY = event.originalEvent.changedTouches[0].pageY;
         event.data.startPanX = event.data.x;
         event.data.startPanY = event.data.y;
+
+        $(event.data.bgGrid).unbind('touchstart',event.data.handleTouchStart);
     	
-    	patchspace.divE.unbind('touchstart',patchspace.handleTouchStart);
-    	
-    	var doc = $(document);
-    	doc.bind('touchmove',patchspace,patchspace.handleTouchMove);
-    	doc.bind('touchend',patchspace,patchspace.handleTouchEnd);
+        var doc = $(document);
+        doc.bind('touchmove',event.data,event.data.handleTouchMove);
+        doc.bind('touchend',event.data,event.data.handleTouchEnd);
+
+	doc.bind('gesturestart',event.data,event.data.handleGestureStart);
     },
     
     handleMmove:function(event){
@@ -2017,13 +2275,16 @@ LSDPatchSpace.prototype = {
     },
     
     handleTouchMove:function(event){
-    	var mDiffX = event.data.startMouseX - event.changedTouches[0].pageX;
-        var mDiffY = event.data.startMouseY - event.changedTouches[0].pageY;
+        event.preventDefault();
+
+    	var mDiffX = event.data.startMouseX - event.originalEvent.changedTouches[0].pageX;
+        var mDiffY = event.data.startMouseY - event.originalEvent.changedTouches[0].pageY;
         
-        event.data.setPan(mDiffX+event.data.startPanX,mDiffY+event.data.startPanY);
+        event.data.setPan(mDiffX+event.data.startPanX,event.data.startPanY+mDiffY);
     },
     
     handleMup:function(event){
+	//alert('meh');
         var doc = $(document);
         doc.unbind('mouseup',event.data.handleMup);
         doc.unbind('mousemove',event.data.handleMmove);
@@ -2033,12 +2294,16 @@ LSDPatchSpace.prototype = {
     },
     
     handleTouchEnd:function(event){
-    	var doc = $(document);
-    	doc.unbind('touchend',event.data.handleTouchEnd);
-    	doc.unbind('touchmove',event.data.handleTouchMove);
-    	event.data.divE.bind('touchstart',event.data.handleTouchStart);
+        event.preventDefault();
+
+        var doc = $(document);
+        doc.unbind('touchend',event.data.handleTouchEnd);
+        doc.unbind('touchmove',event.data.handleTouchMove);
+	doc.unbind('gesturestart',event.data.handleGestureStart);	
+
+        $(event.data.bgGrid).bind('touchstart',event.data,event.data.handleTouchStart);
     	
-    	lsdApp.server.panPatchSpace(event.data.psId,event.data.x,event.data.y,event.data.scale);
+        lsdApp.server.panPatchSpace(event.data.psId,event.data.x,event.data.y,event.data.scale);
     },
     
     // Webkit & co (positive up 120 units wheelDelta)
@@ -2069,6 +2334,43 @@ LSDPatchSpace.prototype = {
         event.data.zoomSlider.slider('value',sliderScale);
         
         event.data.setScale(newScale,viewCenterX,viewCenterY);
+    },
+
+    // Touch Based Pinch-to-Zoom
+    handleGestureStart:function(event){i
+	event.data.pinchSScale = event.data.scale;
+
+        // Instruct next touch start event to determine centre of pinch
+	$(document).bind('touchstart',event.data,event.data.recordPinchCentre);
+
+	// Pinch change handler
+	$(document).bind('gesturechange',event.data,event.data.handleGestureChange);
+	$(document).bind('gestureend',event.data,event.data.handleGestureEnd);
+    },
+
+    handleGestureChange:function(event){
+
+        var newScale = event.data.pinchSScale * event.originalEvent.scale;
+        newScale = Math.min(1.5,newScale);
+        newScale = Math.max(0.5,newScale);
+
+        //var sliderScale = (newScale - 0.5)*100;
+        //event.data.zoomSlider.slider('value',sliderScale);
+
+        event.data.setScale(newScale,event.data.pinchCX,event.data.pinchCY);
+    },
+
+    handleGestureEnd:function(event){
+        $(document).unbind('gestureend',event.data.handleGestureEnd);
+	$(document).unbind('gesturechange',event.data.handleGestureChange);
+
+	$(document).bind('gesturestart',event.data,event.data.handleGestureStart);
+    },
+
+    recordPinchCentre:function(event){
+        event.data.pinchCX = event.data.startMouseX+((event.originalEvent.changedTouches[0].pageX-event.data.startMouseX)/2); 
+        event.data.pinchCY = event.data.startMouseY+((event.originalEvent.changedTouches[0].pageY-event.data.startMouseY)/2);
+        $(document).unbind('touchstart',event.data.recordPinchCentre);
     },
     
     getSvgDefs:function(){
